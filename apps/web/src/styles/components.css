@@ -505,3 +505,13 @@
 .diff-row.diff-empty { background: repeating-linear-gradient(45deg, var(--bg-0) 0 6px, var(--bg-1) 6px 12px); color: var(--tx-3); }
 .diff-legend { display: flex; gap: 14px; font-size: var(--fs-12); color: var(--tx-3); align-items: center; }
 .diff-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--bd); vertical-align: -2px; margin-right: 4px; }
+
+/* ---------- 22. 제품 추가(목업에 없는 상태 표현, 설계서 §10.3 로딩·§10.5) ---------- */
+/* 버튼 스피너: 텍스트 색(currentColor)으로 도는 12px 원 */
+.spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; animation: spin .7s linear infinite; flex: 0 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* 스켈레톤: 표·카드 로딩(200ms 이후 표시) */
+.skeleton { display: block; height: 12px; border-radius: 4px; background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-0) 50%, var(--bg-2) 75%); background-size: 200% 100%; animation: skeleton 1.2s ease-in-out infinite; }
+.skeleton + .skeleton { margin-top: 8px; }
+@keyframes skeleton { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .spinner, .skeleton { animation: none; } }

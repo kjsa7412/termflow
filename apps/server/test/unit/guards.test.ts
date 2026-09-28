@@ -147,7 +147,7 @@ describe('ProjectRoleGuard', () => {
     memberRole: 'EDITOR',
     ...over,
   });
-  const req = (over: Record<string, unknown> = {}) => ({
+  const req = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
     method: 'GET',
     params: { projectKey: 'PRJA' },
     authUser: user(),
