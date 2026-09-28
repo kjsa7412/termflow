@@ -5,7 +5,7 @@
   "type": "module",
   "description": "TermFlow API 서버(NestJS, Express 어댑터)",
   "scripts": {
-    "dev": "nest start --watch --preserveWatchOutput",
+    "dev": "node scripts/dev-server.mjs",
     "build": "nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",

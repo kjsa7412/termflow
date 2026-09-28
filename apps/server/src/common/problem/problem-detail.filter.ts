@@ -88,6 +88,11 @@ export class ProblemDetailFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest<Request>();
     const res = ctx.getResponse<Response>();
+    // /health(terminus)의 503 본문 {status, info, error, details}은 모니터링 형식 그대로 둔다(§12.3)
+    if (exception instanceof HttpException && req.path === '/health') {
+      res.status(exception.getStatus()).json(exception.getResponse());
+      return;
+    }
     const problem = this.toProblem(exception, req.originalUrl);
     if (problem.status >= 500) {
       this.logger.error(

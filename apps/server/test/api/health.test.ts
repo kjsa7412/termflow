@@ -1,9 +1,11 @@
 import type { INestApplication } from '@nestjs/common';
 import { Global, Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { HEALTH_STATUS } from '@termflow/shared';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
+import { ProblemDetailFilter } from '../../src/common/problem/problem-detail.filter.js';
 import { PG_POOL } from '../../src/db/db.module.js';
 import { HealthModule } from '../../src/health/health.module.js';
 
@@ -14,6 +16,8 @@ async function appWith(query: () => Promise<unknown>): Promise<INestApplication>
   class FakeDbModule {}
   const moduleRef = await Test.createTestingModule({
     imports: [FakeDbModule, HealthModule],
+    // 전역 ProblemDetailFilter가 있어도 /health 본문은 terminus 형식 그대로여야 한다
+    providers: [{ provide: APP_FILTER, useClass: ProblemDetailFilter }],
   }).compile();
   const app = moduleRef.createNestApplication({ logger: false });
   await app.init();
