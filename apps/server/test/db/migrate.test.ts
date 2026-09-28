@@ -11,9 +11,9 @@ import os from 'node:os';
 import path from 'node:path';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { MIGRATIONS_FOLDER, runMigrations } from '../../../src/db/migrate.js';
-import { resetDatabase } from '../../../src/db/reset.js';
-import { createDatabase } from '../setup/databases.js';
+import { MIGRATIONS_FOLDER, runMigrations } from '../../src/db/migrate.js';
+import { resetDatabase } from '../../src/db/reset.js';
+import { createDatabase } from './setup/databases.js';
 
 const EXPECTED_TABLES = [
   'ddl_export_log',
@@ -96,7 +96,7 @@ async function failureCause(p: Promise<unknown>): Promise<string> {
   return String((err as Error & { cause?: Error }).cause?.message);
 }
 
-describe('poc/migrate (T1.2·T1.3)', () => {
+describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
   let pool: pg.Pool;
   const tmpDirs: string[] = [];
 
@@ -111,7 +111,7 @@ describe('poc/migrate (T1.2·T1.3)', () => {
   it('T1.2 부록 A 적용 → 19 테이블 + 이력 1행, 재실행 시 변경 없음', async () => {
     const t0 = performance.now();
     await runMigrations(pool);
-    console.log(`[poc/migrate] baseline 적용 ${Math.round(performance.now() - t0)}ms`);
+    console.log(`[db/migrate] baseline 적용 ${Math.round(performance.now() - t0)}ms`);
     expect(await tables(pool)).toEqual(EXPECTED_TABLES);
     expect(await historyCount(pool)).toBe(1);
     await runMigrations(pool);
