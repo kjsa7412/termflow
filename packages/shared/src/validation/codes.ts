@@ -236,5 +236,12 @@ export const API_ERROR_CODES = {
   E_BIZ_AREA_NOT_FOUND: '업무구분이 프로젝트에 없습니다',
   E_TEMPLATE_IN_USE: '파생 프로젝트가 있는 템플릿입니다',
   E_TEMPLATE_NO_TABLES: '템플릿에는 테이블·멤버를 만들 수 없습니다',
+  // 인증·사용자(단계 4, CR-03 §5)
+  E_INVALID_CREDENTIALS: '아이디 또는 비밀번호가 올바르지 않습니다',
+  E_PW_CURRENT_MISMATCH: '현재 비밀번호가 올바르지 않습니다',
+  E_LOGIN_ID_DUP: '이미 사용 중인 아이디입니다',
+  E_LAST_SYS_ADMIN: '마지막 시스템 관리자는 해제·비활성화할 수 없습니다',
+  E_SELF_DEACTIVATE: '자기 계정은 비활성화할 수 없습니다',
+  E_PROJECT_READONLY: '보관된 프로젝트·템플릿은 수정할 수 없습니다',
 } as const;
 export type ApiErrorCode = keyof typeof API_ERROR_CODES;
