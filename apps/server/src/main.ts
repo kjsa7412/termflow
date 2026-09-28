@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { API_PREFIX, APP_NAME } from '@termflow/shared';
+import { APP_NAME } from '@termflow/shared';
 import { loadEnvOrExit } from './config/load-env.js';
 
 async function main(): Promise<void> {
@@ -25,10 +25,11 @@ async function main(): Promise<void> {
   const { NestFactory } = await import('@nestjs/core');
   const { Logger } = await import('nestjs-pino');
   const { AppModule } = await import('./app.module.js');
+  const { configureApp } = await import('./app.setup.js');
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
-  app.setGlobalPrefix(API_PREFIX.slice(1), { exclude: ['health'] });
+  configureApp(app);
   app.enableShutdownHooks();
   await app.listen(env.PORT);
   app

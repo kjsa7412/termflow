@@ -48,7 +48,44 @@ export interface MyProject {
 }
 export interface MeResponse {
   user: SessionUser;
+  /** 강제 비밀번호 변경 중이면 true(SPA가 `/me?forcePassword=1`로 고정, §7.6). */
+  mustChangePassword: boolean;
   projects: MyProject[];
+}
+
+// ── 사용자 관리(/admin/users, §9.3) ─────────────────────────────────────────
+export interface AdminUserItem {
+  id: number;
+  loginId: string;
+  userNm: string;
+  email: string | null;
+  isSysAdmin: boolean;
+  isActive: boolean;
+  pwChangeRequired: boolean;
+  /** 잠금 중(locked_until > 현재). */
+  locked: boolean;
+  lockedUntil: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+  projects: { key: string; nm: string; role: MemberRole }[];
+}
+export interface AdminUserPage extends Page<AdminUserItem> {
+  counts: {
+    all: number;
+    active: number;
+    pwPending: number;
+    locked: number;
+    inactive: number;
+    sysAdmin: number;
+  };
+}
+export interface AdminUserCreateResponse {
+  user: AdminUserItem;
+  /** 서버가 만든 초기 비밀번호(관리자가 직접 지정했으면 없음). 이 응답에서만 1회 제공. */
+  temporaryPassword?: string;
+}
+export interface PasswordResetResponse {
+  temporaryPassword: string;
 }
 
 // ── 프로젝트 ────────────────────────────────────────────────────────────────

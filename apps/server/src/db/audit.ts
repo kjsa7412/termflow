@@ -1,4 +1,4 @@
-import { sql, type InferInsertModel } from 'drizzle-orm';
+import { sql, type InferInsertModel, type SQL } from 'drizzle-orm';
 import type { PgColumn, PgInsertValue, PgTable, PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import type { Audit } from '../common/audit/audit.js';
 import type { Db } from './client.js';
@@ -33,7 +33,10 @@ export type AuditColumn =
 export type AuditedInsert<T extends AuditedTable> = {
   [K in keyof InferInsertModel<T> as K extends AuditColumn ? never : K]: InferInsertModel<T>[K];
 };
-export type AuditedPatch<T extends AuditedTable> = Partial<AuditedInsert<T>>;
+/** update 값: 컬럼 값 또는 SQL 식(`login_fail_cnt + 1`, `CURRENT_TIMESTAMP` 등). */
+export type AuditedPatch<T extends AuditedTable> = {
+  [K in keyof AuditedInsert<T>]?: AuditedInsert<T>[K] | SQL;
+};
 
 /** Db 또는 트랜잭션(tx). */
 export type DbExecutor = Pick<Db, 'insert' | 'update'>;

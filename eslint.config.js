@@ -77,7 +77,11 @@ export default tseslint.config(
   },
   {
     files: ['apps/web/src/**/*.{ts,vue}'],
-    languageOptions: { globals: { ...globals.browser } },
+    languageOptions: { globals: { ...globals.browser, __APP_VERSION__: 'readonly' } },
+    rules: {
+      // TS 선택적 prop(`label?: string`)은 undefined가 기본값이다(withDefaults 강제는 소음)
+      'vue/require-default-prop': 'off',
+    },
   },
   {
     files: ['apps/web/vite.config.ts'],

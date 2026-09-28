@@ -11,6 +11,9 @@ import { AppConfigModule } from './config/config.module.js';
 import type { Env } from './config/env.schema.js';
 import { DbModule } from './db/db.module.js';
 import { HealthModule } from './health/health.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { UserModule } from './user/user.module.js';
+import { webStaticModules } from './web-static.js';
 
 @Module({
   imports: [
@@ -27,6 +30,9 @@ import { HealthModule } from './health/health.module.js';
     CommonModule,
     DbModule,
     HealthModule,
+    AuthModule,
+    UserModule,
+    ...webStaticModules(),
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemDetailFilter }],
 })
