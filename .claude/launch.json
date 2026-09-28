@@ -4,8 +4,26 @@
     {
       "name": "mockups",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "C:/project/termflow/docs/mockups"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--directory",
+        "C:/project/termflow/docs/mockups"
+      ],
       "port": 8765
+    },
+    {
+      "name": "server",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@termflow/server", "dev"],
+      "port": 8080
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@termflow/web", "dev"],
+      "port": 5173
     }
   ]
 }

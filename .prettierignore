@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+docs/
+seed/
+migration/
+logs/
+pnpm-lock.yaml
+.env
+.env.example

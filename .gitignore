@@ -11,3 +11,4 @@ migration/work/
 .vite/
 .DS_Store
 Thumbs.db
+*.tsbuildinfo

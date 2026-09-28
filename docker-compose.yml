@@ -1,0 +1,22 @@
+# TermFlow 실행 구성(설계서 부록 B.1 db 서비스). app 서비스는 T11.2에서 추가한다(부록 B.3).
+# TERMFLOW_DB_PASSWORD는 같은 디렉터리의 .env에서 읽는다(.env.example 참고).
+services:
+  db:
+    image: postgres:17
+    container_name: termflow-db
+    environment:
+      POSTGRES_DB: termflow
+      POSTGRES_USER: termflow
+      POSTGRES_PASSWORD: ${TERMFLOW_DB_PASSWORD:?required}
+      TZ: Asia/Seoul
+    ports: ['5434:5432']
+    volumes:
+      - termflow-pgdata:/var/lib/postgresql/data
+      - ./seed:/seed:ro # migrate 단계 psql 적재용(읽기 전용)
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U termflow -d termflow']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  termflow-pgdata:
