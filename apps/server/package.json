@@ -13,9 +13,10 @@
     "test:db": "node ../../scripts/run-vitest.mjs run --config vitest.db.config.ts --passWithNoTests",
     "db:migrate": "tsx src/db/cli.ts migrate",
     "db:pull": "tsx scripts/db-pull.ts",
-    "migrate:seed": "node -e \"console.error('migrate:seed — 단계 3(T3.x)에서 구현 예정'); process.exit(1)\"",
+    "migrate:seed": "tsx src/migration/seed.ts",
     "db:reset": "tsx src/db/cli.ts reset",
-    "db:new": "tsx scripts/db-new.ts"
+    "db:new": "tsx scripts/db-new.ts",
+    "migrate:scan": "tsx src/migration/sensitive-scan.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.0",
