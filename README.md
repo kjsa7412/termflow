@@ -71,7 +71,21 @@ pnpm test:db -- schema   # 파일 이름 필터(pnpm 10의 `--` 전달은 script
 | `pnpm db:reset`                                | dev 전용: 스키마 삭제 후 재적용(production 거부)                    |
 | `pnpm --filter @termflow/server db:new <이름>` | 다음 번호 빈 마이그레이션 파일 생성                                 |
 
-규약은 `apps/server/drizzle/README.md`. `pnpm migrate:seed`(승계 러너)는 단계 3에서 구현한다.
+규약은 `apps/server/drizzle/README.md`.
+
+### 초기 데이터 승계(1차: legacy → 템플릿 STDV1)
+
+```bash
+pnpm --filter @termflow/server migrate:scan   # dump 민감값 사전 점검 → migration/report/sensitive-scan.csv
+pnpm migrate:seed                             # 기본 --steps=LOAD_LEGACY..DEFAULT_COL + RECONCILE(1차 대사)
+pnpm migrate:seed -- --reset                  # dev 전용: STDV1·RMS·legacy 삭제 후 처음부터(멱등 확인용)
+pnpm migrate:seed -- --steps=RECONCILE        # 대사만 다시
+```
+
+- 원본: `seed/original/dump-gen_table-new.sql`(수정 금지) → 치환본 `migration/work/dump-legacy.sql` → 스키마 `legacy`
+- 리포트: `migration/report/{run_id}/`의 규칙별 `rNN_*.csv`·`summary.csv`·`reconcile.csv`(UTF-8 BOM, 엑셀에서 바로 열림)
+- 이미 적재된 step은 SKIPPED, 실패·대사 불일치면 종료 코드 1. 실행 기록은 `migration_log`
+- 규칙·기대 건수와 설계 대비 차이는 `docs/CR-03_단계3_4_구현반영.md`
 
 ### 저장소 구조
 

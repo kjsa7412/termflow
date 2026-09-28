@@ -102,15 +102,13 @@ async function writeLog(
       log.result?.excluded ?? 0,
       log.result?.flagged ?? 0,
     ],
-    ...(log.result?.rules ?? []).map(
-      (r): [string, number, number, number, number] => [
-        r.rule,
-        r.source,
-        r.loaded,
-        r.excluded,
-        r.flagged,
-      ],
-    ),
+    ...(log.result?.rules ?? []).map((r): [string, number, number, number, number] => [
+      r.rule,
+      r.source,
+      r.loaded,
+      r.excluded,
+      r.flagged,
+    ]),
   ];
   for (const [rule, source, loaded, excluded, flagged] of rows) {
     await pool.query(
@@ -145,12 +143,16 @@ export async function runSeed(
 
   for (const s of opts.steps) {
     if (!deps.steps.has(s)) {
-      throw new Error(`step ${s}는 아직 구현되지 않았습니다(단계 5: COPY_TO_RMS·TABLE, 단계 7: DDL_REGRESSION)`);
+      throw new Error(
+        `step ${s}는 아직 구현되지 않았습니다(단계 5: COPY_TO_RMS·TABLE, 단계 7: DDL_REGRESSION)`,
+      );
     }
   }
   if (opts.reset) {
     const r = await resetTargets(deps.pool, deps.db, opts);
-    log(`[migrate:seed] --reset: 프로젝트 ${r.projects}건 삭제${r.legacyDropped ? ', legacy 스키마 삭제' : ''}`);
+    log(
+      `[migrate:seed] --reset: 프로젝트 ${r.projects}건 삭제${r.legacyDropped ? ', legacy 스키마 삭제' : ''}`,
+    );
   }
 
   const logs: StepLog[] = [];
@@ -170,7 +172,13 @@ export async function runSeed(
     let entry: StepLog;
     try {
       if (def.skippable !== false && (await def.isDone(base))) {
-        entry = { step: name, status: 'SKIPPED', seconds: 0, result: null, message: '대상이 비어 있지 않음' };
+        entry = {
+          step: name,
+          status: 'SKIPPED',
+          seconds: 0,
+          result: null,
+          message: '대상이 비어 있지 않음',
+        };
       } else {
         const result =
           def.transactional === false
@@ -210,9 +218,27 @@ export async function runSeed(
   const summaryRows: unknown[][] = [];
   for (const l of logs) {
     const r = l.result;
-    summaryRows.push([l.step, '', r?.source ?? 0, r?.loaded ?? 0, r?.excluded ?? 0, r?.flagged ?? 0, l.status, l.seconds]);
+    summaryRows.push([
+      l.step,
+      '',
+      r?.source ?? 0,
+      r?.loaded ?? 0,
+      r?.excluded ?? 0,
+      r?.flagged ?? 0,
+      l.status,
+      l.seconds,
+    ]);
     for (const rc of r?.rules ?? []) {
-      summaryRows.push([l.step, rc.rule, rc.source, rc.loaded, rc.excluded, rc.flagged, l.status, '']);
+      summaryRows.push([
+        l.step,
+        rc.rule,
+        rc.source,
+        rc.loaded,
+        rc.excluded,
+        rc.flagged,
+        l.status,
+        '',
+      ]);
     }
   }
   files.push(report.writeTable('summary', SUMMARY_HEADER, summaryRows));

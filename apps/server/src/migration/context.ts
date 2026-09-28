@@ -95,7 +95,8 @@ export class StepFailure extends Error {
 /** STDV1 project_id. 없으면 선행 step(TEMPLATE) 누락으로 실패. */
 export async function stdv1Id(db: Db | Tx): Promise<number> {
   const id = await findProjectId(db, STDV1.key);
-  if (id === null) throw new StepFailure('템플릿 STDV1이 없습니다 — 먼저 TEMPLATE step을 실행하십시오');
+  if (id === null)
+    throw new StepFailure('템플릿 STDV1이 없습니다 — 먼저 TEMPLATE step을 실행하십시오');
   return id;
 }
 

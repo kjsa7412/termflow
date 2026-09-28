@@ -15,7 +15,8 @@
     "db:pull": "tsx scripts/db-pull.ts",
     "migrate:seed": "tsx src/migration/seed.ts",
     "db:reset": "tsx src/db/cli.ts reset",
-    "db:new": "tsx scripts/db-new.ts"
+    "db:new": "tsx scripts/db-new.ts",
+    "migrate:scan": "tsx src/migration/sensitive-scan.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.0",

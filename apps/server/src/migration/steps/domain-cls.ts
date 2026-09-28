@@ -17,7 +17,10 @@ export const domainClsStep: StepDef = {
   name: 'DOMAIN_CLS',
   isDone: ({ db }) =>
     stdv1Has(db, async (id) => {
-      const [r] = await db.select({ n: count() }).from(stdDomainCls).where(eq(stdDomainCls.projectId, id));
+      const [r] = await db
+        .select({ n: count() })
+        .from(stdDomainCls)
+        .where(eq(stdDomainCls.projectId, id));
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
@@ -33,11 +36,20 @@ export const domainClsStep: StepDef = {
       const t = convertDomainClsType(c.col_type, c.col_length);
       if (t.review) reviewLegacy++;
       if (t.change) {
-        pending.push({ suffix, row: {
-          rule: 'R03', step: 'DOMAIN_CLS', legacyKey: c.suffix, targetTable: 'std_domain_cls',
-          field: t.change.field, before: t.change.before, after: t.change.after,
-          action: t.review ? 'REVIEW' : 'NORMALIZED', note: t.reviewNote,
-        } });
+        pending.push({
+          suffix,
+          row: {
+            rule: 'R03',
+            step: 'DOMAIN_CLS',
+            legacyKey: c.suffix,
+            targetTable: 'std_domain_cls',
+            field: t.change.field,
+            before: t.change.before,
+            after: t.change.after,
+            action: t.review ? 'REVIEW' : 'NORMALIZED',
+            note: t.reviewNote,
+          },
+        });
       }
       return {
         projectId,
@@ -53,7 +65,9 @@ export const domainClsStep: StepDef = {
     });
     const dupNew = NEW_SUFFIXES.filter((n) => legacySuffixes.has(n.suffix));
     if (dupNew.length > 0) {
-      throw new StepFailure(`신규 접미어가 원본에 이미 있습니다: ${dupNew.map((d) => d.suffix).join(', ')}`);
+      throw new StepFailure(
+        `신규 접미어가 원본에 이미 있습니다: ${dupNew.map((d) => d.suffix).join(', ')}`,
+      );
     }
     const added = NEW_SUFFIXES.map((n) => ({
       projectId,
@@ -65,8 +79,12 @@ export const domainClsStep: StepDef = {
       description: `신규 접미어(§11.6 D12): ${n.note}`.slice(0, 200),
       reviewYn: n.review,
     }));
-    const inserted = await insertMigrated(tx, stdDomainCls, [...values, ...added], MIGRATION_AUDIT, (q) =>
-      q.returning({ id: stdDomainCls.domainClsId, suffix: stdDomainCls.suffix }),
+    const inserted = await insertMigrated(
+      tx,
+      stdDomainCls,
+      [...values, ...added],
+      MIGRATION_AUDIT,
+      (q) => q.returning({ id: stdDomainCls.domainClsId, suffix: stdDomainCls.suffix }),
     );
     const idBySuffix = new Map(inserted.map((r) => [r.suffix, r.id]));
     for (const p of pending) {
@@ -81,7 +99,13 @@ export const domainClsStep: StepDef = {
       flagged: reviewLegacy + reviewNew,
       rules: [
         { rule: 'R03', source: legacy.length, loaded: r3, excluded: 0, flagged: reviewLegacy },
-        { rule: 'D12', source: NEW_SUFFIXES.length, loaded: added.length, excluded: 0, flagged: reviewNew },
+        {
+          rule: 'D12',
+          source: NEW_SUFFIXES.length,
+          loaded: added.length,
+          excluded: 0,
+          flagged: reviewNew,
+        },
       ],
       message: `원본 ${legacy.length} + 신규 접미어 ${added.length} = ${inserted.length}(검토 표시 신규 ${reviewNew})`,
     };

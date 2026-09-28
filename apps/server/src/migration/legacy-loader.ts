@@ -48,7 +48,9 @@ export function transformDump(dump: string): string {
     if (l.startsWith('INSERT INTO public.')) {
       const values = l.slice(l.indexOf(' VALUES '));
       if (values.includes('public.')) {
-        throw new LegacyTransformError('데이터 값에 "public." 문자열이 있어 단순 치환할 수 없습니다');
+        throw new LegacyTransformError(
+          '데이터 값에 "public." 문자열이 있어 단순 치환할 수 없습니다',
+        );
       }
     }
   }

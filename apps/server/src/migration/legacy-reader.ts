@@ -13,8 +13,7 @@ async function rows<T>(q: Q, query: SQL): Promise<T[]> {
   return r.rows as T[];
 }
 
-const ts = (col: string) =>
-  sql`to_char(${sql.identifier(col)}, 'YYYY-MM-DD HH24:MI:SS')`;
+const ts = (col: string) => sql`to_char(${sql.identifier(col)}, 'YYYY-MM-DD HH24:MI:SS')`;
 
 export interface LegacyTerm {
   term_id: number;

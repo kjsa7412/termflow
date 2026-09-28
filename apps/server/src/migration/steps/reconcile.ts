@@ -15,7 +15,17 @@ export const reconcileStep: StepDef = {
     const path = report.writeTable(
       'reconcile',
       RECONCILE_HEADER,
-      rows.map((r) => [r.item, r.legacyCnt, r.excludedCnt, r.stdv1Cnt, r.rmsCnt ?? 'N/A', r.flaggedCnt, r.check, r.result, r.note]),
+      rows.map((r) => [
+        r.item,
+        r.legacyCnt,
+        r.excludedCnt,
+        r.stdv1Cnt,
+        r.rmsCnt ?? 'N/A',
+        r.flaggedCnt,
+        r.check,
+        r.result,
+        r.note,
+      ]),
     );
     const checked = rows.filter((r) => r.result !== 'N/A');
     const bad = checked.filter((r) => r.result === 'MISMATCH');

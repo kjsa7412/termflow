@@ -3,9 +3,7 @@
  * (2차 동의어 관리 입력, `r04_synonym_candidates.csv`).
  */
 export type SynonymDecision =
-  | { kind: 'NONE' }
-  | { kind: 'NULLED'; before: string }
-  | { kind: 'KEPT'; value: string };
+  { kind: 'NONE' } | { kind: 'NULLED'; before: string } | { kind: 'KEPT'; value: string };
 
 export function decideSynonymRef(sameNmRef: string | null): SynonymDecision {
   if (sameNmRef === null || sameNmRef.trim() === '') return { kind: 'NONE' };

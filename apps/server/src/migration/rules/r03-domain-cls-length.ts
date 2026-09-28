@@ -16,13 +16,20 @@ export interface DomainClsTypeResult {
   change: { field: 'col_type' | 'col_length'; before: string; after: string } | null;
 }
 
-export function convertDomainClsType(colType: string, colLength: string | null): DomainClsTypeResult {
+export function convertDomainClsType(
+  colType: string,
+  colLength: string | null,
+): DomainClsTypeResult {
   const parsed = parseTypeAndLength(colType, colLength);
   if (!parsed.ok) {
     // 타입명만이라도 표준이면 살리고 길이는 NULL + review. 타입명도 모르면 CHECK 위반이므로 실패.
     const bare = parseStdType(colType.trim().replace(/\(.*$/, ''));
     const name = colType.trim().toUpperCase().replace(/\(.*$/, '');
-    const type = bare.ok ? bare.type : (STD_TYPES as readonly string[]).includes(name) ? name : null;
+    const type = bare.ok
+      ? bare.type
+      : (STD_TYPES as readonly string[]).includes(name)
+        ? name
+        : null;
     if (!type) throw new Error(`R3 도메인분류 타입 해석 불가: ${colType} / ${colLength ?? ''}`);
     return {
       colType: type as StdType,

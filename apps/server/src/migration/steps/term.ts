@@ -11,7 +11,11 @@ import { decideSynonymRef } from '../rules/r04-synonym.js';
 import { decideTermPhysical, synonymGroups } from '../rules/r08-physical.js';
 import { migratedTimes } from '../rules/r13-audit.js';
 
-type Pending = { file: string; termKor: string; row: Omit<ReportRow, 'targetId' | 'step' | 'targetTable'> };
+type Pending = {
+  file: string;
+  termKor: string;
+  row: Omit<ReportRow, 'targetId' | 'step' | 'targetTable'>;
+};
 
 /** step 5 TERM(T3.9): R1·R2·R4·R8·R13 → STDV1 `std_term`(전부 APPROVED). */
 export const termStep: StepDef = {
@@ -24,7 +28,13 @@ export const termStep: StepDef = {
   async run({ tx, report }) {
     const projectId = await stdv1Id(tx);
     const legacy = await readTerms(tx);
-    for (const f of ['r01_numeric_terms', 'r02_description_null', 'r04_synonym_candidates', 'r08_physical_format', 'r08_synonym_groups']) {
+    for (const f of [
+      'r01_numeric_terms',
+      'r02_description_null',
+      'r04_synonym_candidates',
+      'r08_physical_format',
+      'r08_synonym_groups',
+    ]) {
       report.declare(f);
     }
     const pending: Pending[] = [];
@@ -37,7 +47,18 @@ export const termStep: StepDef = {
       let termKor = t.term_kor.trim();
       if (isNumericDotZero(termKor)) {
         const after = normalizeNumericText(termKor);
-        pending.push({ file: 'r01_numeric_terms', termKor: after, row: { rule: 'R01', legacyKey: key, field: 'term_kor', before: termKor, after, action: 'NORMALIZED' } });
+        pending.push({
+          file: 'r01_numeric_terms',
+          termKor: after,
+          row: {
+            rule: 'R01',
+            legacyKey: key,
+            field: 'term_kor',
+            before: termKor,
+            after,
+            action: 'NORMALIZED',
+          },
+        });
         termKor = after;
         c.r1++;
       }
@@ -46,23 +67,75 @@ export const termStep: StepDef = {
       let physicalIn = t.term_physical;
       if (physicalIn !== null && isNumericDotZero(physicalIn)) {
         const after = normalizeNumericText(physicalIn);
-        pending.push({ file: 'r01_numeric_terms', termKor, row: { rule: 'R01', legacyKey: key, field: 'term_physical', before: physicalIn, after, action: 'NORMALIZED' } });
+        pending.push({
+          file: 'r01_numeric_terms',
+          termKor,
+          row: {
+            rule: 'R01',
+            legacyKey: key,
+            field: 'term_physical',
+            before: physicalIn,
+            after,
+            action: 'NORMALIZED',
+          },
+        });
         physicalIn = after;
       }
       // R2
       let description = t.description;
       if (shouldNullDescription(description, termKor)) {
-        pending.push({ file: 'r02_description_null', termKor, row: { rule: 'R02', legacyKey: key, field: 'description', before: description, after: null, action: 'NULLED', note: description!.length <= 1 ? '1자 이하' : description === termKor ? '용어와 동일' : '공백' } });
+        pending.push({
+          file: 'r02_description_null',
+          termKor,
+          row: {
+            rule: 'R02',
+            legacyKey: key,
+            field: 'description',
+            before: description,
+            after: null,
+            action: 'NULLED',
+            note:
+              description!.length <= 1
+                ? '1자 이하'
+                : description === termKor
+                  ? '용어와 동일'
+                  : '공백',
+          },
+        });
         description = null;
         c.r2++;
       }
       // R4
       const syn = decideSynonymRef(t.same_nm_ref);
       if (syn.kind === 'NULLED') {
-        pending.push({ file: 'r04_synonym_candidates', termKor, row: { rule: 'R04', legacyKey: key, field: 'synonym_ref', before: syn.before, after: null, action: 'NULLED', note: '숫자 참조' } });
+        pending.push({
+          file: 'r04_synonym_candidates',
+          termKor,
+          row: {
+            rule: 'R04',
+            legacyKey: key,
+            field: 'synonym_ref',
+            before: syn.before,
+            after: null,
+            action: 'NULLED',
+            note: '숫자 참조',
+          },
+        });
         c.r4Nulled++;
       } else if (syn.kind === 'KEPT') {
-        pending.push({ file: 'r04_synonym_candidates', termKor, row: { rule: 'R04', legacyKey: key, field: 'synonym_ref', before: t.same_nm_ref, after: syn.value, action: 'NORMALIZED', note: '보존(2차 동의어 관리 입력)' } });
+        pending.push({
+          file: 'r04_synonym_candidates',
+          termKor,
+          row: {
+            rule: 'R04',
+            legacyKey: key,
+            field: 'synonym_ref',
+            before: t.same_nm_ref,
+            after: syn.value,
+            action: 'NORMALIZED',
+            note: '보존(2차 동의어 관리 입력)',
+          },
+        });
         c.r4Kept++;
       }
       // R8
@@ -73,13 +146,37 @@ export const termStep: StepDef = {
       if (ph.kind === 'KEEP') termPhysical = ph.value;
       else if (ph.kind === 'NORMALIZED' || ph.kind === 'FILLED_NUMERIC') {
         termPhysical = ph.value;
-        pending.push({ file: 'r08_physical_format', termKor, row: { rule: 'R08', legacyKey: key, field: 'term_physical', before: t.term_physical, after: ph.value, action: 'NORMALIZED', note: ph.kind === 'FILLED_NUMERIC' ? '숫자 용어 → term_kor' : 'upper(trim)' } });
+        pending.push({
+          file: 'r08_physical_format',
+          termKor,
+          row: {
+            rule: 'R08',
+            legacyKey: key,
+            field: 'term_physical',
+            before: t.term_physical,
+            after: ph.value,
+            action: 'NORMALIZED',
+            note: ph.kind === 'FILLED_NUMERIC' ? '숫자 용어 → term_kor' : 'upper(trim)',
+          },
+        });
         if (ph.kind === 'NORMALIZED') c.r8Norm++;
         else c.r8Filled++;
       } else {
         reviewYn = true;
         reviewNote = ph.note;
-        pending.push({ file: 'r08_physical_format', termKor, row: { rule: 'R08', legacyKey: key, field: 'term_physical', before: t.term_physical, after: null, action: 'REVIEW', note: ph.note } });
+        pending.push({
+          file: 'r08_physical_format',
+          termKor,
+          row: {
+            rule: 'R08',
+            legacyKey: key,
+            field: 'term_physical',
+            before: t.term_physical,
+            after: null,
+            action: 'REVIEW',
+            note: ph.note,
+          },
+        });
         c.r8Review++;
       }
       return {
@@ -100,15 +197,29 @@ export const termStep: StepDef = {
     );
     const idByKor = new Map(inserted.map((r) => [r.kor, r.id]));
     for (const p of pending) {
-      report.add(p.file, { ...p.row, step: 'TERM', targetTable: 'std_term', targetId: idByKor.get(p.termKor) ?? null });
+      report.add(p.file, {
+        ...p.row,
+        step: 'TERM',
+        targetTable: 'std_term',
+        targetId: idByKor.get(p.termKor) ?? null,
+      });
     }
     // R8 동의어 후보 그룹(정보): 같은 물리약어를 공유하는 용어
-    const groups = synonymGroups(values.map((v) => ({ termKor: v.termKor, physical: v.termPhysical })));
+    const groups = synonymGroups(
+      values.map((v) => ({ termKor: v.termKor, physical: v.termPhysical })),
+    );
     for (const g of groups) {
       report.add('r08_synonym_groups', {
-        rule: 'R08', step: 'TERM', legacyKey: g.physical, targetTable: 'std_term',
-        targetId: g.terms.map((k) => idByKor.get(k)).join('/'), field: 'term_physical',
-        before: g.terms.join('/'), after: g.physical, action: 'REVIEW', note: `정보: 동의어 후보 ${g.terms.length}건`,
+        rule: 'R08',
+        step: 'TERM',
+        legacyKey: g.physical,
+        targetTable: 'std_term',
+        targetId: g.terms.map((k) => idByKor.get(k)).join('/'),
+        field: 'term_physical',
+        before: g.terms.join('/'),
+        after: g.physical,
+        action: 'REVIEW',
+        note: `정보: 동의어 후보 ${g.terms.length}건`,
       });
     }
     const flagged = c.r8Review;
@@ -121,7 +232,13 @@ export const termStep: StepDef = {
         { rule: 'R01', source: legacy.length, loaded: c.r1, excluded: 0, flagged: 0 },
         { rule: 'R02', source: legacy.length, loaded: c.r2, excluded: 0, flagged: 0 },
         { rule: 'R04', source: c.r4Nulled + c.r4Kept, loaded: c.r4Kept, excluded: 0, flagged: 0 },
-        { rule: 'R08', source: legacy.length, loaded: c.r8Norm + c.r8Filled, excluded: 0, flagged: c.r8Review },
+        {
+          rule: 'R08',
+          source: legacy.length,
+          loaded: c.r8Norm + c.r8Filled,
+          excluded: 0,
+          flagged: c.r8Review,
+        },
       ],
       message:
         `R1 ${c.r1} · R2 NULL ${c.r2} · R4 NULL ${c.r4Nulled}/보존 ${c.r4Kept} · ` +

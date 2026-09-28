@@ -38,14 +38,19 @@ export function parseArgs(argv: readonly string[]): CliArgs {
   const known = ['--steps', '--run-id', '--reset', '--no-reconcile', '--dump'];
   for (const a of argv) {
     if (a === '--') continue;
-    if (!known.some((k) => a === k || a.startsWith(`${k}=`))) throw new Error(`알 수 없는 인자: ${a}`);
+    if (!known.some((k) => a === k || a.startsWith(`${k}=`)))
+      throw new Error(`알 수 없는 인자: ${a}`);
   }
   const runId = get('run-id') || randomUUID();
   if (runId.length > 36 || !/^[A-Za-z0-9_-]+$/.test(runId)) {
     throw new Error('--run-id는 영문·숫자·-·_ 36자 이내입니다');
   }
   const steps = parseSteps(get('steps') ?? DEFAULT_STEPS);
-  if (steps.includes('DEFAULT_COL') && !steps.includes('RECONCILE') && get('no-reconcile') === undefined) {
+  if (
+    steps.includes('DEFAULT_COL') &&
+    !steps.includes('RECONCILE') &&
+    get('no-reconcile') === undefined
+  ) {
     steps.push('RECONCILE');
   }
   return { runId, steps, reset: get('reset') !== undefined, dump: get('dump') || undefined };
@@ -109,7 +114,9 @@ async function main(): Promise<number> {
   try {
     await runMigrations(pool); // 스키마 전진(서버 기동과 같은 규칙)
     const db = createDb(pool);
-    console.log(`[migrate:seed] run_id=${opts.runId} steps=${opts.steps.join(',')}${opts.reset ? ' --reset' : ''}`);
+    console.log(
+      `[migrate:seed] run_id=${opts.runId} steps=${opts.steps.join(',')}${opts.reset ? ' --reset' : ''}`,
+    );
     const summary = await runSeed(opts, { pool, db, steps: STAGE3_STEPS });
     console.log(
       `[migrate:seed] ${summary.ok ? '완료' : '실패'} ${summary.seconds.toFixed(2)}s — 리포트 ${summary.reportDir}`,
@@ -120,12 +127,15 @@ async function main(): Promise<number> {
   }
 }
 
-const isEntry = process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isEntry =
+  process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isEntry) {
   main()
     .then((code) => process.exit(code))
     .catch((error: unknown) => {
-      console.error(`[migrate:seed] ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`);
+      console.error(
+        `[migrate:seed] ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`,
+      );
       process.exit(1);
     });
 }

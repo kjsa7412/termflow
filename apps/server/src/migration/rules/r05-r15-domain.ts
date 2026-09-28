@@ -63,7 +63,8 @@ export interface DomainDecision {
   notFound: readonly string[];
 }
 
-const blank = (v: string | null | undefined): boolean => v === null || v === undefined || v.trim() === '';
+const blank = (v: string | null | undefined): boolean =>
+  v === null || v === undefined || v.trim() === '';
 const typeKey = (t: StdType | null, l: number | null, s: number | null) => typeText(t, l, s) ?? '';
 
 export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDecision {
@@ -76,7 +77,14 @@ export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDeci
     const v = p!.trim();
     if (isNumericDotZero(v)) {
       const after = normalizeNumericText(v);
-      reports.push({ file: 'r01_numeric_terms', rule: 'R01', field: `nm${i + 1}`, before: p, after, action: 'NORMALIZED' });
+      reports.push({
+        file: 'r01_numeric_terms',
+        rule: 'R01',
+        field: `nm${i + 1}`,
+        before: p,
+        after,
+        action: 'NORMALIZED',
+      });
       return after;
     }
     return v;
@@ -86,20 +94,50 @@ export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDeci
   // R9: 논리명 trim, 물리명 upper(trim)
   const logicalNm = row.logicalNm.trim();
   if (logicalNm !== row.logicalNm) {
-    reports.push({ file: 'r09_physical_normalized', rule: 'R09', field: 'logical_nm', before: row.logicalNm, after: logicalNm, action: 'NORMALIZED' });
+    reports.push({
+      file: 'r09_physical_normalized',
+      rule: 'R09',
+      field: 'logical_nm',
+      before: row.logicalNm,
+      after: logicalNm,
+      action: 'NORMALIZED',
+    });
   }
   const pn = normalizePhysicalName(row.physicalNm);
   let physicalNm = pn.value;
   if (pn.changed) {
-    reports.push({ file: 'r09_physical_normalized', rule: 'R09', field: 'physical_nm', before: row.physicalNm, after: pn.value, action: 'NORMALIZED' });
+    reports.push({
+      file: 'r09_physical_normalized',
+      rule: 'R09',
+      field: 'physical_nm',
+      before: row.physicalNm,
+      after: pn.value,
+      action: 'NORMALIZED',
+    });
   }
   if (pn.formatError || pn.tooLong) {
     const why = pn.formatError ? '물리명 형식 위반' : '물리명 63자 초과';
-    reports.push({ file: 'r09_physical_normalized', rule: 'R09', field: 'physical_nm', before: row.physicalNm, after: null, action: 'REVIEW', note: `${why}(자동 수정 없음, NULL로 적재)` });
+    reports.push({
+      file: 'r09_physical_normalized',
+      rule: 'R09',
+      field: 'physical_nm',
+      before: row.physicalNm,
+      after: null,
+      action: 'REVIEW',
+      note: `${why}(자동 수정 없음, NULL로 적재)`,
+    });
     notes.push(`${why}: ${pn.value}`);
     physicalNm = null;
   } else if (pn.oracleLong) {
-    reports.push({ file: 'r09_physical_normalized', rule: 'R09', field: 'physical_nm', before: row.physicalNm, after: pn.value, action: 'REVIEW', note: 'W Oracle 30자 초과' });
+    reports.push({
+      file: 'r09_physical_normalized',
+      rule: 'R09',
+      field: 'physical_nm',
+      before: row.physicalNm,
+      after: pn.value,
+      action: 'REVIEW',
+      note: 'W Oracle 30자 초과',
+    });
   }
 
   let suffix = blank(row.suffix) ? null : row.suffix!.trim().toUpperCase();
@@ -119,25 +157,64 @@ export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDeci
     if (!consistent) {
       r15 = 'REVIEW';
       notes.push('명칭 조각과 논리명 불일치');
-      reports.push({ file: 'r15_domain_physical', rule: 'R15', field: 'physical_nm', before: null, after: null, action: 'REVIEW', note: `명칭 조각과 논리명 불일치: ${l1.logicalNm} ≠ ${logicalNm}` });
+      reports.push({
+        file: 'r15_domain_physical',
+        rule: 'R15',
+        field: 'physical_nm',
+        before: null,
+        after: null,
+        action: 'REVIEW',
+        note: `명칭 조각과 논리명 불일치: ${l1.logicalNm} ≠ ${logicalNm}`,
+      });
     } else if (l1.notFound.length > 0) {
       r15 = 'REVIEW';
       const uniq = [...new Set(l1.notFound)];
       notes.push(`미등록 조각: ${uniq.join(', ')}`);
-      reports.push({ file: 'r15_domain_physical', rule: 'R15', field: 'physical_nm', before: null, after: null, action: 'REVIEW', note: `미등록 조각: ${uniq.join(', ')}` });
+      reports.push({
+        file: 'r15_domain_physical',
+        rule: 'R15',
+        field: 'physical_nm',
+        before: null,
+        after: null,
+        action: 'REVIEW',
+        note: `미등록 조각: ${uniq.join(', ')}`,
+      });
     } else {
       const chk = normalizePhysicalName(l1.physicalNm);
       if (chk.formatError || chk.tooLong) {
         r15 = 'REVIEW';
         notes.push(`재생성 물리명 사용 불가: ${l1.physicalNm}`);
-        reports.push({ file: 'r15_domain_physical', rule: 'R15', field: 'physical_nm', before: null, after: l1.physicalNm, action: 'REVIEW', note: '재생성 물리명 형식·길이 위반' });
+        reports.push({
+          file: 'r15_domain_physical',
+          rule: 'R15',
+          field: 'physical_nm',
+          before: null,
+          after: l1.physicalNm,
+          action: 'REVIEW',
+          note: '재생성 물리명 형식·길이 위반',
+        });
       } else {
         r15 = 'RECALC';
         physicalNm = chk.value;
         suffix = l1.suffix;
-        reports.push({ file: 'r15_domain_physical', rule: 'R15', field: 'physical_nm', before: null, after: physicalNm, action: 'RECALC', note: `suffix=${l1.suffix ?? ''}` });
+        reports.push({
+          file: 'r15_domain_physical',
+          rule: 'R15',
+          field: 'physical_nm',
+          before: null,
+          after: physicalNm,
+          action: 'RECALC',
+          note: `suffix=${l1.suffix ?? ''}`,
+        });
         if (descr !== l1.descr) {
-          reports.push({ file: 'r15_domain_physical', rule: 'R15', field: 'descr', before: descr, after: l1.descr, action: 'RECALC' });
+          reports.push({
+            file: 'r15_domain_physical',
+            rule: 'R15',
+            field: 'descr',
+            before: descr,
+            after: l1.descr,
+            action: 'RECALC',
+          });
           descr = l1.descr;
         }
       }
@@ -153,18 +230,39 @@ export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDeci
 
   const legacyType = blank(row.colType) ? null : parseTypeAndLength(row.colType, row.colLength);
   const manual = blank(row.colTypeManual) ? null : parseStdType(row.colTypeManual);
-  const legacyText = blank(row.colType) ? null : `${row.colType}${blank(row.colLength) ? '' : `(${row.colLength})`}`;
+  const legacyText = blank(row.colType)
+    ? null
+    : `${row.colType}${blank(row.colLength) ? '' : `(${row.colLength})`}`;
 
   if (legacyType?.ok) {
     ({ type: colType, length: colLength, scale: colScale } = legacyType);
-    if (manual?.ok && typeKey(manual.type, manual.length, manual.scale) !== typeKey(colType, colLength, colScale)) {
+    if (
+      manual?.ok &&
+      typeKey(manual.type, manual.length, manual.scale) !== typeKey(colType, colLength, colScale)
+    ) {
       r5 = 'MANUAL_OVERRIDE';
-      reports.push({ file: 'r05_domain_type', rule: 'R05', field: 'col_type', before: legacyText, after: manual.normalized, action: 'MANUAL', note: `R5-b 수기 타입 우선(col_type_manual=${row.colTypeManual})` });
+      reports.push({
+        file: 'r05_domain_type',
+        rule: 'R05',
+        field: 'col_type',
+        before: legacyText,
+        after: manual.normalized,
+        action: 'MANUAL',
+        note: `R5-b 수기 타입 우선(col_type_manual=${row.colTypeManual})`,
+      });
       ({ type: colType, length: colLength, scale: colScale } = manual);
       typeSource = 'MANUAL';
     } else if (manual && !manual.ok) {
       notes.push(`수기 타입 해석 불가: ${row.colTypeManual}`);
-      reports.push({ file: 'r05_domain_type', rule: 'R05', field: 'col_type_manual', before: row.colTypeManual, after: legacyType.normalized, action: 'REVIEW', note: `수기 타입 해석 불가(${manual.reason}), 접미어 타입 유지` });
+      reports.push({
+        file: 'r05_domain_type',
+        rule: 'R05',
+        field: 'col_type_manual',
+        before: row.colTypeManual,
+        after: legacyType.normalized,
+        action: 'REVIEW',
+        note: `수기 타입 해석 불가(${manual.reason}), 접미어 타입 유지`,
+      });
     }
   } else {
     if (legacyType && !legacyType.ok) {
@@ -174,11 +272,27 @@ export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDeci
       r5 = 'MANUAL';
       ({ type: colType, length: colLength, scale: colScale } = manual);
       typeSource = 'MANUAL';
-      reports.push({ file: 'r05_domain_type', rule: 'R05', field: 'col_type', before: legacyText, after: manual.normalized, action: 'MANUAL', note: `col_type_manual=${row.colTypeManual}` });
+      reports.push({
+        file: 'r05_domain_type',
+        rule: 'R05',
+        field: 'col_type',
+        before: legacyText,
+        after: manual.normalized,
+        action: 'MANUAL',
+        note: `col_type_manual=${row.colTypeManual}`,
+      });
     } else {
       if (manual && !manual.ok) {
         notes.push(`수기 타입 해석 불가: ${row.colTypeManual}`);
-        reports.push({ file: 'r05_domain_type', rule: 'R05', field: 'col_type_manual', before: row.colTypeManual, after: null, action: 'REVIEW', note: `수기 타입 해석 불가(${manual.reason}) — 자동 수정 없음` });
+        reports.push({
+          file: 'r05_domain_type',
+          rule: 'R05',
+          field: 'col_type_manual',
+          before: row.colTypeManual,
+          after: null,
+          action: 'REVIEW',
+          note: `수기 타입 해석 불가(${manual.reason}) — 자동 수정 없음`,
+        });
       }
       if (suffixReliable && l1.colType !== null) {
         r5 = 'RECALC';
@@ -186,7 +300,15 @@ export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDeci
         colLength = l1.colLength;
         colScale = l1.colScale;
         suffix = l1.suffix;
-        reports.push({ file: 'r05_domain_type', rule: 'R05', field: 'col_type', before: legacyText, after: l1.typeText, action: 'RECALC', note: `suffix=${l1.suffix}` });
+        reports.push({
+          file: 'r05_domain_type',
+          rule: 'R05',
+          field: 'col_type',
+          before: legacyText,
+          after: l1.typeText,
+          action: 'RECALC',
+          note: `suffix=${l1.suffix}`,
+        });
       } else {
         r5 = 'REVIEW';
         const why = !consistent
@@ -196,7 +318,15 @@ export function decideDomain(row: LegacyDomainRow, snap: L1Snapshot): DomainDeci
               return sfx === null ? '접미어 없음' : `접미어 ${sfx} 미등록`;
             })();
         if (!notes.includes(why)) notes.push(why);
-        reports.push({ file: 'r05_domain_type', rule: 'R05', field: 'col_type', before: legacyText, after: null, action: 'REVIEW', note: why });
+        reports.push({
+          file: 'r05_domain_type',
+          rule: 'R05',
+          field: 'col_type',
+          before: legacyText,
+          after: null,
+          action: 'REVIEW',
+          note: why,
+        });
       }
     }
   }

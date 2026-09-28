@@ -65,7 +65,7 @@ export interface ReportRow {
   note?: string | null;
 }
 
-const BOM = '﻿';
+const BOM = String.fromCharCode(0xfeff);
 
 /** RFC 4180: 쉼표·따옴표·개행이 있으면 큰따옴표로 감싸고 내부 따옴표는 두 번. 수식 주입(=,+,-,@) 방지 접두 `'`. */
 export function csvCell(v: unknown): string {
@@ -149,7 +149,11 @@ export class ReportWriter {
     return written;
   }
 
-  writeTable(file: string, header: readonly string[], rows: readonly (readonly unknown[])[]): string {
+  writeTable(
+    file: string,
+    header: readonly string[],
+    rows: readonly (readonly unknown[])[],
+  ): string {
     mkdirSync(this.dir, { recursive: true });
     const p = this.pathOf(file);
     writeFileSync(p, toCsv(header, rows), 'utf8');

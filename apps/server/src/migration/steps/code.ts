@@ -14,7 +14,10 @@ export const codeStep: StepDef = {
   name: 'CODE',
   isDone: ({ db }) =>
     stdv1Has(db, async (id) => {
-      const [r] = await db.select({ n: count() }).from(stdCodeCls).where(eq(stdCodeCls.projectId, id));
+      const [r] = await db
+        .select({ n: count() })
+        .from(stdCodeCls)
+        .where(eq(stdCodeCls.projectId, id));
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
@@ -73,7 +76,9 @@ export const codeStep: StepDef = {
       }),
     );
     const cdById = new Map(biz.map((b) => [b.id, b.cd]));
-    const clsId = new Map(insertedCls.map((r) => [`${cdById.get(r.bizAreaId)}|${r.codeCls}`, r.id]));
+    const clsId = new Map(
+      insertedCls.map((r) => [`${cdById.get(r.bizAreaId)}|${r.codeCls}`, r.id]),
+    );
     for (const e of classes.values()) {
       report.add('r07_code_cls', {
         rule: 'R07',
