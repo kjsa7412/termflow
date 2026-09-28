@@ -12,3 +12,7 @@ migration/work/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+
+# drizzle-kit pull 임시 출력(T1.4 PoC, db:pull)
+apps/server/test/db/poc/.pull/
+apps/server/.drizzle-pull/
