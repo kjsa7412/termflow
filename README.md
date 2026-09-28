@@ -37,7 +37,9 @@ pnpm dev                     # shared 빌드 후 shared(watch)·server(nest buil
 ```
 
 - 서버 확인: `curl -s localhost:8080/health` → `{"status":"ok","info":{"db":{"status":"up"}},...}` (200, DB가 응답하지 않으면 503)
-- 웹 확인: 브라우저에서 <http://localhost:5173> → `TermFlow · server ok`
+- 웹 확인: 브라우저에서 <http://localhost:5173> → 로그인 화면
+- 첫 로그인: `tf_user`가 비어 있으면 서버 기동 시 초기 시스템 관리자를 만든다 — 아이디 `.env`의 `TERMFLOW_ADMIN_LOGIN`, 비밀번호 `TERMFLOW_ADMIN_PASSWORD`. 첫 로그인에서 비밀번호 변경이 강제된다(이후 사용자는 [시스템 › 사용자]에서 만든다)
+- 프로덕션 모드 확인: `pnpm build && node apps/server/dist/main.js` → <http://localhost:8080>(웹 빌드를 같은 포트에서 제공, 새로고침해도 index.html)
 - 종료: `pnpm dev` 터미널에서 Ctrl+C, DB는 `docker compose stop db`
 
 ### 포트
