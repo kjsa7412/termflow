@@ -27,6 +27,8 @@ export default tseslint.config(
       'migration/**',
       'logs/**',
       'apps/server/.drizzle-pull/**',
+      // db:pull 생성물(BIGINT IDENTITY maxValue 리터럴 정밀도 등 생성 코드 특성, 직접 수정 금지)
+      'apps/server/src/db/schema.ts',
     ],
   },
   js.configs.recommended,
@@ -59,14 +61,14 @@ export default tseslint.config(
   {
     // NestJS DI는 생성자 파라미터 타입의 런타임 값(emitDecoratorMetadata)이 필요하다.
     // type-only import로 바꾸면 주입이 깨지므로 서버 소스에서는 자동 변환 규칙을 끈다.
-    files: ['apps/server/src/**/*.ts'],
+    files: ['apps/server/src/**/*.ts', 'apps/server/test/**/*.ts'],
     rules: {
       '@typescript-eslint/consistent-type-imports': 'off',
     },
   },
   {
     files: [
-      'apps/server/**/*.ts',
+      'apps/server/**/*.{ts,mjs}',
       'packages/shared/**/*.ts',
       'scripts/**/*.{js,mjs}',
       '*.{js,mjs,ts}',

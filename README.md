@@ -32,10 +32,11 @@ cp .env.example .env         # 빈 값(TERMFLOW_DB_PASSWORD, TERMFLOW_ADMIN_PASS
 
 ```bash
 docker compose up -d db      # PostgreSQL 17(termflow-db), healthy까지 수 초
-pnpm dev                     # shared 빌드 후 shared(watch)·server(nest --watch)·web(vite) 동시 기동
+pnpm db:migrate              # 스키마 적용(서버 기동 시에도 자동 적용, 실패하면 기동 안 함)
+pnpm dev                     # shared 빌드 후 shared(watch)·server(nest build --watch + node --watch)·web(vite) 동시 기동
 ```
 
-- 서버 확인: `curl -s localhost:8080/health` → `{"status":"ok",...}` (200)
+- 서버 확인: `curl -s localhost:8080/health` → `{"status":"ok","info":{"db":{"status":"up"}},...}` (200, DB가 응답하지 않으면 503)
 - 웹 확인: 브라우저에서 <http://localhost:5173> → `TermFlow · server ok`
 - 종료: `pnpm dev` 터미널에서 Ctrl+C, DB는 `docker compose stop db`
 
@@ -56,7 +57,21 @@ pnpm test          # Vitest 단위·API 테스트(컨테이너 불필요)
 pnpm check:no-ai   # AI 관련 문자열 0건 확인(설계서 §1.2)
 ```
 
-`pnpm test:db`(Testcontainers), `pnpm db:migrate`, `pnpm db:pull`, `pnpm migrate:seed`는 단계 1~3에서 구현한다(현재는 자리만).
+```bash
+pnpm test:db       # Testcontainers(postgres:17, Docker 필요): 스키마 제약·마이그레이션·헬스·감사 통합 테스트
+pnpm test:db -- schema   # 파일 이름 필터(pnpm 10의 `--` 전달은 scripts/run-vitest.mjs가 처리)
+```
+
+### DB 명령
+
+| 명령                                           | 동작                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| `pnpm db:migrate`                              | `apps/server/drizzle/000n_*.sql` 미적용분 적용(적용 파일 해시 대조) |
+| `pnpm db:pull`                                 | DB → `apps/server/src/db/schema.ts` 재생성(FK 제거 후처리)          |
+| `pnpm db:reset`                                | dev 전용: 스키마 삭제 후 재적용(production 거부)                    |
+| `pnpm --filter @termflow/server db:new <이름>` | 다음 번호 빈 마이그레이션 파일 생성                                 |
+
+규약은 `apps/server/drizzle/README.md`. `pnpm migrate:seed`(승계 러너)는 단계 3에서 구현한다.
 
 ### 저장소 구조
 
