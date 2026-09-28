@@ -8,3 +8,5 @@ logs/
 pnpm-lock.yaml
 .env
 .env.example
+# 목업(mockup.css)에서 이식한 스타일 3파일: 목업과 줄 단위로 대조할 수 있게 원형 유지(T4.8)
+apps/web/src/styles/

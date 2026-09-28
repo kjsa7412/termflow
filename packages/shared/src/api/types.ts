@@ -70,7 +70,14 @@ export interface AdminUserItem {
   projects: { key: string; nm: string; role: MemberRole }[];
 }
 export interface AdminUserPage extends Page<AdminUserItem> {
-  counts: { all: number; active: number; pwPending: number; locked: number; inactive: number; sysAdmin: number };
+  counts: {
+    all: number;
+    active: number;
+    pwPending: number;
+    locked: number;
+    inactive: number;
+    sysAdmin: number;
+  };
 }
 export interface AdminUserCreateResponse {
   user: AdminUserItem;
