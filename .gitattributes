@@ -5,3 +5,4 @@
 *.png binary
 *.jpg binary
 *.xlsx binary
+seed/original/** -text
