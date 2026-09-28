@@ -62,3 +62,29 @@ export function updateAudited<T extends AuditedTable>(
 ) {
   return db.update(table).set({ ...patch, ...auditUpdate(a) } as PgUpdateSetSource<T>);
 }
+
+/** 승계 러너 전용: 원본 일시 유지(R13 — created_at/updated_at = 원본 firs_reg_dts/fina_reg_dts). */
+export type MigratedInsert<T extends AuditedTable> = AuditedInsert<T> & {
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+/**
+ * 승계 insert(§11.1 주체 규칙). 감사 주체는 `a`(보통 MIGRATION_AUDIT)로 강제하고, 일시만 원본 값을 허용한다.
+ * 파라미터 상한(65,535)을 넘지 않도록 `chunk`행씩 나눠 실행하고 returning 결과를 이어 붙인다.
+ */
+export async function insertMigrated<T extends AuditedTable, R extends Record<string, unknown>>(
+  db: DbExecutor,
+  table: T,
+  values: MigratedInsert<T>[],
+  a: Audit,
+  returning: (q: ReturnType<typeof insertAudited<T>>) => Promise<R[]>,
+  chunk = 500,
+): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < values.length; i += chunk) {
+    const part = values.slice(i, i + chunk) as AuditedInsert<T>[];
+    out.push(...(await returning(insertAudited(db, table, part, a))));
+  }
+  return out;
+}
