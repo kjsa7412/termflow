@@ -17,6 +17,7 @@
     "test": "pnpm -r test",
     "test:db": "pnpm --filter @termflow/server test:db",
     "db:migrate": "pnpm --filter @termflow/server db:migrate",
+    "db:reset": "pnpm --filter @termflow/server db:reset",
     "db:pull": "pnpm --filter @termflow/server db:pull",
     "migrate:seed": "pnpm --filter @termflow/server migrate:seed",
     "check:no-ai": "node scripts/check-no-ai.mjs"
