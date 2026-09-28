@@ -26,6 +26,7 @@ export default tseslint.config(
       'seed/**',
       'migration/**',
       'logs/**',
+      'apps/server/.drizzle-pull/**',
     ],
   },
   js.configs.recommended,
