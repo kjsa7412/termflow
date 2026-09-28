@@ -33,8 +33,17 @@ export function poolConfig(env: DbEnv): pg.PoolConfig {
   };
 }
 
-export function createPool(env: DbEnv): pg.Pool {
-  return new pg.Pool(poolConfig(env));
+/**
+ * 풀 생성. 유휴 연결이 서버 쪽에서 끊기면(DB 재기동 등) pg.Pool이 'error'를 내는데,
+ * 처리기가 없으면 프로세스가 죽는다 → 기록만 하고 다음 요청에서 새 연결을 맺는다(/health 503→200).
+ */
+export function createPool(
+  env: DbEnv,
+  onIdleError: (e: Error) => void = (e) => console.warn(`[db] 유휴 연결 오류: ${e.message}`),
+): pg.Pool {
+  const pool = new pg.Pool(poolConfig(env));
+  pool.on('error', onIdleError);
+  return pool;
 }
 
 /** drizzle-kit(pull) 등 URL 하나만 받는 도구용: 계정을 URL에 넣는다. */

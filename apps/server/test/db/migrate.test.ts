@@ -11,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { MIGRATIONS_FOLDER, runMigrations } from '../../src/db/migrate.js';
+import { MIGRATIONS_FOLDER, MigrationIntegrityError, runMigrations } from '../../src/db/migrate.js';
 import { resetDatabase } from '../../src/db/reset.js';
 import { createDatabase } from './setup/databases.js';
 
@@ -101,7 +101,7 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
   const tmpDirs: string[] = [];
 
   beforeAll(async () => {
-    pool = new pg.Pool({ connectionString: await createDatabase('poc_migrate') });
+    pool = new pg.Pool({ connectionString: await createDatabase('t_migrate') });
   });
   afterAll(async () => {
     await pool.end();
@@ -114,8 +114,37 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
     console.log(`[db/migrate] baseline 적용 ${Math.round(performance.now() - t0)}ms`);
     expect(await tables(pool)).toEqual(EXPECTED_TABLES);
     expect(await historyCount(pool)).toBe(1);
-    await runMigrations(pool);
+    expect(await runMigrations(pool)).toEqual({ applied: 0, total: 1 });
     expect(await historyCount(pool)).toBe(1);
+  });
+
+  it('T2.1 적용된 파일이 바뀌거나 사라지면 MigrationIntegrityError(해시 대조), 동시 실행은 직렬화', async () => {
+    const edited = folderWith0002('0002_noop', 'SELECT 1;');
+    tmpDirs.push(edited);
+    const baseline = path.join(edited, '0001_baseline.sql');
+    writeFileSync(baseline, `${readFileSync(baseline, 'utf8')}-- 적용 후 수정`);
+    await expect(runMigrations(pool, edited)).rejects.toBeInstanceOf(MigrationIntegrityError);
+    expect(await historyCount(pool)).toBe(1); // 0002도 적용되지 않음
+
+    const missing = mkdtempSync(path.join(os.tmpdir(), 'tf-mig-'));
+    tmpDirs.push(missing);
+    mkdirSync(path.join(missing, 'meta'));
+    writeFileSync(
+      path.join(missing, 'meta', '_journal.json'),
+      JSON.stringify({ version: '7', dialect: 'postgresql', entries: [] }),
+    );
+    await expect(runMigrations(pool, missing)).rejects.toThrow(/파일이 없습니다/);
+
+    const results = await Promise.all([
+      runMigrations(pool),
+      runMigrations(pool),
+      runMigrations(pool),
+    ]);
+    expect(results).toEqual([
+      { applied: 0, total: 1 },
+      { applied: 0, total: 1 },
+      { applied: 0, total: 1 },
+    ]);
   });
 
   it('T1.2 복합 FK ON DELETE SET NULL(열)·DEFERRABLE 유니크·부분 인덱스가 카탈로그에 존재', async () => {
