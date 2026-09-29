@@ -159,7 +159,7 @@ export class BizAreaService {
       if (blocked.length > 0) {
         throw new ConflictProblem(
           'E_BIZ_AREA_IN_USE',
-          `테이블 ${tableCnt}개가 있어 ${blocked.join('·')}을(를) 바꿀 수 없습니다`,
+          `테이블 ${tableCnt}개가 있어 변경할 수 없습니다(${blocked.join('·')})`,
           { tableCnt, fields: blocked },
         );
       }
