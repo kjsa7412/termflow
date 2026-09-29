@@ -4,7 +4,7 @@ import { AUTHZ_MATRIX, ROLE_LOGIN, ROLES, type MatrixCtx, type Role } from '../a
 import { Client, createTestApp, setTestEnv } from './setup/app.js';
 import { FIXTURE_PASSWORD, useTestDb } from './setup/databases.js';
 
-// T4.7 권한 매트릭스: §7.3 표(test/api/authz-matrix.ts) × 역할 6종 자동 생성
+// T4.7·T5.14 권한 매트릭스: §7.3 표(test/api/authz-matrix.ts) × 역할 6종 자동 생성
 const t = useTestDb('t_authz', { fixture: 'std_small' });
 let app: INestApplication;
 let ctx: MatrixCtx;
@@ -17,11 +17,19 @@ beforeAll(async () => {
       from (values ('nobody', '무소속'), ('target1', '대상')) v(login_id, nm)
       cross join (select password_hash from tf_user where login_id = 'viewer') u`);
   const { rows } = await t.pool.query("select user_id from tf_user where login_id = 'target1'");
+  const pa = await t.pool.query("select user_id from tf_user where login_id = 'pa'");
+  const biz = await t.pool.query(
+    "select b.biz_cd, b.biz_area_id from prj_biz_area b join tf_project p using (project_id) where p.project_key = 'PRJA'",
+  );
+  const bizId = (cd: string) => biz.rows.find((r) => r.biz_cd === cd)!.biz_area_id as number;
   let n = 0;
   ctx = {
     targetUserId: rows[0].user_id as number,
     seq: () => ++n,
     fixturePassword: FIXTURE_PASSWORD,
+    bizRpId: bizId('RP'),
+    bizPsId: bizId('PS'),
+    paUserId: pa.rows[0].user_id as number,
   };
   setTestEnv(t.url);
   app = await createTestApp();
@@ -47,7 +55,7 @@ describe('권한 매트릭스(§7.3)', () => {
     console.log(
       `[authz-matrix] 행 ${AUTHZ_MATRIX.length} × 역할 ${ROLES.length} = ${cases.length}건`,
     );
-    expect(AUTHZ_MATRIX.length).toBeGreaterThanOrEqual(12);
+    expect(AUTHZ_MATRIX.length).toBeGreaterThanOrEqual(38);
   });
 
   it.each(cases.map((c) => [`${c.row.method} ${c.row.path}`, c.role, c] as const))(
@@ -58,7 +66,7 @@ describe('권한 매트릭스(§7.3)', () => {
       if (row.allow.includes(role)) {
         expect(row.ok, `허용인데 ${res.status}: ${JSON.stringify(res.body)}`).toContain(res.status);
       } else {
-        const expected = role === 'anon' ? 401 : (row.deny ?? 403);
+        const expected = role === 'anon' ? 401 : (row.denyByRole?.[role] ?? row.deny ?? 403);
         expect(res.status, JSON.stringify(res.body)).toBe(expected);
       }
     },
