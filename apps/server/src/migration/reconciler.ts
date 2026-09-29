@@ -5,7 +5,9 @@ import { NEW_SUFFIXES } from './rules/new-suffixes.js';
 
 /**
  * 대사(설계서 §11.4, G7: 원본 = 적재 + 제외). 1차 범위(단계 3)는 legacy ↔ STDV1.
- * RMS가 없으면 RMS 열·테이블/컬럼 행은 N/A로 기록한다(단계 5에서 STDV1 ↔ RMS 대사 추가).
+ * RMS가 있으면 전체 범위(단계 5, T5.11): STDV1 ↔ RMS(`project_copy_log` source_cnt = copied_cnt, origin_id 역조인 0건,
+ * 건수 동일) + 테이블·컬럼(legacy 33/649 = RMS, legacy_table_id 매핑, 테이블별 컬럼 수, 참조가 모두 RMS 행).
+ * RMS가 없으면 RMS 열·테이블/컬럼 행은 N/A로 기록한다.
  * 집합 비교는 정규화 키(R1 정수 표기·trim)로 한다 — 개수만 맞고 내용이 다른 경우를 잡는다.
  */
 export interface ReconcileRow {
@@ -63,7 +65,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       flaggedCnt: r.flaggedCnt,
       check: r.check,
       result: r.ok ? 'OK' : 'MISMATCH',
-      note: r.note + (rmsNa ? ' / RMS 미생성(단계 5): N/A' : ''),
+      note: r.note + (rmsNa ? ' / RMS 미생성: N/A' : ''),
     });
 
   // 업무구분
@@ -231,6 +233,10 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       note: '',
     });
   }
+  if (rmsId !== null) {
+    await reconcileRms(q, pid, rmsId, rows);
+    return rows;
+  }
   // 테이블 / 컬럼(RMS 소관 — 1차 범위 N/A)
   {
     const l = await one<{ t: number; c: number }>(
@@ -250,9 +256,138 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
         flaggedCnt: 0,
         check: 'RMS 적재 건수(step 10)',
         result: 'N/A',
-        note: '1차 범위 밖: RMS·step 10은 단계 5',
+        note: '1차 범위 밖: RMS 생성(COPY_TO_RMS·TABLE) 후 대사',
       });
     }
   }
   return rows;
+}
+
+/** 표준 항목 → (테이블, PK, project_copy_log.item). */
+const STD_ITEMS: Record<string, { table: string; pk: string; item: string }> = {
+  업무구분: { table: 'prj_biz_area', pk: 'biz_area_id', item: 'BIZ_AREA' },
+  도메인분류: { table: 'std_domain_cls', pk: 'domain_cls_id', item: 'DOMAIN_CLS' },
+  용어: { table: 'std_term', pk: 'term_id', item: 'TERM' },
+  도메인: { table: 'std_domain', pk: 'domain_id', item: 'DOMAIN' },
+  코드구분: { table: 'std_code_cls', pk: 'code_cls_id', item: 'CODE_CLS' },
+  코드: { table: 'std_code', pk: 'code_id', item: 'CODE' },
+  기본컬럼: { table: 'std_default_col', pk: 'default_col_id', item: 'DEFAULT_COL' },
+};
+
+/**
+ * STDV1 ↔ RMS(§11.4 "RMS(복사)" 열) + 테이블·컬럼 행. 표준 7항목: ① RMS 건수 = STDV1 ② 복사 로그 source_cnt = copied_cnt
+ * ③ origin_id 역조인(원본 없는 RMS 행) 0건 ④ 도메인은 review 건수 동일(C3 생략: 원본 동일).
+ */
+async function reconcileRms(q: Q, stdv1: number, rms: number, rows: ReconcileRow[]): Promise<void> {
+  for (const row of rows) {
+    const m = STD_ITEMS[row.item];
+    if (!m) continue;
+    const t = sql.identifier(m.table);
+    const pk = sql.identifier(m.pk);
+    const flag = m.table === 'std_domain' ? sql`count(*) filter (where r.review_yn)::int` : sql`0`;
+    const r = await one<{ n: number; orphan: number; f: number }>(
+      q,
+      sql`select count(*)::int n,
+                 count(*) filter (where not exists (select 1 from ${t} s
+                                   where s.project_id = ${stdv1} and s.${pk} = r.origin_id))::int orphan,
+                 ${flag} f
+            from ${t} r where r.project_id = ${rms}`,
+    );
+    const log = await one<{ s: number; c: number } | undefined>(
+      q,
+      sql`select l.source_cnt s, l.copied_cnt c from project_copy_log l
+           where l.project_id = ${rms} and l.operation = 'CREATE' and l.item = ${m.item}
+           order by l.copy_id desc limit 1`,
+    );
+    const problems: string[] = [];
+    if (r.n !== row.stdv1Cnt) problems.push(`RMS ${r.n} ≠ STDV1 ${row.stdv1Cnt}`);
+    if (!log) problems.push('복사 로그 없음');
+    else if (log.s !== log.c) problems.push(`복사 로그 source ${log.s} ≠ copied ${log.c}`);
+    if (r.orphan > 0) problems.push(`원본 없는 RMS 행 ${r.orphan}`);
+    if (m.table === 'std_domain' && r.f !== row.flaggedCnt)
+      problems.push(`review RMS ${r.f} ≠ STDV1 ${row.flaggedCnt}`);
+    row.rmsCnt = r.n;
+    row.check += ' / STDV1 = RMS(복사 로그·origin 역조인)';
+    if (problems.length > 0) row.result = 'MISMATCH';
+    row.note = [row.note, problems.length ? `RMS: ${problems.join(', ')}` : 'RMS 일치']
+      .filter(Boolean)
+      .join(' / ');
+  }
+
+  // 테이블·컬럼(legacy → RMS 업무구분 RP)
+  const l = await one<{ t: number; c: number }>(
+    q,
+    sql`select (select count(*) from legacy.tb_table_schema)::int t, (select count(*) from legacy.tb_column_schema)::int c`,
+  );
+  const tt = await one<{ n: number; f: number; nonrp: number }>(
+    q,
+    sql`select count(*)::int n, count(*) filter (where t.review_yn)::int f,
+               count(*) filter (where b.biz_cd <> 'RP' or t.status <> 'FINAL')::int nonrp
+          from prj_table t join prj_biz_area b on b.biz_area_id = t.biz_area_id where t.project_id = ${rms}`,
+  );
+  const tmap = await setDiff(
+    q,
+    sql`select trim(table_id) k from legacy.tb_table_schema`,
+    sql`select legacy_table_id k from prj_table where project_id = ${rms}`,
+  );
+  const perTable = await one<{ bad: number; sample: string | null }>(
+    q,
+    sql`with l as (select table_id, count(*) n from legacy.tb_column_schema group by table_id),
+             r as (select t.legacy_table_id table_id, count(c.column_id) n from prj_table t
+                     left join prj_column c on c.table_id = t.table_id
+                    where t.project_id = ${rms} group by t.legacy_table_id)
+        select count(*)::int bad, string_agg(coalesce(l.table_id, r.table_id), ', ') sample
+          from l full join r on r.table_id = l.table_id where coalesce(l.n, -1) <> coalesce(r.n, -1)`,
+  );
+  const cc = await one<{
+    n: number;
+    foreign_ref: number;
+    dom: number;
+    dflt: number;
+    code: number;
+    typ: number;
+  }>(
+    q,
+    sql`select count(*)::int n,
+               count(*) filter (where (c.domain_id is not null and d.project_id <> ${rms})
+                                   or (c.code_cls_id is not null and k.project_id <> ${rms})
+                                   or (c.default_col_id is not null and f.project_id <> ${rms}))::int foreign_ref,
+               count(c.domain_id)::int dom, count(c.default_col_id)::int dflt, count(c.code_cls_id)::int code,
+               count(*) filter (where c.data_type is null)::int typ
+          from prj_column c
+          left join std_domain d on d.domain_id = c.domain_id
+          left join std_code_cls k on k.code_cls_id = c.code_cls_id
+          left join std_default_col f on f.default_col_id = c.default_col_id
+         where c.project_id = ${rms}`,
+  );
+  const tOk = l.t === tt.n && tmap.onlyLegacy === 0 && tmap.onlyTarget === 0 && tt.nonrp === 0;
+  rows.push({
+    item: '테이블',
+    legacyCnt: l.t,
+    excludedCnt: 0,
+    stdv1Cnt: 0,
+    rmsCnt: tt.n,
+    flaggedCnt: tt.f,
+    check: 'legacy_table_id 집합 동일, 업무구분 RP·FINAL',
+    result: tOk ? 'OK' : 'MISMATCH',
+    note:
+      `review ${tt.f}(PK 없음·타입 확인)` +
+      (tmap.sample ? `, 차이: ${tmap.sample}` : '') +
+      (tt.nonrp ? `, RP·FINAL 아님 ${tt.nonrp}` : ''),
+  });
+  const cOk = l.c === cc.n && perTable.bad === 0 && cc.foreign_ref === 0;
+  rows.push({
+    item: '컬럼',
+    legacyCnt: l.c,
+    excludedCnt: 0,
+    stdv1Cnt: 0,
+    rmsCnt: cc.n,
+    flaggedCnt: cc.typ,
+    check: '건수·테이블별 컬럼 수 동일, 참조(도메인·코드구분·기본컬럼)가 모두 RMS 행',
+    result: cOk ? 'OK' : 'MISMATCH',
+    note:
+      `도메인 연결 ${cc.dom} · 기본컬럼 연결 ${cc.dflt} · 코드구분 ${cc.code} · 타입 NULL ${cc.typ}` +
+      (perTable.bad ? ` · 컬럼 수 불일치 테이블 ${perTable.bad}: ${perTable.sample}` : '') +
+      (cc.foreign_ref ? ` · 다른 프로젝트 참조 ${cc.foreign_ref}` : ''),
+  });
 }

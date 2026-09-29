@@ -117,3 +117,47 @@ export const readDefaultCols = (q: Q) =>
                ${ts('firs_reg_dts')} as firs_reg_dts, ${ts('fina_reg_dts')} as fina_reg_dts
           from legacy.tb_default_col order by col_seq`,
   );
+
+export interface LegacyTable {
+  table_id: string;
+  table_nm: string;
+  table_logical_nm: string;
+  description: string | null;
+  status: string | null;
+  firs_reg_dts: string | null;
+  fina_reg_dts: string | null;
+}
+/** 테이블 33(§11.1 step 10). 정렬: 최초 등록 순 → table_id. */
+export const readTables = (q: Q) =>
+  rows<LegacyTable>(
+    q,
+    sql`select table_id, table_nm, table_logical_nm, description, status,
+               ${ts('firs_reg_dts')} as firs_reg_dts, ${ts('fina_reg_dts')} as fina_reg_dts
+          from legacy.tb_table_schema order by firs_reg_dts, table_id`,
+  );
+
+export interface LegacyColumn {
+  table_id: string;
+  col_seq: number;
+  logical_col_nm: string;
+  physical_col_nm: string;
+  is_key: string | null;
+  data_type: string | null;
+  data_length: string | null;
+  is_nullable: string | null;
+  default_val: string | null;
+  col_comment: string | null;
+  code_cls: string | null;
+  domain_id: number | null;
+  firs_reg_dts: string | null;
+  fina_reg_dts: string | null;
+}
+/** 컬럼 649(§11.1 step 10). 테이블별 col_seq 순. */
+export const readColumns = (q: Q) =>
+  rows<LegacyColumn>(
+    q,
+    sql`select table_id, col_seq, logical_col_nm, physical_col_nm, is_key, data_type, data_length, is_nullable,
+               default_val, col_comment, code_cls, domain_id,
+               ${ts('firs_reg_dts')} as firs_reg_dts, ${ts('fina_reg_dts')} as fina_reg_dts
+          from legacy.tb_column_schema order by table_id, col_seq`,
+  );

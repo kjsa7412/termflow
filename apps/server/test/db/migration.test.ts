@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDb, type Db } from '../../src/db/client.js';
 import type { RunOptions, StepDef, StepName } from '../../src/migration/context.js';
 import { ResetRefusedError, runSeed, type RunSummary } from '../../src/migration/runner.js';
-import { STAGE3_STEPS } from '../../src/migration/steps/index.js';
+import { SEED_STEPS } from '../../src/migration/steps/index.js';
 import { createMigratedDatabase } from './setup/databases.js';
 
 // T3.14 dump 전체 적재 통합(`pnpm test:db -- migration`) + T3.2 러너 골격 + 게이트 3 멱등성
@@ -159,10 +159,10 @@ describe('러너 골격(T3.2)', () => {
 
   it('구현되지 않은 step 요청은 실행 전에 거부, --reset은 production에서 거부', async () => {
     await expect(
-      runSeed(options('', 'run-d', ['COPY_TO_RMS']), {
+      runSeed(options('', 'run-d', ['DDL_REGRESSION']), {
         pool,
         db,
-        steps: STAGE3_STEPS,
+        steps: SEED_STEPS,
         log: () => {},
       }),
     ).rejects.toThrow(/구현되지 않았습니다/);
@@ -170,7 +170,7 @@ describe('러너 골격(T3.2)', () => {
       runSeed(options('', 'run-e', ['TEMPLATE'], { reset: true, nodeEnv: 'production' }), {
         pool,
         db,
-        steps: STAGE3_STEPS,
+        steps: SEED_STEPS,
         log: () => {},
       }),
     ).rejects.toThrow(ResetRefusedError);
@@ -190,7 +190,7 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
     first = await runSeed(options(url, 'full-1', PHASE1), {
       pool,
       db,
-      steps: STAGE3_STEPS,
+      steps: SEED_STEPS,
       log: (m) => logs.push(m),
     });
     console.log(`[test:db migration] 러너 1차 실행 ${first.seconds}s`);
@@ -357,7 +357,7 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
     const again = await runSeed(options(url, 'full-2', PHASE1), {
       pool,
       db,
-      steps: STAGE3_STEPS,
+      steps: SEED_STEPS,
       log: () => {},
     });
     expect(again.ok).toBe(true);
@@ -376,7 +376,7 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
     const reset = await runSeed(options(url, 'full-3', PHASE1, { reset: true }), {
       pool,
       db,
-      steps: STAGE3_STEPS,
+      steps: SEED_STEPS,
       log: () => {},
     });
     expect(reset.ok).toBe(true);
@@ -388,13 +388,13 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
     await runSeed(options(url, 'r7-0', ['TEMPLATE'], { reset: true }), {
       pool,
       db,
-      steps: STAGE3_STEPS,
+      steps: SEED_STEPS,
       log: () => {},
     });
     await runSeed(options(url, 'r7-1', ['BIZ_AREA']), {
       pool,
       db,
-      steps: STAGE3_STEPS,
+      steps: SEED_STEPS,
       log: () => {},
     });
     await pool.query(
@@ -404,7 +404,7 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
       const r = await runSeed(options(url, 'r7-3', ['CODE']), {
         pool,
         db,
-        steps: STAGE3_STEPS,
+        steps: SEED_STEPS,
         log: () => {},
       });
       expect(r.ok).toBe(false);
@@ -426,14 +426,14 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
         PHASE1.filter((s) => s !== 'LOAD_LEGACY'),
         { reset: true },
       ),
-      { pool, db, steps: STAGE3_STEPS, log: () => {} },
+      { pool, db, steps: SEED_STEPS, log: () => {} },
     );
     expect(r0.ok).toBe(true);
     await pool.query("delete from std_term where term_kor = '연구'");
     const r = await runSeed(options(url, 'rc-1', ['RECONCILE']), {
       pool,
       db,
-      steps: STAGE3_STEPS,
+      steps: SEED_STEPS,
       log: () => {},
     });
     expect(r.ok).toBe(false);
