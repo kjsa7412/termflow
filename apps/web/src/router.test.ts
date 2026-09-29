@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryHistory, type RouteLocationNormalized } from 'vue-router';
 import { createApiClient } from './api/client.js';
 import { installAuth } from './auth-wiring.js';
@@ -92,12 +92,19 @@ describe('세션 만료 → 로그인 → 원래 경로 복귀(installAuth)', ()
 
     await router.push('/admin/users');
     expect(router.currentRoute.value.fullPath).toBe('/admin/users');
-    // 세션 만료: 다음 API가 401
+    // 세션 만료: 다음 API가 401. 폴링(waitFor 제한 시간) 대신 로그인 화면 이동 완료 이벤트를 기다린다(CR-05 C1).
+    const toLogin = new Promise<void>((resolve) => {
+      const off = router.afterEach((to) => {
+        if (to.path === '/login') {
+          off();
+          resolve();
+        }
+      });
+    });
     loggedIn = false;
     await client.get('/admin/users').catch(() => undefined);
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/login'), {
-      timeout: 5000,
-    });
+    await toLogin;
+    expect(router.currentRoute.value.path).toBe('/login');
     expect(router.currentRoute.value.query['next']).toBe('/admin/users');
     expect(session.isLoggedIn).toBe(false);
 

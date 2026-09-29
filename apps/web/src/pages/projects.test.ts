@@ -8,7 +8,14 @@ import AppShell from '../components/layout/AppShell.vue';
 import { createAppRouter } from '../router.js';
 import { useSessionStore } from '../stores/session.js';
 import { useToastStore } from '../stores/toast.js';
-import { fakeFetch, json, problem, type FakeRequest, type Handler } from '../test-utils.js';
+import {
+  fakeFetch,
+  json,
+  problem,
+  type FakeRequest,
+  type Handler,
+  untilRoute,
+} from '../test-utils.js';
 import AdminProjectsPage from './AdminProjectsPage.vue';
 import AdminTemplatesPage from './AdminTemplatesPage.vue';
 import BizAreasPage from './BizAreasPage.vue';
@@ -264,7 +271,7 @@ describe('ProjectNewPage(02b) — S5 계수·미리보기·C3 경고', () => {
     expect(w.text()).toContain('새로 표시 12건');
     await click(button(w, '프로젝트 홈으로'));
     await flushPromises();
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/projects/HRM26'));
+    await untilRoute(router, '/projects/HRM26');
     // S5 합격 기준(§13.2): 입력 4 / 클릭 6 / 이동 1(목록 → 마법사) 이내
     expect(ops.input).toBeLessThanOrEqual(4);
     expect(ops.click).toBeLessThanOrEqual(6);
@@ -405,7 +412,7 @@ describe('ProjectSettingsPage(12)', () => {
     await confirm().trigger('click');
     await flushPromises();
     expect(bodyOf(calls, 'DELETE', '/api/v1/admin/projects/RMS')).toEqual({ confirmKey: 'RMS' });
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/admin/projects'));
+    await untilRoute(router, '/admin/projects');
     w.unmount();
   });
 });
