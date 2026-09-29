@@ -30,6 +30,6 @@ export const useToastStore = defineStore('toast', () => {
     dismiss,
     success: (t: string) => push(t, 'success'),
     error: (t: string) => push(t, 'error'),
-    info: (t: string) => push(t, 'info'),
+    info: (t: string, ms?: number) => push(t, 'info', ms),
   };
 });

@@ -16,6 +16,8 @@ export interface NavItem {
   minRole?: MemberRole;
   /** 제공 예정 화면(링크 없음). */
   pending?: boolean;
+  /** 건수 배지(승인 큐 PENDING, 30초 폴링). */
+  badge?: 'pending-terms';
 }
 
 export interface NavGroup {
@@ -48,28 +50,25 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     title: '표준 사전',
     scope: 'project',
     items: [
-      { id: 'terms', label: '용어', icon: 'book', projectPath: '/standards/terms', pending: true },
+      { id: 'terms', label: '용어', icon: 'book', projectPath: '/standards/terms' },
       {
         id: 'domain-classes',
         label: '도메인분류',
         icon: 'tag',
         projectPath: '/standards/domain-classes',
-        pending: true,
       },
       {
         id: 'domains',
         label: '도메인',
         icon: 'layers',
         projectPath: '/standards/domains',
-        pending: true,
       },
-      { id: 'codes', label: '코드', icon: 'code', projectPath: '/standards/codes', pending: true },
+      { id: 'codes', label: '코드', icon: 'code', projectPath: '/standards/codes' },
       {
         id: 'default-columns',
         label: '기본컬럼',
         icon: 'columns',
         projectPath: '/standards/default-columns',
-        pending: true,
       },
       {
         id: 'approvals',
@@ -77,7 +76,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: 'check-circle',
         projectPath: '/standards/approvals',
         minRole: 'ADMIN',
-        pending: true,
+        badge: 'pending-terms',
       },
     ],
   },

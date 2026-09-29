@@ -515,3 +515,11 @@
 .skeleton + .skeleton { margin-top: 8px; }
 @keyframes skeleton { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .spinner, .skeleton { animation: none; } }
+/* 표준 사전 화면(단계 6): 사유 줄바꿈 표시, 사이드바 승인 대기 배지, 전역 검색 결과, 변경 이력 줄 */
+.d-block { display: block; }
+.nav-item .nav-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-full); background: var(--info-bg); color: var(--info); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+.topbar-search { position: relative; }
+.search-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40; background: var(--bg-1); border: 1px solid var(--bd); border-radius: var(--r-md); box-shadow: var(--sh-2); padding: 6px 0; max-height: 420px; overflow: auto; }
+.search-pop .dropdown-item { width: 100%; }
+.history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-12); }
+.history-list li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }

@@ -59,6 +59,48 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '업무구분' },
   },
   {
+    path: '/projects/:projectKey/standards/terms',
+    name: 'std-terms',
+    component: () => import('./pages/TermsPage.vue'),
+    meta: { title: '용어' },
+  },
+  {
+    path: '/projects/:projectKey/standards/domain-classes',
+    name: 'std-domain-classes',
+    component: () => import('./pages/DomainClassesPage.vue'),
+    meta: { title: '도메인분류' },
+  },
+  {
+    path: '/projects/:projectKey/standards/domains',
+    name: 'std-domains',
+    component: () => import('./pages/DomainsPage.vue'),
+    meta: { title: '도메인' },
+  },
+  {
+    path: '/projects/:projectKey/standards/codes',
+    name: 'std-codes',
+    component: () => import('./pages/CodesPage.vue'),
+    meta: { title: '코드' },
+  },
+  {
+    path: '/projects/:projectKey/standards/default-columns',
+    name: 'std-default-columns',
+    component: () => import('./pages/DefaultColumnsPage.vue'),
+    meta: { title: '기본컬럼' },
+  },
+  {
+    path: '/projects/:projectKey/standards/approvals',
+    name: 'std-approvals',
+    component: () => import('./pages/ApprovalsPage.vue'),
+    meta: { title: '승인 큐' },
+  },
+  {
+    path: '/projects/:projectKey/standards/:kind/import',
+    name: 'std-import',
+    component: () => import('./pages/StdImportPage.vue'),
+    meta: { title: '일괄 등록' },
+  },
+  {
     path: '/projects/:projectKey/settings',
     name: 'project-settings',
     component: () => import('./pages/ProjectSettingsPage.vue'),

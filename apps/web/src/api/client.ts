@@ -30,6 +30,8 @@ export interface RequestOptions {
   body?: unknown;
   /** application/x-www-form-urlencoded(로그인, §7.1). */
   form?: Record<string, string>;
+  /** multipart/form-data(일괄 등록 업로드, §9.4). Content-Type은 브라우저가 경계값과 함께 정한다. */
+  formData?: FormData;
   query?: Record<string, string | number | boolean | undefined | null>;
   signal?: AbortSignal;
 }
@@ -58,6 +60,10 @@ export interface ApiClient {
   post<T>(path: string, body?: unknown, opts?: RequestOptions): Promise<T>;
   put<T>(path: string, body?: unknown, opts?: RequestOptions): Promise<T>;
   del<T>(path: string, opts?: RequestOptions): Promise<T>;
+  /** multipart 업로드(POST). */
+  upload<T>(path: string, formData: FormData, opts?: RequestOptions): Promise<T>;
+  /** 파일 내려받기(GET): 본문 Blob + Content-Disposition 파일명. */
+  download(path: string, opts?: RequestOptions): Promise<{ blob: Blob; fileName: string | null }>;
   /** 로그인 응답의 새 토큰으로 교체(세션 ID가 바뀌므로, CR-02 C6). null이면 다음 비-GET에서 다시 받는다. */
   setCsrfToken(token: string | null): void;
   configure(opts: Pick<ApiClientOptions, 'onUnauthorized' | 'onPasswordChangeRequired'>): void;
@@ -107,7 +113,9 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   ): Promise<Response> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     let body: BodyInit | undefined;
-    if (opts.form) {
+    if (opts.formData) {
+      body = opts.formData;
+    } else if (opts.form) {
       headers['Content-Type'] = 'application/x-www-form-urlencoded';
       body = new URLSearchParams(opts.form).toString();
     } else if (opts.body !== undefined) {
@@ -138,13 +146,7 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     return res;
   }
 
-  async function request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
-    const res = await send(method, path, opts, false);
-    if (res.ok) {
-      if (res.status === 204) return undefined as T;
-      const text = await res.text();
-      return (text ? JSON.parse(text) : undefined) as T;
-    }
+  async function fail(res: Response, path: string): Promise<never> {
     const body = (await res.json().catch(() => null)) as unknown;
     const err = new ApiError(res.status, isProblemDetail(body) ? body : null);
     if (res.status === 401 && path !== '/auth/login') handlers.onUnauthorized?.(err);
@@ -154,12 +156,33 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     throw err;
   }
 
+  async function download(
+    path: string,
+    opts: RequestOptions = {},
+  ): Promise<{ blob: Blob; fileName: string | null }> {
+    const res = await send('GET', path, opts, false);
+    if (!res.ok) return fail(res, path);
+    return { blob: await res.blob(), fileName: fileNameOf(res.headers.get('Content-Disposition')) };
+  }
+
+  async function request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
+    const res = await send(method, path, opts, false);
+    if (res.ok) {
+      if (res.status === 204) return undefined as T;
+      const text = await res.text();
+      return (text ? JSON.parse(text) : undefined) as T;
+    }
+    return fail(res, path);
+  }
+
   return {
     request,
     get: (p, o) => request('GET', p, o),
     post: (p, b, o) => request('POST', p, { ...o, body: b }),
     put: (p, b, o) => request('PUT', p, { ...o, body: b }),
     del: (p, o) => request('DELETE', p, o),
+    upload: (p, fd, o) => request('POST', p, { ...o, formData: fd }),
+    download,
     setCsrfToken(token) {
       csrfToken = token;
     },
@@ -167,6 +190,33 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       Object.assign(handlers, o);
     },
   };
+}
+
+/** `Content-Disposition`의 파일명(RFC 5987 `filename*=UTF-8''…` 우선). */
+export function fileNameOf(header: string | null): string | null {
+  if (!header) return null;
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1]);
+    } catch {
+      /* 잘못된 인코딩이면 아래 일반 이름 */
+    }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(header);
+  return plain?.[1] ?? null;
+}
+
+/** 브라우저에서 Blob을 파일로 저장(다운로드 링크 클릭). */
+export function saveBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /** 앱 전역 인스턴스. 401·강제 변경 처리기는 main.ts가 라우터와 연결한다. */
