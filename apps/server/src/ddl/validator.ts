@@ -171,9 +171,12 @@ export function validateTable(table: TableModel, ctx: ValidateContext): Validati
       push('W_TERM_CHANGED', phys, { before: c.physicalNm, after: hint.resegmented });
     }
 
+    // 기본컬럼(defaultColId)은 기본컬럼 세트 정의가 타입·물리명의 기준 → 도메인 타입 비교·접미어 판정 제외(CR-06 C5)
+    const isDefaultCol = c.defaultColId !== null;
     if (c.domain) {
       const d = c.domain;
       if (
+        !isDefaultCol &&
         d.colType !== null &&
         (d.colType !== c.dataType || d.colLength !== c.dataLength || d.colScale !== c.dataScale)
       ) {
@@ -181,8 +184,7 @@ export function validateTable(table: TableModel, ctx: ValidateContext): Validati
       }
       if (d.reviewYn) push('W_DOMAIN_REVIEW', base);
     }
-    // 기본컬럼(세트 정의가 기준)은 접미어 판정에서 제외
-    if (physOk && ctx.suffixes && c.defaultColId === null) {
+    if (physOk && ctx.suffixes && !isDefaultCol) {
       const s = physicalSuffix(c.physicalNm);
       if (s !== null && !ctx.suffixes.has(s)) push('W_SUFFIX_UNREGISTERED', phys, { suffix: s });
     }

@@ -156,10 +156,24 @@ describe('TableValidator — 코드표 전 행(§5.7)', () => {
     );
   });
 
-  it('기본컬럼(defaultColId)은 접미어 판정 제외, 접미어는 끝 숫자를 뗀다', () => {
-    expect(
-      codes(withCol({ physicalNm: 'WRK_RMK', defaultColId: 3 }), { suffixes: new Set(['ID']) }),
-    ).not.toContain('W_SUFFIX_UNREGISTERED');
+  it('기본컬럼(defaultColId)은 도메인 타입 비교·접미어 판정 제외, 접미어는 끝 숫자를 뗀다', () => {
+    const dflt = withCol({
+      physicalNm: 'WRK_RMK',
+      defaultColId: 3,
+      dataLength: 50,
+      domainId: 9,
+      domain: {
+        domainId: 9,
+        logicalNm: 'x',
+        colType: 'VARCHAR',
+        colLength: 20,
+        colScale: null,
+        reviewYn: false,
+      },
+    });
+    const got = codes(dflt, { suffixes: new Set(['ID']) });
+    expect(got).not.toContain('W_SUFFIX_UNREGISTERED');
+    expect(got).not.toContain('W_DOMAIN_TYPE_CHANGED');
     expect(physicalSuffix('WRK_ADDR1')).toBe('ADDR');
     expect(physicalSuffix('MEMO')).toBe('MEMO');
     expect(physicalSuffix('A_1')).toBeNull();
