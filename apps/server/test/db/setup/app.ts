@@ -103,6 +103,35 @@ export class Client {
     return this.send('delete', path, body, opts);
   }
 
+  /** multipart 업로드(일괄 등록): 필드 1개 파일 + CSRF 헤더. */
+  async upload(
+    path: string,
+    field: string,
+    buf: Buffer,
+    filename: string,
+  ): Promise<request.Response> {
+    let req = request(this.server as Parameters<typeof request>[0])
+      .post(path)
+      .set('Cookie', this.header());
+    if (this.csrf) req = req.set('X-XSRF-TOKEN', this.csrf);
+    const res = await req.attach(field, buf, { filename, contentType: 'application/octet-stream' });
+    this.store(res.headers['set-cookie'] as unknown as string[] | undefined);
+    return res;
+  }
+
+  /** 바이너리 응답 GET(xlsx 다운로드). */
+  async download(path: string): Promise<request.Response> {
+    return request(this.server as Parameters<typeof request>[0])
+      .get(path)
+      .set('Cookie', this.header())
+      .buffer(true)
+      .parse((res, cb) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (d: Buffer) => chunks.push(d));
+        res.on('end', () => cb(null, Buffer.concat(chunks)));
+      });
+  }
+
   /** GET /auth/csrf → 토큰 보관. */
   async fetchCsrf(): Promise<string> {
     const res = await this.get('/api/v1/auth/csrf');

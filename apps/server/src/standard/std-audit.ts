@@ -36,7 +36,15 @@ export async function writeStdAudit(
   a: Audit,
 ): Promise<void> {
   const list = Array.isArray(entries) ? entries : [entries];
-  if (list.length === 0) return;
+  // 일괄 등록·재계산은 수만 행 — 바인드 파라미터 상한(65,535)을 넘지 않게 1,000행씩 나눈다
+  for (let i = 0; i < list.length; i += AUDIT_CHUNK) {
+    await insertChunk(q, list.slice(i, i + AUDIT_CHUNK), a);
+  }
+}
+
+const AUDIT_CHUNK = 1000;
+
+async function insertChunk(q: Pick<Db, 'insert'>, list: StdAuditEntry[], a: Audit): Promise<void> {
   await q.insert(stdAuditLog).values(
     list.map((e) => ({
       projectId: e.projectId,
