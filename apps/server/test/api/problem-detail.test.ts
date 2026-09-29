@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
-import { pageQuerySchema, PROBLEM_TYPE_BASE, termInputSchema } from '@termflow/shared';
+import { pageQuerySchema, PROBLEM_TYPE_BASE, termInlineSchema } from '@termflow/shared';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ZodValidationPipe } from '../../src/common/pipes/zod-validation.pipe.js';
@@ -25,7 +25,7 @@ import {
 @Controller('p')
 class ProbeController {
   @Post('zod')
-  zod(@Body(new ZodValidationPipe(termInputSchema)) body: unknown) {
+  zod(@Body(new ZodValidationPipe(termInlineSchema)) body: unknown) {
     return body;
   }
   @Get('page')
