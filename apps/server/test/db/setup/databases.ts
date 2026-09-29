@@ -66,7 +66,7 @@ export interface TestDb {
  */
 export function useTestDb(
   database: string,
-  opts: { truncateEach?: boolean; fixture?: 'std_small' } = {},
+  opts: { truncateEach?: boolean; fixture?: 'std_small' | 'rp33' } = {},
 ): TestDb {
   const ctx = {} as TestDb;
   beforeAll(async () => {

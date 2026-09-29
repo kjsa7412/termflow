@@ -9,7 +9,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "node ../../scripts/run-vitest.mjs run",
     "test:db": "node ../../scripts/run-vitest.mjs run --config vitest.db.config.ts --passWithNoTests",
     "db:migrate": "tsx src/db/cli.ts migrate",
     "db:pull": "tsx scripts/db-pull.ts",

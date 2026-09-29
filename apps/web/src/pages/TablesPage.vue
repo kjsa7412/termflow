@@ -107,7 +107,7 @@ const moreThanPage = computed(
 );
 const selectingAll = ref(false);
 /** 필터 결과 전체 선택(1회 200 상한 = 내보내기 상한, §6.10). */
-async function selectAllMatching(): Promise<void> {
+async function selectFiltered(): Promise<void> {
   selectingAll.value = true;
   try {
     const q = { ...list.query(), page: 1, size: 200 };
@@ -262,7 +262,7 @@ const COLS = 9;
             variant="ghost"
             size="sm"
             :loading="selectingAll"
-            @click="selectAllMatching"
+            @click="selectFiltered"
             >조건에 맞는 {{ fmtNum(page?.total) }}개 모두 선택</TfButton
           >
           <TfButton variant="ghost" size="sm" @click="selected = []">선택 해제</TfButton>
