@@ -116,7 +116,8 @@ describe('승계 2차(STDV1 → RMS 복사 · 33 테이블 · 전체 대사)', (
     console.log(
       `[test:db migration-rms] RMS 복사 elapsed_ms 합 ${sum}ms — ${log.rows.map((r) => `${r.item} ${r.elapsed_ms}`).join(' · ')}`,
     );
-    expect(sum).toBeLessThan(5000);
+    // C6 5초 판정은 test:db copy(단독 측정)가 한다. 여기서는 병렬 실행(컨테이너 공유) 중 상한만 확인
+    expect(sum).toBeLessThan(15000);
     const m = await pool.query(`select u.login_id, m.member_role from tf_project_member m
         join tf_user u using (user_id) join tf_project p using (project_id) where p.project_key = 'RMS'`);
     expect(m.rows).toEqual([{ login_id: 'admin', member_role: 'ADMIN' }]);
