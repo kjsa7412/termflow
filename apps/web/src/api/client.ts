@@ -64,6 +64,12 @@ export interface ApiClient {
   upload<T>(path: string, formData: FormData, opts?: RequestOptions): Promise<T>;
   /** 파일 내려받기(GET): 본문 Blob + Content-Disposition 파일명. */
   download(path: string, opts?: RequestOptions): Promise<{ blob: Blob; fileName: string | null }>;
+  /** 파일 내려받기(POST 본문, DDL .sql·.zip·.tsv, §6.10). */
+  downloadPost(
+    path: string,
+    body: unknown,
+    opts?: RequestOptions,
+  ): Promise<{ blob: Blob; fileName: string | null }>;
   /** 로그인 응답의 새 토큰으로 교체(세션 ID가 바뀌므로, CR-02 C6). null이면 다음 비-GET에서 다시 받는다. */
   setCsrfToken(token: string | null): void;
   configure(opts: Pick<ApiClientOptions, 'onUnauthorized' | 'onPasswordChangeRequired'>): void;
@@ -159,8 +165,9 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   async function download(
     path: string,
     opts: RequestOptions = {},
+    method = 'GET',
   ): Promise<{ blob: Blob; fileName: string | null }> {
-    const res = await send('GET', path, opts, false);
+    const res = await send(method, path, opts, false);
     if (!res.ok) return fail(res, path);
     return { blob: await res.blob(), fileName: fileNameOf(res.headers.get('Content-Disposition')) };
   }
@@ -182,7 +189,8 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     put: (p, b, o) => request('PUT', p, { ...o, body: b }),
     del: (p, o) => request('DELETE', p, o),
     upload: (p, fd, o) => request('POST', p, { ...o, formData: fd }),
-    download,
+    download: (p, o) => download(p, o),
+    downloadPost: (p, b, o) => download(p, { ...o, body: b }, 'POST'),
     setCsrfToken(token) {
       csrfToken = token;
     },

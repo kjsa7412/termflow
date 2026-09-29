@@ -20,7 +20,7 @@ const router = useRouter();
 const inProject = computed(() => Boolean(route.params['projectKey']));
 const projectKey = computed(() => String(route.params['projectKey'] ?? ''));
 
-// ── 전역 검색(T6.10, §10.2: 현재 프로젝트 범위, 용어·도메인 각 5건 — 테이블은 T7.9) ──────────
+// ── 전역 검색(T6.10·T7.9, §10.2: 현재 프로젝트 범위, 용어·도메인·테이블 각 5건) ──────────
 const std = standardsApi();
 const q = ref('');
 const result = ref<SearchResponse | null>(null);
@@ -54,6 +54,13 @@ const hits = computed<Hit[]>(() => {
       sub: `${d.physicalNm ?? '물리명 없음'} · ${d.typeText ?? '타입 없음'}${d.reviewYn ? ' · 검토필요' : ''}`,
       to: `${base}/domains?q=${encodeURIComponent(d.logicalNm)}`,
       group: '도메인',
+    })),
+    ...r.tables.map((t) => ({
+      id: `tb${t.tableId}`,
+      label: t.tableNm,
+      sub: `${t.logicalNm} · ${t.bizCd}`,
+      to: `/projects/${projectKey.value}/tables?q=${encodeURIComponent(t.tableNm)}`,
+      group: '테이블',
     })),
   ];
 });
