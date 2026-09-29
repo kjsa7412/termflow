@@ -16,7 +16,8 @@
     "migrate:seed": "tsx src/migration/seed.ts",
     "db:reset": "tsx src/db/cli.ts reset",
     "db:new": "tsx scripts/db-new.ts",
-    "migrate:scan": "tsx src/migration/sensitive-scan.ts"
+    "migrate:scan": "tsx src/migration/sensitive-scan.ts",
+    "corrections:draft": "tsx src/migration/corrections-draft.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.0",
@@ -31,6 +32,7 @@
     "cookie-parser": "1.4.7",
     "csrf-csrf": "4.0.3",
     "drizzle-orm": "0.45.3",
+    "exceljs": "^4.4.0",
     "express-session": "1.19.0",
     "helmet": "^8.3.0",
     "nestjs-cls": "7.0.1",

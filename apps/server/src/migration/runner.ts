@@ -214,6 +214,13 @@ export async function runSeed(
     if (!ok) break;
   }
 
+  // 대량 적재 직후에는 통계가 없어(autovacuum 전) 목록·검색 쿼리가 나쁜 계획을 고른다 → 적재한 표를 바로 ANALYZE(CR-05 C7)
+  if (logs.some((l) => l.status === 'SUCCESS')) {
+    await deps.pool.query(
+      'ANALYZE prj_biz_area, std_term, std_domain_cls, std_domain, std_code_cls, std_code, std_default_col_set, std_default_col, prj_table, prj_column',
+    );
+  }
+
   const files = report.flush();
   const summaryRows: unknown[][] = [];
   for (const l of logs) {

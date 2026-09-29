@@ -1,4 +1,4 @@
-import { STD_TYPES, type StdType } from '@termflow/shared';
+import { checkStdTypeParts, STD_TYPES, typeText, type StdType } from '@termflow/shared';
 
 /**
  * 표준 타입 3분할 파서(R16, 설계서 §11.2·§6.3). 승계 러너(R3·R5·R10·R14·R16)와 이후 편집기·엑셀 입력이 같이 쓴다.
@@ -30,11 +30,6 @@ export type StdTypeParseFailure =
 export type StdTypeParseResult =
   | ({ ok: true; normalized: string } & StdTypeParts)
   | { ok: false; reason: StdTypeParseFailure; input: string };
-
-/** 길이(정밀도)가 필수인 타입. */
-const LENGTH_REQUIRED: ReadonlySet<StdType> = new Set(['VARCHAR', 'CHAR', 'NUMERIC']);
-/** 길이를 가질 수 있는 타입(TIMESTAMP는 소수 초 자릿수). */
-const LENGTH_ALLOWED: ReadonlySet<StdType> = new Set(['VARCHAR', 'CHAR', 'NUMERIC', 'TIMESTAMP']);
 
 /**
  * 타입 문자열 → 3분할. 구조만이 아니라 표준 규칙(§5.7 E_TYPE_LEN_MISSING·E_TYPE_LEN_RANGE)도 검사한다:
@@ -69,48 +64,10 @@ export function parseTypeAndLength(
 
 function checkParts(p: StdTypeParts, raw: string): StdTypeParseResult {
   const { type, length, scale } = p;
-  if (length === null && LENGTH_REQUIRED.has(type)) {
-    return { ok: false, reason: 'LEN_MISSING', input: raw };
-  }
-  if (length !== null && !LENGTH_ALLOWED.has(type)) {
-    return { ok: false, reason: 'SCALE_NOT_ALLOWED', input: raw };
-  }
-  if (scale !== null && type !== 'NUMERIC') {
-    return { ok: false, reason: 'SCALE_NOT_ALLOWED', input: raw };
-  }
-  if (type === 'TIMESTAMP') {
-    if (length !== null && length > 6) return { ok: false, reason: 'LEN_RANGE', input: raw };
-  } else if (length !== null && length < 1) {
-    return { ok: false, reason: 'LEN_RANGE', input: raw };
-  }
-  if (scale !== null && length !== null && scale > length) {
-    return { ok: false, reason: 'LEN_RANGE', input: raw };
-  }
+  const problem = checkStdTypeParts(type, length, scale);
+  if (problem) return { ok: false, reason: problem, input: raw };
   return { ok: true, type, length, scale, normalized: typeText(type, length, scale) ?? type };
 }
 
-/**
- * 표시·DDL 미리보기용 타입 텍스트(L1 9단계, §5.2). 저장은 항상 3분할.
- * VARCHAR/CHAR → `T(n)`, NUMERIC → `T(p,s)`(s 없으면 `T(p)`), TIMESTAMP → n이 있으면 `T(n)`, 그 외 타입명.
- */
-export function typeText(
-  type: StdType | string | null | undefined,
-  length: number | null | undefined,
-  scale: number | null | undefined,
-): string | null {
-  if (!type) return null;
-  const n = length ?? null;
-  const sc = scale ?? null;
-  switch (type) {
-    case 'VARCHAR':
-    case 'CHAR':
-      return n !== null ? `${type}(${n})` : type;
-    case 'NUMERIC':
-      if (n === null) return type;
-      return sc !== null ? `${type}(${n},${sc})` : `${type}(${n})`;
-    case 'TIMESTAMP':
-      return n !== null ? `${type}(${n})` : type;
-    default:
-      return type;
-  }
-}
+/** 표시·DDL 미리보기용 타입 텍스트(L1 9단계) — 규칙은 `@termflow/shared`(화면과 공유). */
+export { typeText };

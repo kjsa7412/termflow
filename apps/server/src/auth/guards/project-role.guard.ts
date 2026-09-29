@@ -79,7 +79,14 @@ export class ProjectRoleGuard implements CanActivate {
         throw new ConflictProblem('E_PROJECT_READONLY', API_ERROR_CODES.E_PROJECT_READONLY);
       }
     }
-    req.projectCtx = { projectId: row.projectId, projectKey: key, kind, status, role };
+    req.projectCtx = {
+      projectId: row.projectId,
+      projectKey: key,
+      kind,
+      status,
+      role,
+      sysAdmin: user.isSysAdmin,
+    };
     return true;
   }
 }

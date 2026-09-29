@@ -41,6 +41,16 @@ export interface MatrixCtx {
   bizPsId: number;
   /** PRJA 프로젝트 관리자(유일한 ADMIN) user_id — 제거 시도는 409 E_LAST_PROJECT_ADMIN. */
   paUserId: number;
+  /** PRJA 표준 사전 ID(단계 6 행): 승인 용어·검토대기 2건·도메인·도메인분류·코드구분·기본컬럼 세트. */
+  std: {
+    termId: number;
+    pendingApproveId: number;
+    pendingRejectId: number;
+    domainId: number;
+    domainClsId: number;
+    codeClsId: number;
+    setId: number;
+  };
 }
 
 export interface MatrixRow {
@@ -62,6 +72,10 @@ const PA_UP: readonly Role[] = ['pa', 'sa'];
 /** 프로젝트 행: 비멤버(login)는 403이 아니라 404(§7.3 존재 노출 방지). */
 const P_DENY = { login: 404 } as const;
 const P = '/api/v1/projects/PRJA';
+const S = `${P}/standards`;
+/** 없는 ID·importId — 허용 역할은 핸들러에서 404(도달 증명), 상태 불변. */
+const MISSING = 999999;
+const NO_IMPORT = '00000000-0000-4000-8000-000000000000';
 const EMPTY_IMPORTS = {
   bizAreas: { source: 'EMPTY' },
   terms: { source: 'EMPTY' },
@@ -77,6 +91,409 @@ const SETTINGS = {
   includeDefaultCols: true,
   defaultColSetId: null,
 };
+
+/**
+ * 단계 6 표준 사전 행(§7.3: `P/standards/**` GET = 조회자 이상, 쓰기·imports·recalculate·approvals = PA).
+ * 생성 요청은 seq로 키를 바꾸고, 삭제·없는 importId는 999999/빈 UUID로 404(도달)만 확인해 상태를 바꾸지 않는다.
+ * 승인·반려는 첫 허용 역할이 처리하면 다음 역할은 상태 아님 409, 파일 없는 업로드는 422 E_IMPORT_FILE(도달).
+ */
+const STANDARD_ROWS: readonly MatrixRow[] = [
+  {
+    path: 'P/standards/terms',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/terms`),
+  },
+  {
+    path: 'P/standards/terms/check',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/terms/check?termKor=%EC%9A%A9%EC%96%B41`),
+  },
+  {
+    path: 'P/standards/terms/{id}',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${S}/terms/${x.std.termId}`),
+  },
+  {
+    path: 'P/standards/terms',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${S}/terms`, { termKor: `매트릭스${x.seq()}`, termPhysical: 'MTRX' }),
+  },
+  {
+    path: 'P/standards/terms/{id}',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.put(`${S}/terms/${x.std.termId}`, {
+        termKor: '용어2',
+        termPhysical: 'PA_T2',
+        description: '설명 2',
+      }),
+  },
+  {
+    path: 'P/standards/terms/{id}',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.delete(`${S}/terms/${MISSING}`),
+  },
+  {
+    path: 'P/standards/approvals',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/approvals`),
+  },
+  {
+    path: 'P/standards/approvals/count',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/approvals/count`),
+  },
+  {
+    path: 'P/standards/approvals/{termId}/approve',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [200, 409],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${S}/approvals/${x.std.pendingApproveId}/approve`, {}),
+  },
+  {
+    path: 'P/standards/approvals/{termId}/reject',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [200, 409],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${S}/approvals/${x.std.pendingRejectId}/reject`, { note: '매트릭스' }),
+  },
+  {
+    path: 'P/standards/approvals/approve-batch',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [409],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${S}/approvals/approve-batch`, { termIds: [x.std.termId] }),
+  },
+  {
+    path: 'P/standards/domain-classes',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/domain-classes`),
+  },
+  {
+    path: 'P/standards/domain-classes/{id}',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${S}/domain-classes/${x.std.domainClsId}`),
+  },
+  {
+    path: 'P/standards/domain-classes',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.post(`${S}/domain-classes`, { suffix: `MX${x.seq()}`, clsNm: '매트릭스', colType: 'TEXT' }),
+  },
+  {
+    path: 'P/standards/domain-classes/{id}',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.put(`${S}/domain-classes/${x.std.domainClsId}`, {
+        suffix: 'SFX01',
+        clsNm: '분류1',
+        colType: 'VARCHAR',
+        colLength: 11,
+      }),
+  },
+  {
+    path: 'P/standards/domain-classes/{id}',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.delete(`${S}/domain-classes/${MISSING}`),
+  },
+  {
+    path: 'P/standards/domains',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/domains?review=true`),
+  },
+  {
+    path: 'P/standards/domains/{id}',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${S}/domains/${x.std.domainId}`),
+  },
+  {
+    path: 'P/standards/domains/calculate',
+    method: 'POST',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.post(`${S}/domains/calculate`, { nm1: '용어1', nm2: '용어2' }),
+  },
+  {
+    path: 'P/standards/domains',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${S}/domains`, { nm1: '용어1', nm2: `조각${x.seq()}` }),
+  },
+  {
+    path: 'P/standards/domains/{id}',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.put(`${S}/domains/${x.std.domainId}`, { nm1: '용어9', nm2: '용어8' }),
+  },
+  {
+    path: 'P/standards/domains/{id}',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.delete(`${S}/domains/${MISSING}`),
+  },
+  {
+    path: 'P/standards/domains/recalculate',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.post(`${S}/domains/recalculate`, { scope: 'REVIEW_ONLY' }),
+  },
+  {
+    path: 'P/standards/code-classes',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/code-classes`),
+  },
+  {
+    path: 'P/standards/code-classes/{id}',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${S}/code-classes/${x.std.codeClsId}`),
+  },
+  {
+    path: 'P/standards/code-classes/{id}/codes',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${S}/code-classes/${x.std.codeClsId}/codes`),
+  },
+  {
+    path: 'P/standards/code-classes',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.post(`${S}/code-classes`, {
+        bizAreaId: x.bizRpId,
+        codeCls: `M${x.seq()}`,
+        codeClsNm: '매트릭스',
+      }),
+  },
+  {
+    path: 'P/standards/code-classes/{id}',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.put(`${S}/code-classes/${x.std.codeClsId}`, {
+        bizAreaId: x.bizRpId,
+        codeCls: 'RP001',
+        codeClsNm: '코드구분1',
+      }),
+  },
+  {
+    path: 'P/standards/code-classes/{id}',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.delete(`${S}/code-classes/${MISSING}`),
+  },
+  {
+    path: 'P/standards/code-classes/{id}/codes',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.post(`${S}/code-classes/${x.std.codeClsId}/codes`, {
+        code: `M${x.seq()}`,
+        codeNm: '매트릭스',
+      }),
+  },
+  {
+    path: 'P/standards/code-classes/{id}/codes/{codeId}',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.put(`${S}/code-classes/${x.std.codeClsId}/codes/${MISSING}`, { code: 'X', codeNm: 'x' }),
+  },
+  {
+    path: 'P/standards/code-classes/{id}/codes/{codeId}',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c, x) => c.delete(`${S}/code-classes/${x.std.codeClsId}/codes/${MISSING}`),
+  },
+  {
+    path: 'P/standards/default-column-sets',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/default-column-sets`),
+  },
+  {
+    path: 'P/standards/default-column-sets/{id}',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${S}/default-column-sets/${x.std.setId}`),
+  },
+  {
+    path: 'P/standards/default-column-sets',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${S}/default-column-sets`, { setNm: `매트릭스${x.seq()}` }),
+  },
+  {
+    path: 'P/standards/default-column-sets/{id}',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.put(`${S}/default-column-sets/${x.std.setId}`, { setNm: '기본' }),
+  },
+  {
+    path: 'P/standards/default-column-sets/{id}/columns',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.put(`${S}/default-column-sets/${MISSING}/columns`, { columns: [] }),
+  },
+  {
+    path: 'P/standards/default-column-sets/{id}/default',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.put(`${S}/default-column-sets/${x.std.setId}/default`),
+  },
+  {
+    path: 'P/standards/default-column-sets/{id}',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.delete(`${S}/default-column-sets/${MISSING}`),
+  },
+  {
+    path: 'P/standards/audit-logs',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/audit-logs`),
+  },
+  {
+    path: 'P/standards/{kind}/imports/template',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/terms/imports/template`),
+  },
+  {
+    path: 'P/standards/{kind}/imports',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [422],
+    denyByRole: P_DENY,
+    run: (c) => c.post(`${S}/terms/imports`, {}),
+  },
+  {
+    path: 'P/standards/imports/{importId}',
+    method: 'GET',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${S}/imports/${NO_IMPORT}`),
+  },
+  {
+    path: 'P/standards/imports/{importId}/apply',
+    method: 'POST',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.post(`${S}/imports/${NO_IMPORT}/apply`, {}),
+  },
+  {
+    path: 'P/standards/imports/{importId}',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.delete(`${S}/imports/${NO_IMPORT}`),
+  },
+  {
+    path: 'P/search',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${P}/search?q=%EC%9A%A9%EC%96%B4`),
+  },
+];
 
 export const AUTHZ_MATRIX: readonly MatrixRow[] = [
   // ── 인증(§7.3 1행) ─────────────────────────────────────────────
@@ -399,4 +816,5 @@ export const AUTHZ_MATRIX: readonly MatrixRow[] = [
     ok: [409],
     run: (c) => c.delete('/api/v1/admin/templates/STDS', { confirmKey: 'STDS' }),
   },
+  ...STANDARD_ROWS,
 ];

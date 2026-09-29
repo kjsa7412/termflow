@@ -10,6 +10,8 @@ export interface ProjectCtx {
   kind: ProjectKind;
   status: ProjectStatus;
   role: MemberRole;
+  /** 요청자가 시스템 관리자인지(템플릿 표준 편집 허용 판정, §4.6). */
+  sysAdmin: boolean;
 }
 
 declare module 'express-serve-static-core' {

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import type { StdType } from '@termflow/shared';
 import type { Db } from '../db/client.js';
 import { stdDomainCls, stdTerm } from '../db/schema.js';
@@ -16,7 +16,8 @@ export async function loadL1Snapshot(q: SelectExecutor, projectId: number): Prom
   const terms = await q
     .select({ kor: stdTerm.termKor, physical: stdTerm.termPhysical, id: stdTerm.termId })
     .from(stdTerm)
-    .where(eq(stdTerm.projectId, projectId));
+    // 반려(REJECTED) 용어는 미등록과 같다(§5.1 자동완성 대상 = APPROVED·PENDING)
+    .where(and(eq(stdTerm.projectId, projectId), ne(stdTerm.status, 'REJECTED')));
   const cls = await q
     .select({
       id: stdDomainCls.domainClsId,

@@ -163,6 +163,7 @@ describe('ProjectRoleGuard', () => {
       kind: 'PROJECT',
       status: 'ACTIVE',
       role: 'EDITOR',
+      sysAdmin: false,
     });
   });
   it('역할 부족 403, 비멤버·없는 키·형식 오류·템플릿 404', async () => {

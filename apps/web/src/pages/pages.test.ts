@@ -5,7 +5,7 @@ import { createMemoryHistory } from 'vue-router';
 import { api } from '../api/client.js';
 import { createAppRouter } from '../router.js';
 import { useSessionStore } from '../stores/session.js';
-import { fakeFetch, json, problem, type Handler } from '../test-utils.js';
+import { fakeFetch, json, problem, type Handler, untilRoute } from '../test-utils.js';
 import AdminUsersPage from './AdminUsersPage.vue';
 import LoginPage from './LoginPage.vue';
 import MePage from './MePage.vue';
@@ -48,7 +48,7 @@ describe('LoginPage', () => {
     const login = calls.find((c) => c.path === '/api/v1/auth/login')!;
     expect(login.body).toBe('loginId=admin&password=secret-pw1');
     expect(login.headers['x-xsrf-token']).toBe('T');
-    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/admin/users'));
+    await untilRoute(router, '/admin/users');
     expect(useSessionStore().user?.loginId).toBe('admin');
     w.unmount();
   });
@@ -117,7 +117,7 @@ describe('MePage — 강제 변경 모드(/me?forcePassword=1)', () => {
       currentPassword: 'Init#pass12',
       newPassword: 'Fresh#2026ok',
     });
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/projects'));
+    await untilRoute(router, '/projects');
     expect(session.mustChangePassword).toBe(false);
   });
 

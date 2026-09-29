@@ -22,6 +22,27 @@ beforeAll(async () => {
     "select b.biz_cd, b.biz_area_id from prj_biz_area b join tf_project p using (project_id) where p.project_key = 'PRJA'",
   );
   const bizId = (cd: string) => biz.rows.find((r) => r.biz_cd === cd)!.biz_area_id as number;
+  const one = async (q: string) => (await t.pool.query(q)).rows[0].id as number;
+  const PRJA = "(select project_id from tf_project where project_key = 'PRJA')";
+  const std = {
+    termId: await one(
+      `select term_id id from std_term where project_id = ${PRJA} and term_kor = '용어2'`,
+    ),
+    pendingApproveId: await one(
+      `select term_id id from std_term where project_id = ${PRJA} and term_kor = '용어49'`,
+    ),
+    pendingRejectId: await one(
+      `select term_id id from std_term where project_id = ${PRJA} and term_kor = '용어50'`,
+    ),
+    domainId: await one(`select max(domain_id) id from std_domain where project_id = ${PRJA}`),
+    domainClsId: await one(
+      `select domain_cls_id id from std_domain_cls where project_id = ${PRJA} and suffix = 'SFX01'`,
+    ),
+    codeClsId: await one(
+      `select code_cls_id id from std_code_cls where project_id = ${PRJA} and code_cls = 'RP001'`,
+    ),
+    setId: await one(`select set_id id from std_default_col_set where project_id = ${PRJA}`),
+  };
   let n = 0;
   ctx = {
     targetUserId: rows[0].user_id as number,
@@ -30,6 +51,7 @@ beforeAll(async () => {
     bizRpId: bizId('RP'),
     bizPsId: bizId('PS'),
     paUserId: pa.rows[0].user_id as number,
+    std,
   };
   setTestEnv(t.url);
   app = await createTestApp();
@@ -55,7 +77,7 @@ describe('권한 매트릭스(§7.3)', () => {
     console.log(
       `[authz-matrix] 행 ${AUTHZ_MATRIX.length} × 역할 ${ROLES.length} = ${cases.length}건`,
     );
-    expect(AUTHZ_MATRIX.length).toBeGreaterThanOrEqual(38);
+    expect(AUTHZ_MATRIX.length).toBeGreaterThanOrEqual(84);
   });
 
   it.each(cases.map((c) => [`${c.row.method} ${c.row.path}`, c.role, c] as const))(

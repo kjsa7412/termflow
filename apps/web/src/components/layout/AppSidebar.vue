@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { APP_NAME, MEMBER_ROLE_RANK, type MyProject } from '@termflow/shared';
+import { standardsApi } from '../../api/standards.js';
 import { useSessionStore } from '../../stores/session.js';
 import TfIcon from '../ui/TfIcon.vue';
 import TfPopover from '../ui/TfPopover.vue';
@@ -65,6 +66,45 @@ function isActive(i: NavItem): boolean {
   return i.projectPath === ''
     ? route.path === t
     : route.path === t || route.path.startsWith(`${t}/`);
+}
+// 승인 큐 PENDING 배지(§4.5: 화면 진입·30초 폴링) — 프로젝트 관리자(시스템 관리자)에게만
+const pendingCnt = ref(0);
+const PENDING_POLL_MS = 30_000;
+const std = standardsApi();
+const canApprove = computed(
+  () =>
+    current.value !== null &&
+    (session.isSysAdmin || current.value.role === 'ADMIN') &&
+    current.value.status !== 'ARCHIVED',
+);
+let timer: ReturnType<typeof setInterval> | null = null;
+async function pollPending(): Promise<void> {
+  const key = current.value?.key;
+  if (!key || !canApprove.value) {
+    pendingCnt.value = 0;
+    return;
+  }
+  try {
+    const r = await std.approvalCount(key);
+    if (current.value?.key === key) pendingCnt.value = r.pending;
+  } catch {
+    /* 배지는 부가 정보 — 실패해도 조용히 둔다 */
+  }
+}
+watch(
+  () => [current.value?.key, canApprove.value, route.path] as const,
+  () => {
+    void pollPending();
+    if (timer) clearInterval(timer);
+    timer = canApprove.value ? setInterval(() => void pollPending(), PENDING_POLL_MS) : null;
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer);
+});
+function badgeOf(i: NavItem): number {
+  return i.badge === 'pending-terms' ? pendingCnt.value : 0;
 }
 const version = __APP_VERSION__;
 </script>
@@ -131,6 +171,13 @@ const version = __APP_VERSION__;
             :title="i.label"
           >
             <TfIcon :name="i.icon" /><span>{{ i.label }}</span>
+            <span
+              v-if="badgeOf(i) > 0"
+              class="nav-badge"
+              :aria-label="`검토대기 ${badgeOf(i)}건`"
+              data-testid="pending-badge"
+              >{{ badgeOf(i) }}</span
+            >
           </RouterLink>
           <span
             v-else

@@ -14,6 +14,7 @@ import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UserModule } from './user/user.module.js';
 import { ProjectModule } from './project/project.module.js';
+import { StandardModule } from './standard/standard.module.js';
 import { webStaticModules } from './web-static.js';
 
 @Module({
@@ -34,6 +35,7 @@ import { webStaticModules } from './web-static.js';
     AuthModule,
     UserModule,
     ProjectModule,
+    StandardModule,
     ...webStaticModules(),
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemDetailFilter }],

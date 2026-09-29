@@ -251,6 +251,35 @@ export const API_ERROR_CODES = {
   E_MEMBER_DUP: '이미 이 프로젝트의 멤버입니다',
   E_USER_INACTIVE: '비활성 사용자는 멤버로 추가할 수 없습니다',
   E_DEFAULT_COL_SET_NOT_FOUND: '이 프로젝트의 기본컬럼 세트가 아닙니다',
+  // 표준 사전(단계 6, CR-05)
+  E_TERM_DUP: '같은 한글 용어가 있습니다',
+  E_TERM_KOR_EMPTY: '한글 용어를 입력하세요',
+  E_TERM_KOR_LEN: '한글 용어는 100자 이내입니다',
+  E_TERM_PHYSICAL_EMPTY: '물리약어를 입력하세요',
+  E_TERM_PHYSICAL_FORMAT: '물리약어는 영대문자·숫자·_만 쓸 수 있습니다',
+  E_TERM_PHYSICAL_LEN: '물리약어는 30자 이내입니다',
+  E_TERM_NOT_PENDING: '검토대기 상태가 아닌 용어입니다',
+  E_TERM_PENDING_DELETE: '검토대기 용어는 승인 큐에서 승인·반려하세요',
+  E_SUFFIX_EMPTY: '접미어를 입력하세요',
+  E_SUFFIX_FORMAT: '접미어는 영대문자·숫자·_만 쓸 수 있습니다',
+  E_DOMAIN_CLS_DUP: '같은 접미어가 있습니다',
+  E_DOMAIN_CLS_IN_USE: '이 접미어를 쓰는 도메인이 있습니다',
+  E_DOMAIN_DUP: '같은 논리명의 도메인이 있습니다',
+  E_DOMAIN_PARTS_EMPTY: '명칭 1을 입력하세요',
+  E_TYPE_UNKNOWN: '표준 타입 12종 중 하나여야 합니다',
+  E_CODE_CLS_DUP: '같은 업무구분에 같은 코드구분이 있습니다',
+  E_CODE_DUP: '같은 코드구분에 같은 코드가 있습니다',
+  E_BIZ_AREA_INACTIVE: '사용 중지된 업무구분에는 코드구분을 추가할 수 없습니다',
+  E_DEFAULT_COL_SET_DUP: '같은 이름의 기본컬럼 세트가 있습니다',
+  E_DEFAULT_COL_DUP: '세트 안에 같은 물리명의 기본컬럼이 있습니다',
+  E_DEFAULT_COL_SET_DEFAULT: '기본 세트는 다른 세트를 기본으로 지정한 뒤 삭제할 수 있습니다',
+  E_IMPORT_NOT_FOUND: '일괄 등록 미리보기가 없거나 만료되었습니다(30분)',
+  E_IMPORT_FILE: 'xlsx 파일이 아니거나 읽을 수 없습니다',
+  E_IMPORT_HEADER: '템플릿 헤더와 다릅니다',
+  E_IMPORT_ROWS_MAX: '행 수 상한을 넘었습니다',
+  E_IMPORT_EMPTY: '데이터 행이 없습니다',
+  E_IMPORT_HAS_ERRORS: '오류 행이 있어 적용하지 않았습니다',
+  E_IMPORT_FILE_DUP: '파일 안에서 같은 키가 앞 행에 있습니다',
 } as const;
 export type ApiErrorCode = keyof typeof API_ERROR_CODES;
 
@@ -265,3 +294,16 @@ export const COPY_WARNING_CODES = {
   W_COPY_NO_DEFAULT_COL_SET: '기본컬럼 세트가 없어 프로젝트 기본 세트를 지정하지 않았습니다',
 } as const;
 export type CopyWarningCode = keyof typeof COPY_WARNING_CODES;
+
+/**
+ * 표준 사전 쓰기·일괄 등록 경고(단계 6, 설계서 §4.5 R8·§5.2 10단계). 저장은 되고 응답 `warnings[]`·미리보기 행에 실린다.
+ */
+export const STD_WARNING_CODES = {
+  W_TERM_PHYSICAL_SHARED: '같은 물리약어를 쓰는 다른 용어가 있습니다(R8)',
+  W_TERM_UNREGISTERED: '미등록 조각이 있어 물리명을 만들지 않았습니다(검토필요)',
+  W_SUFFIX_UNREGISTERED: '접미어가 도메인분류에 없어 타입을 정하지 못했습니다(검토필요)',
+  W_PHYS_LEN: '물리명이 63자를 넘어 저장하지 않았습니다(검토필요)',
+  W_DOMAIN_LOGICAL_MISMATCH: '명칭 조각 연결이 논리명과 다릅니다(검토필요)',
+  W_DOMAIN_CLS_IN_USE: '이 접미어를 쓰는 도메인의 분류 연결이 해제됩니다',
+} as const;
+export type StdWarningCode = keyof typeof STD_WARNING_CODES;

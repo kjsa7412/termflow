@@ -28,5 +28,8 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'jsdom',
+    // jsdom 환경 준비가 병렬 실행(서버 테스트와 동시)에서 수 초씩 걸린다 — 기본 5초 제한 대신 넉넉히(CR-05 C1).
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
   },
 });

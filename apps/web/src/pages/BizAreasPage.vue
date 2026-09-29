@@ -240,6 +240,9 @@ async function remove(): Promise<void> {
         </p>
       </div>
       <div v-if="canWrite" class="page-actions">
+        <RouterLink class="btn btn-ghost" :to="`/projects/${key}/standards/biz-areas/import`"
+          ><TfIcon name="upload" />일괄 등록</RouterLink
+        >
         <TfButton variant="primary" icon="plus" :aria-expanded="adding" @click="openAdd"
           >업무구분 추가</TfButton
         >

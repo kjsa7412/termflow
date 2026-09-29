@@ -12,6 +12,7 @@ import type {
   StdType,
   TableStatus,
   TermStatus,
+  TypeSource,
 } from '../enums.js';
 import type { ValidationIssue } from './problem.js';
 
@@ -434,4 +435,318 @@ export interface DdlResponse {
   sql: string;
   files: { name: string; size: number }[];
   warnings: ValidationIssue[];
+}
+
+// ── 표준 사전(단계 6, §9.3·§9.4·§8.5) ───────────────────────────────────────
+/** 같은 물리약어를 쓰는 다른 용어(R8 경고·승인 큐 충돌 표시). */
+export interface TermRef {
+  termId: number;
+  termKor: string;
+  termPhysical: string | null;
+  status: TermStatus;
+}
+export interface TermItem {
+  termId: number;
+  termKor: string;
+  termPhysical: string | null;
+  description: string | null;
+  synonymRef: string | null;
+  status: TermStatus;
+  reviewYn: boolean;
+  reviewNote: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  /** 같은 물리약어를 쓰는 다른 용어 수(0이면 공유 없음). */
+  sharedCnt: number;
+  createdBy: string;
+  createdAt: string;
+  updatedBy: string;
+  updatedAt: string;
+}
+export interface TermPage extends Page<TermItem> {
+  /** 상태 세그먼트 건수(검색어 반영, 상태 필터 제외). */
+  counts: { all: number; approved: number; pending: number; rejected: number; shared: number };
+}
+/** 용어 저장 응답: 저장된 용어 + R8 경고(같은 물리약어 기존 용어). */
+export interface TermSaveResponse {
+  term: TermItem;
+  physicalConflicts: TermRef[];
+  warnings: ValidationIssue[];
+}
+export interface TermCheckResponse {
+  korExists: boolean;
+  korTerm: TermRef | null;
+  physicalUsedBy: TermRef[];
+}
+export interface TermDetail {
+  term: TermItem;
+  physicalConflicts: TermRef[];
+  /** 이 용어를 명칭 조각으로 쓰는 도메인 수(삭제·물리약어 변경 영향). */
+  domainCnt: number;
+}
+
+/** 승인 큐 항목(§4.5, 목업 11). */
+export interface ApprovalItem extends TermItem {
+  /** 같은 물리약어를 쓰는 다른 용어(충돌 경고). */
+  physicalConflicts: TermRef[];
+  /** 논리명에 이 한글 용어가 들어 있는 컬럼 수(영향 추정). */
+  columnCnt: number;
+  /** 컬럼 예시(테이블 물리명 · 컬럼 논리명) 최대 3건. */
+  columnSamples: { tableNm: string; logicalNm: string }[];
+}
+export interface ApprovalPage extends Page<ApprovalItem> {
+  counts: { pending: number; processed: number };
+}
+export interface ApprovalBatchResponse {
+  approved: number;
+  termIds: number[];
+}
+
+export interface DomainClsItem {
+  domainClsId: number;
+  suffix: string;
+  clsNm: string;
+  colType: StdType;
+  colLength: number | null;
+  colScale: number | null;
+  typeText: string;
+  description: string | null;
+  reviewYn: boolean;
+  /** 이 분류에 연결된 도메인 수. */
+  domainCnt: number;
+  /** 예시 도메인(논리명·물리명) 1건. */
+  sample: { logicalNm: string; physicalNm: string | null } | null;
+  updatedBy: string;
+  updatedAt: string;
+}
+export interface DomainClsPage extends Page<DomainClsItem> {
+  counts: { all: number; review: number };
+}
+export interface DomainClsSaveResponse {
+  domainCls: DomainClsItem;
+  warnings: ValidationIssue[];
+}
+export interface DomainClsDeleteResponse {
+  /** 분류 연결이 해제(domain_cls_id NULL)된 도메인 수. */
+  unlinkedDomains: number;
+}
+
+/** L1 조각 결과(도메인 미리보기·목록 표시). */
+export interface DomainPiece {
+  kor: string;
+  physical: string;
+  matched: boolean;
+  numeric: boolean;
+}
+export interface DomainItem {
+  domainId: number;
+  nm: (string | null)[];
+  logicalNm: string;
+  physicalNm: string | null;
+  descr: string | null;
+  suffix: string | null;
+  domainClsId: number | null;
+  colType: StdType | null;
+  colLength: number | null;
+  colScale: number | null;
+  typeText: string | null;
+  typeSource: TypeSource;
+  reviewYn: boolean;
+  reviewNote: string | null;
+  updatedBy: string;
+  updatedAt: string;
+}
+export interface DomainPage extends Page<DomainItem> {
+  counts: { all: number; review: number; noPhysical: number; manual: number };
+}
+export interface DomainDetail {
+  domain: DomainItem;
+  pieces: DomainPiece[];
+  /** 이 도메인에 연결된 컬럼 수(삭제 시 연결 해제). */
+  columnCnt: number;
+}
+/** L1 미리보기(POST P/standards/domains/calculate, §5.2). */
+export interface DomainCalcResult {
+  logicalNm: string;
+  /** 저장될 물리명(미등록 조각·형식 위반이면 null). */
+  physicalNm: string | null;
+  /** 조립 결과(미등록 조각은 한글 그대로 — 화면 표시용). */
+  assembledPhysical: string;
+  descr: string;
+  suffix: string | null;
+  domainClsId: number | null;
+  colType: StdType | null;
+  colLength: number | null;
+  colScale: number | null;
+  typeText: string | null;
+  typeSource: TypeSource;
+  pieces: DomainPiece[];
+  notFound: string[];
+  /** 저장 시 review_yn이 켜질 사유(비어 있으면 정상). */
+  reviewReasons: string[];
+  /** 같은 논리명의 기존 도메인(있으면 저장 409). */
+  duplicate: { domainId: number; logicalNm: string } | null;
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+}
+export interface DomainSaveResponse {
+  domain: DomainItem;
+  warnings: ValidationIssue[];
+}
+export interface DomainRecalcReportRow {
+  domainId: number;
+  logicalNm: string;
+  changes: Record<string, [unknown, unknown]>;
+  reviewYn: boolean;
+  reviewNote: string | null;
+}
+export interface DomainRecalcResponse {
+  scope: 'REVIEW_ONLY' | 'ALL_AUTO';
+  /** 대상 행 수(REVIEW_ONLY = 검토필요 도메인, ALL_AUTO = AUTO 도메인). */
+  target: number;
+  updated: number;
+  /** 검토필요가 해제된 수. */
+  resolved: number;
+  /** 대상 중 재계산 후에도 검토필요로 남은 수. */
+  stillReview: number;
+  batchId: string | null;
+  elapsedMs: number;
+  /** 바뀐 행(최대 1,000행). */
+  report: DomainRecalcReportRow[];
+}
+
+export interface CodeClsItem {
+  codeClsId: number;
+  bizAreaId: number;
+  bizCd: string;
+  bizNm: string;
+  bizUseYn: boolean;
+  codeCls: string;
+  codeClsNm: string;
+  description: string | null;
+  codeCnt: number;
+  activeCodeCnt: number;
+  /** 이 코드구분을 참조하는 컬럼 수. */
+  columnCnt: number;
+  updatedBy: string;
+  updatedAt: string;
+}
+export interface CodeItem {
+  codeId: number;
+  codeClsId: number;
+  code: string;
+  codeNm: string;
+  sortOrder: number | null;
+  isActive: boolean;
+  updatedBy: string;
+  updatedAt: string;
+}
+export interface CodeClsDetail {
+  codeCls: CodeClsItem;
+  codes: CodeItem[];
+  /** 참조 컬럼 예시(테이블.컬럼) 최대 3건. */
+  columnSamples: string[];
+}
+export interface CodeClsDeleteResponse {
+  deletedCodes: number;
+  affectedColumns: number;
+}
+
+export interface DefaultColItem {
+  defaultColId: number;
+  colSeq: number;
+  logicalNm: string;
+  physicalNm: string;
+  isPk: boolean;
+  dataType: StdType;
+  dataLength: number | null;
+  dataScale: number | null;
+  typeText: string;
+  isNullable: boolean;
+  defaultVal: string | null;
+  colComment: string | null;
+}
+export interface DefaultColSetItem {
+  setId: number;
+  setNm: string;
+  description: string | null;
+  isDefault: boolean;
+  colCnt: number;
+  columns: DefaultColItem[];
+  /** 이 세트의 기본컬럼을 참조하는 테이블 컬럼 수. */
+  columnRefCnt: number;
+  updatedBy: string;
+  updatedAt: string;
+}
+
+export interface AuditLogItem {
+  auditId: number;
+  entityType: StdEntityType;
+  entityId: number;
+  action: string;
+  before: unknown;
+  after: unknown;
+  /** before/after에서 바뀐 필드(UPDATE·IMPORT·APPROVE 등). */
+  changedFields: string[];
+  batchId: string | null;
+  actor: string;
+  actorIp: string | null;
+  actedAt: string;
+}
+
+export interface SearchResponse {
+  terms: { termId: number; termKor: string; termPhysical: string | null; status: TermStatus }[];
+  domains: {
+    domainId: number;
+    logicalNm: string;
+    physicalNm: string | null;
+    typeText: string | null;
+    reviewYn: boolean;
+  }[];
+  /** 테이블 검색은 T7.9에서 추가(현재는 빈 배열). */
+  tables: { tableId: number; tableNm: string; logicalNm: string; bizCd: string }[];
+}
+
+// ── 엑셀 일괄 등록(§9.4) ────────────────────────────────────────────────────
+export interface ImportIssue {
+  code: string;
+  message: string;
+  field?: string;
+}
+export interface ImportRow {
+  rowNo: number;
+  status: 'NEW' | 'UPDATE' | 'SKIP' | 'ERROR';
+  /** 키(용어 = 한글용어, 도메인 = 계산 논리명, 코드 = 업무구분/코드구분/코드 …). */
+  key: string;
+  values: Record<string, string | number | boolean | null>;
+  /** 갱신 행의 바뀌는 필드 [기존, 새 값]. */
+  changes: Record<string, [unknown, unknown]>;
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
+}
+export interface ImportSummary {
+  new: number;
+  update: number;
+  skip: number;
+  error: number;
+  warn: number;
+}
+export interface ImportPreview extends Page<ImportRow> {
+  importId: string;
+  kind: string;
+  fileName: string;
+  totalRows: number;
+  summary: ImportSummary;
+  /** 표시 열(템플릿 헤더 순서 + 계산 열, 값 키 = values의 키). computed = 서버 계산 값(도메인 L1 결과 등). */
+  columns: { key: string; label: string; required: boolean; computed?: boolean }[];
+  createdAt: string;
+  expiresAt: string;
+  elapsedMs: number;
+}
+export interface ImportApplyResponse {
+  applied: { new: number; update: number };
+  skipped: number;
+  errors: number;
+  batchId: string;
+  elapsedMs: number;
 }
