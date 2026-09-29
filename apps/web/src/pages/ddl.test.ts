@@ -139,6 +139,17 @@ const bodies = (calls: FakeRequest[], method: string, path: string) =>
   calls.filter((c) => c.method === method && c.path === path).map((c) => JSON.parse(c.body!));
 const button = (w: VueWrapper, text: string) =>
   w.findAll('button').find((b) => b.text().includes(text))!;
+/**
+ * 조건이 참이 될 때까지 기다린다(미리보기 디바운스 300ms + 비동기 조회). 고정 시간 대기는 병렬 부하에서 조회 사슬이 늦게 끝나면
+ * 흔들리므로 조건 대기로 쓰고 제한은 넉넉히 둔다(CR-05 C1·CR-06 §4).
+ */
+const until = (cond: () => boolean) =>
+  vi.waitFor(
+    () => {
+      if (!cond()) throw new Error('조건 대기');
+    },
+    { timeout: 20_000, interval: 20 },
+  );
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -275,9 +286,7 @@ describe('TablesPage(09)', () => {
       global: { plugins: [pinia, router] },
       attachTo: document.body,
     });
-    await flushPromises();
-    await new Promise((r) => setTimeout(r, 350));
-    await flushPromises();
+    await until(() => e.find('[data-testid="ddl-code"]').exists());
     expect(e.get('[data-testid="selected-tables"]').text()).toContain('RP_A');
     expect(e.get('[data-testid="ddl-code"]').text()).toContain('CREATE TABLE RP_A (');
     await e.get('[data-testid="download-primary"]').trigger('click');
@@ -314,9 +323,7 @@ describe('DdlExportPage(10)', () => {
       global: { plugins: [pinia, router] },
       attachTo: document.body,
     });
-    await flushPromises();
-    await new Promise((r) => setTimeout(r, 350));
-    await flushPromises();
+    await until(() => w.find('[data-testid="ddl-code"]').exists());
     // 순서 = 진입 순서(RP_B, RP_A)
     const names = w
       .get('[data-testid="selected-tables"]')
@@ -326,7 +333,11 @@ describe('DdlExportPage(10)', () => {
     expect(w.get('[data-testid="ddl-warnings"]').text()).toContain('PK 없음');
 
     await w.get('[data-testid="ddl-options"]').findAll('input[type="checkbox"]')[0]!.setValue(true);
-    await new Promise((r) => setTimeout(r, 350));
+    await until(
+      () =>
+        (bodies(calls, 'POST', `${P}/ddl`).at(-1) as { options?: { dropIfExists?: boolean } })
+          .options?.dropIfExists === true,
+    );
     await flushPromises();
     expect(bodies(calls, 'POST', `${P}/ddl`).at(-1)).toMatchObject({
       tableIds: [2, 1],
@@ -376,15 +387,12 @@ describe('DdlExportPage(10)', () => {
       global: { plugins: [pinia, router] },
       attachTo: document.body,
     });
-    await flushPromises();
-    await new Promise((r) => setTimeout(r, 350));
-    await flushPromises();
+    await until(() => w.find('[data-testid="ddl-warnings"]').text().includes('예약어'));
     const warn = w.get('[data-testid="ddl-warnings"]');
     expect(warn.text()).toContain('ORDER은(는) PostgreSQL 예약어입니다');
     expect(w.get('[data-testid="download-primary"]').attributes('disabled')).toBeDefined();
     await button(w, '오류 테이블 제외').trigger('click');
-    await new Promise((r) => setTimeout(r, 350));
-    await flushPromises();
+    await until(() => w.find('[data-testid="ddl-code"]').exists());
     expect(w.get('[data-testid="selected-tables"]').text()).not.toContain('RP_C');
     expect(w.get('[data-testid="ddl-code"]').text()).toContain('CREATE TABLE RP_A (');
     expect(w.get('[data-testid="download-primary"]').attributes('disabled')).toBeUndefined();
