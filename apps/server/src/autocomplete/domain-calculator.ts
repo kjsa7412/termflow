@@ -68,6 +68,15 @@ export interface L1Result {
   /** 미등록(또는 physical NULL) 조각, 입력 순서·중복 유지. */
   readonly notFound: readonly string[];
   readonly issues: readonly L1Issue[];
+  /** 조각별 결과(화면의 조각 배지·미리보기): 한글 조각, 물리약어(미등록이면 upper fallback), 등록 여부, 숫자 여부. */
+  readonly pieces: readonly L1Piece[];
+}
+
+export interface L1Piece {
+  readonly kor: string;
+  readonly physical: string;
+  readonly matched: boolean;
+  readonly numeric: boolean;
 }
 
 /** 식별자 길이 상한(PostgreSQL, §5.7). */
@@ -103,19 +112,25 @@ export function calculateDomain(input: L1Input, snap: L1Snapshot): L1Result {
   }
 
   // 3단계 용어 조회 → 조각별 물리약어
+  const pieces: L1Piece[] = [];
   const phys = parts.map((part) => {
-    if (isNumPart(part)) return part;
+    if (isNumPart(part)) {
+      pieces.push({ kor: part, physical: part, matched: true, numeric: true });
+      return part;
+    }
     const term = snap.termByKor.get(part);
     if (!term || term.physical === null || term.physical === '') {
       notFound.push(part);
+      pieces.push({ kor: part, physical: part.toUpperCase(), matched: false, numeric: false });
       return part.toUpperCase();
     }
+    pieces.push({ kor: part, physical: term.physical, matched: true, numeric: false });
     return term.physical;
   });
 
   // 4~6단계 논리명·물리명·설명
-  const join = (pieces: readonly string[]) =>
-    pieces.map((piece, i) => (i === 0 || isNumPart(parts[i]!) ? piece : `_${piece}`)).join('');
+  const join = (list: readonly string[]) =>
+    list.map((piece, i) => (i === 0 || isNumPart(parts[i]!) ? piece : `_${piece}`)).join('');
   const logicalNm = parts.join('');
   const physicalNm = join(phys);
   const descr = join(parts);
@@ -186,5 +201,6 @@ export function calculateDomain(input: L1Input, snap: L1Snapshot): L1Result {
     typeText: typeText(colType, colLength, colScale),
     notFound,
     issues,
+    pieces,
   };
 }

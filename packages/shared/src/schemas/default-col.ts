@@ -7,6 +7,7 @@ export const defaultColSetInputSchema = z.object({
   setNm: text(50, 1),
   description: optionalText(200),
 });
+export type DefaultColSetInput = z.infer<typeof defaultColSetInputSchema>;
 export const defaultColInputSchema = z.object({
   defaultColId: idSchema.nullable().default(null),
   logicalNm: text(100, 1),
