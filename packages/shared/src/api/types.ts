@@ -3,6 +3,7 @@
  */
 import type {
   CopySourceKind,
+  DdlOutputKind,
   Dialect,
   MatchType,
   MemberRole,
@@ -362,6 +363,7 @@ export interface TableSaveResponse {
 
 export interface TableListItem {
   tableId: number;
+  bizAreaId: number;
   bizCd: string;
   tableNm: string;
   logicalNm: string;
@@ -370,7 +372,20 @@ export interface TableListItem {
   colCnt: number;
   updatedBy: string;
   updatedAt: string;
+  /** TableValidator 재검증(§5.7, DDL 생성과 같은 규칙) 결과 건수. */
+  errorCnt: number;
   warningCnt: number;
+  /** 검증 요약(앞 3건 메시지, 목록 배지 툴팁). */
+  issues: { code: string; message: string }[];
+  reviewYn: boolean;
+  reviewNote: string | null;
+}
+
+/** GET P/tables — 목록 + 좌측 업무구분 건수(§9.3 bizAreaCounts) + 상태 세그먼트 건수(검색·업무구분 필터 적용 후). */
+export interface TablePage extends Page<TableListItem> {
+  bizAreaCounts: { bizAreaId: number; cnt: number }[];
+  allCnt: number;
+  statusCounts: Record<TableStatus, number>;
 }
 
 // ── 자동완성(§5.4) ──────────────────────────────────────────────────────────
@@ -429,12 +444,52 @@ export interface TermInlineResponse {
 }
 
 // ── DDL ─────────────────────────────────────────────────────────────────────
+/** 테이블 1개의 생성 결과(미리보기 이동·"이 테이블만 복사"). */
+export interface DdlTableResult {
+  tableId: number | null;
+  tableNm: string;
+  logicalNm: string;
+  bizCd: string | null;
+  status: TableStatus | null;
+  version: number | null;
+  colCnt: number;
+  sql: string;
+  warningCnt: number;
+}
+
 export interface DdlResponse {
   dialect: Dialect;
   tableCnt: number;
+  /** SINGLE 기준 전체 DDL(헤더 1개 + 테이블 블록, §6.10). */
   sql: string;
+  /** 다운로드 시 만들어질 파일(SINGLE: .sql 1개, PER_TABLE: ZIP 안 파일들). */
   files: { name: string; size: number }[];
+  tables: DdlTableResult[];
   warnings: ValidationIssue[];
+}
+
+/** POST P/ddl/extract output=JSON(§6.11 미리보기). */
+export interface DdlExtractResponse {
+  dialect: Dialect;
+  tableCnt: number;
+  rowCnt: number;
+  text: string;
+  fileName: string;
+}
+
+/** GET P/export-logs(§3.5.15). */
+export interface ExportLogItem {
+  exportId: number;
+  dialect: Dialect;
+  outputKind: DdlOutputKind;
+  tableIds: number[];
+  tableCnt: number;
+  warningCnt: number;
+  /** 첫 테이블 물리명(“3개 (RP_PLND_MST 외)” 표시용). 삭제된 테이블이면 null. */
+  firstTableNm: string | null;
+  exportedBy: string;
+  exportedByNm: string | null;
+  exportedAt: string;
 }
 
 // ── 표준 사전(단계 6, §9.3·§9.4·§8.5) ───────────────────────────────────────

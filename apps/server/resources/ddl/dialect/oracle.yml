@@ -1,0 +1,24 @@
+# 표준 타입 → Oracle(19c 기준) 매핑(설계서 §6.3). D2 확정: MVP는 PostgreSQL만 구현 — 이 파일은 **데이터로만** 유지한다(2차 구현 대상).
+# pattern 자리표시자: {n} 길이, {p} 정밀도(=길이), {s} 스케일. [ … ]는 안의 자리표시자 값이 모두 있을 때만 출력한다.
+dialect: ORACLE
+identifierMaxLength: 30
+quote: '"'
+types:
+  VARCHAR: { pattern: 'VARCHAR2({n} CHAR)', maxLength: 4000, overflow: 'CLOB', warnBytesOver: 1333 }
+  CHAR: { pattern: 'CHAR({n} CHAR)' }
+  TEXT: { pattern: 'CLOB' }
+  SMALLINT: { pattern: 'NUMBER(5)' }
+  INT: { pattern: 'NUMBER(10)' }
+  BIGINT: { pattern: 'NUMBER(19)' }
+  NUMERIC: { pattern: 'NUMBER({p}[,{s}])' }
+  DATE: { pattern: 'DATE' }
+  TIMESTAMP: { pattern: 'TIMESTAMP[({n})]' }
+  BOOLEAN: { pattern: 'NUMBER(1)' }
+  JSONB: { pattern: 'JSON' }
+  BYTEA: { pattern: 'BLOB' }
+defaults:
+  CURRENT_TIMESTAMP: 'SYSTIMESTAMP'
+  CURRENT_DATE: 'TRUNC(SYSDATE)'
+  'TRUE': '1'
+  'FALSE': '0'
+columnAttributeOrder: [DEFAULT, NULLABILITY]
