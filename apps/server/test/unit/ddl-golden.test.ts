@@ -1,26 +1,17 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { ddlOptionsSchema, type DdlOptions } from '@termflow/shared';
+import { ddlOptionsSchema } from '@termflow/shared';
 import { dialectFor } from '../../src/ddl/dialects.js';
 import { generateTable } from '../../src/ddl/generator.js';
 import { validateTable } from '../../src/ddl/validator.js';
-import { GOLDEN_META, rp33Models } from './rp33.js';
+import { GOLDEN_DIR, GOLDEN_META, GOLDEN_OPTION_SETS, rp33Models } from './rp33.js';
 
 /**
  * 골든 파일(T7.10, 설계서 §6.12 — D2로 33 × PostgreSQL × 옵션 2 = 66 파일). 승계 스냅샷 `test/seed/rp33.sql`의 33 테이블을
  * 기본 옵션(D15)·`dropIfExists + CHECK`로 생성해 `test/ddl/golden/postgresql/{default,drop-check}/{TABLE}.sql`과 문자열 비교한다.
  * 갱신은 `UPDATE_GOLDEN=1 pnpm --filter @termflow/server test -- ddl-golden`으로만(매핑·예약어·생성 규칙 변경과 같은 커밋에서).
  */
-export const GOLDEN_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../ddl/golden/postgresql',
-);
-export const GOLDEN_OPTION_SETS: Record<string, Partial<DdlOptions>> = {
-  default: {},
-  'drop-check': { dropIfExists: true, codeColumnStyle: 'CHECK' },
-};
 const UPDATE = process.env['UPDATE_GOLDEN'] === '1';
 
 const pg = dialectFor('POSTGRESQL');

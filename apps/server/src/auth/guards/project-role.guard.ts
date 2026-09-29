@@ -18,7 +18,7 @@ import {
 import type { Db } from '../../db/client.js';
 import { DRIZZLE } from '../../db/db.module.js';
 import { tfProject, tfProjectMember } from '../../db/schema.js';
-import { PROJECT_ROLE } from '../decorators.js';
+import { PROJECT_READ_ONLY_POST, PROJECT_ROLE } from '../decorators.js';
 
 const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const PROJECT_NOT_FOUND = '프로젝트를 찾을 수 없습니다';
@@ -74,7 +74,11 @@ export class ProjectRoleGuard implements CanActivate {
       throw new ForbiddenProblem();
 
     const status = row.status as ProjectStatus;
-    if (!READ_METHODS.has(req.method)) {
+    const readOnlyPost = this.reflector.getAllAndOverride<boolean>(PROJECT_READ_ONLY_POST, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!READ_METHODS.has(req.method) && !readOnlyPost) {
       if (status === 'ARCHIVED' || (kind === 'TEMPLATE' && !user.isSysAdmin)) {
         throw new ConflictProblem('E_PROJECT_READONLY', API_ERROR_CODES.E_PROJECT_READONLY);
       }

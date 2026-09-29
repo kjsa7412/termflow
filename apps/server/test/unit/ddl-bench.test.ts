@@ -9,7 +9,7 @@ import { GOLDEN_META, rp33Models } from './rp33.js';
 /**
  * T7.13 성능(설계서 §12.1 "DDL 생성: 33 테이블 1초 이내"): 검증 + SINGLE·PER_TABLE 생성 + 정보 추출을 20회 반복해
  * 1회 시간(중앙값·최대)을 기록한다. 순수 렌더링만 잰다(DB 조회·HTTP는 `test:db -- ddl`의 API 측정).
- * 반복 측정은 `pnpm --filter @termflow/server exec vitest bench`(ddl.bench.ts)로도 볼 수 있다.
+ * (Vitest 5는 `bench()` 전역 API가 바뀌어 반복 측정을 이 테스트 안에서 직접 한다 — CR-06.)
  */
 describe('DDL 생성 성능 — RMS 33 테이블', () => {
   it('33 테이블 생성(검증 + SINGLE + PER_TABLE + 정보 추출) 1초 이내', () => {

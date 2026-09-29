@@ -15,6 +15,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { UserModule } from './user/user.module.js';
 import { ProjectModule } from './project/project.module.js';
 import { StandardModule } from './standard/standard.module.js';
+import { TableModule } from './table/table.module.js';
 import { webStaticModules } from './web-static.js';
 
 @Module({
@@ -36,6 +37,7 @@ import { webStaticModules } from './web-static.js';
     UserModule,
     ProjectModule,
     StandardModule,
+    TableModule,
     ...webStaticModules(),
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemDetailFilter }],

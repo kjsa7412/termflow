@@ -1,5 +1,6 @@
 import { and, count, eq, sql } from 'drizzle-orm';
-import type { MatchType, StdType } from '@termflow/shared';
+import { DIALECTS, type MatchType, type StdType } from '@termflow/shared';
+import { isReserved } from '../../ddl/reserved-words.js';
 import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertMigrated } from '../../db/audit.js';
 import { prjBizArea, prjColumn, prjTable, prjTableHistory } from '../../db/schema.js';
@@ -120,6 +121,32 @@ export const tableStep: StepDef = {
       }
     }
     if (dups.length > 0) throw new StepFailure(`R11 테이블 내 물리명 중복: ${dups.join(', ')}`);
+
+    // R11 확장(§6.9, CR-04 C15 → 단계 7): 테이블·컬럼 물리명을 3방언 예약어와 대조 — 리포트만(적재는 계속).
+    // 기본 방언(PostgreSQL) 예약어는 DDL 생성 시 E_RESERVED, 다른 방언은 W_RESERVED_OTHER가 된다.
+    let reservedHits = 0;
+    const reservedCheck = (legacyKey: string, table: string, field: string, name: string) => {
+      for (const d of DIALECTS) {
+        if (!isReserved(d, name)) continue;
+        reservedHits++;
+        report.add('r11_dup_reserved', {
+          rule: 'R11',
+          step: 'TABLE',
+          legacyKey,
+          targetTable: table,
+          targetId: null,
+          field,
+          before: name,
+          after: null,
+          action: 'REVIEW',
+          note: `${d} 예약어 — ${d === 'POSTGRESQL' ? 'E_RESERVED(비인용 DDL 불가)' : 'W_RESERVED_OTHER'}`,
+        });
+      }
+    };
+    for (const t of tables) reservedCheck(t.table_id, 'prj_table', 'table_nm', t.table_nm.trim().toUpperCase());
+    for (const c of columns) {
+      reservedCheck(`${c.table_id}#${c.col_seq}`, 'prj_column', 'physical_nm', c.physical_col_nm.trim().toUpperCase());
+    }
 
     // 같은 물리명 컬럼의 확정 타입(R10 추정용): 물리명 → 파싱된 타입 집합
     const typeByPhysical = new Map<string, Set<string>>();
@@ -423,7 +450,7 @@ export const tableStep: StepDef = {
         { rule: 'R07b', source: c.code + c.r7bSkip, loaded: c.code, excluded: 0, flagged: c.r7bSkip },
         { rule: 'R09', source: tables.length + columns.length, loaded: c.r9, excluded: 0, flagged: 0 },
         { rule: 'R10', source: c.r10Src, loaded: c.r10, excluded: 0, flagged: c.r10Review },
-        { rule: 'R11', source: columns.length, loaded: 0, excluded: 0, flagged: 0 },
+        { rule: 'R11', source: tables.length + columns.length, loaded: 0, excluded: 0, flagged: reservedHits },
         { rule: 'R16', source: columns.length, loaded: c.r16, excluded: 0, flagged: 0 },
         { rule: 'R17', source: tables.length, loaded: 0, excluded: 0, flagged: c.r17 },
         { rule: 'R18', source: columns.length, loaded: c.r18, excluded: 0, flagged: 0 },

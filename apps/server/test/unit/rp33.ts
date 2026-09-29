@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { DdlOptions } from '@termflow/shared';
 import { assembleModels, type ModelRows, type TableRow } from '../../src/ddl/assemble.js';
 import type { DdlMeta, TableModel } from '../../src/ddl/model.js';
 
@@ -57,6 +58,16 @@ export function rp33Models(): Rp33 {
     },
   };
 }
+
+/** 골든 파일 위치·옵션 세트(설계서 §6.12: 기본 · dropIfExists+CHECK). */
+export const GOLDEN_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../ddl/golden/postgresql',
+);
+export const GOLDEN_OPTION_SETS: Record<string, Partial<DdlOptions>> = {
+  default: {},
+  'drop-check': { dropIfExists: true, codeColumnStyle: 'CHECK' },
+};
 
 /** 골든 파일 헤더 고정 메타(생성 시각·생성자 고정 → 파일이 입력에만 의존). */
 export const GOLDEN_META: DdlMeta = {
