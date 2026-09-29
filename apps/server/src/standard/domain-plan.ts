@@ -287,6 +287,12 @@ export function recalcDomain(d: StoredDomain, snap: L1Snapshot): RecalcResult {
   next.reviewYn = reasons.length > 0;
   next.reviewNote = reasons.length > 0 ? reasons.join('; ').slice(0, 500) : null;
 
+  // 검토 여부가 그대로이고 사유 문구만 달라지면(승계 문구 ↔ 재계산 문구) 행을 바꾸지 않는다(불필요한 갱신·감사 방지)
+  const onlyWording = (Object.keys(next) as (keyof RecalcFields)[]).every(
+    (k) => k === 'reviewNote' || next[k] === d[k],
+  );
+  if (onlyWording && next.reviewYn === d.reviewYn && next.reviewYn) next.reviewNote = d.reviewNote;
+
   const changes: Record<string, [unknown, unknown]> = {};
   for (const k of Object.keys(next) as (keyof RecalcFields)[]) {
     if (next[k] !== d[k]) changes[k] = [d[k], next[k]];

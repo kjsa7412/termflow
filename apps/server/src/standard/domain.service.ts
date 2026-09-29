@@ -96,9 +96,9 @@ export function mapDomain(r: DomainRow): DomainItem {
 }
 
 const SORTS = {
-  logicalNm: sql`d.logical_nm`,
-  physicalNm: sql`d.physical_nm`,
-  suffix: sql`d.suffix`,
+  logicalNm: sql`d.logical_nm collate "C"`,
+  physicalNm: sql`d.physical_nm collate "C"`,
+  suffix: sql`d.suffix collate "C"`,
   colType: sql`d.col_type`,
   updatedAt: sql`d.updated_at`,
 } as const;
@@ -136,7 +136,7 @@ export class DomainService {
       rowsOf<DomainRow>(
         this.db,
         sql`select ${COLUMNS} from std_domain d where ${where}
-            order by ${orderBy(q.sort, SORTS, sql`d.logical_nm asc`, sql`d.domain_id asc`)} ${limitOffset(q)}`,
+            order by ${orderBy(q.sort, SORTS, sql`d.logical_nm collate "C" asc`, sql`d.domain_id asc`)} ${limitOffset(q)}`,
       ),
       rowsOf<{ n: number }>(this.db, sql`select count(*)::int n from std_domain d where ${where}`),
       rowsOf<DomainPage['counts']>(

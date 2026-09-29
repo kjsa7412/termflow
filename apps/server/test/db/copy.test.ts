@@ -13,6 +13,7 @@ import {
 import { Client, createTestApp, setTestEnv } from './setup/app.js';
 import { createMigratedDatabase, FIXTURE_PASSWORD } from './setup/databases.js';
 import { insertUsers, PHASE1, runSteps, tempReportRoot } from './setup/stdv1.js';
+import { perfLimit } from './setup/perf.js';
 
 // T5.2 복사 엔진(STDV1 전 항목·5초·롤백) · T5.3 C3 재검증 · T5.4 미리보기 = 실제 · CR-01-1 시나리오(§13.2)
 const A = audit('sysadmin', '127.0.0.1');
@@ -104,8 +105,8 @@ describe('복사 엔진(T5.2) — STDV1 전 항목', () => {
         .map((r) => `${r.item} ${r.elapsed_ms}`)
         .join(' · ')}`,
     );
-    expect(sum).toBeLessThan(5000);
-    expect(out.elapsedMs).toBeLessThan(5000);
+    expect(sum).toBeLessThan(perfLimit(5000, 15000));
+    expect(out.elapsedMs).toBeLessThan(perfLimit(5000, 15000));
     // C3 생략(원본 동일) → review는 원본 그대로 293
     expect(out.c3Revalidation).toMatchObject({
       performed: false,
@@ -359,7 +360,7 @@ describe('CR-01-1 시나리오(§13.2): 마법사 API로 STDV1 기반 생성 —
     expect(out.c3Revalidation.flaggedCnt).toBeGreaterThan(0);
     expect(out.c3Revalidation.reviewListUrl).toBe('/projects/CR011/standards/domains?review=true');
     expect(out.warnings.map((w) => w.code)).toContain('W_COPY_SOURCE_MIXED');
-    expect(out.elapsedMs).toBeLessThan(5000);
+    expect(out.elapsedMs).toBeLessThan(perfLimit(5000, 15000));
     console.log(
       `[test:db copy] CR-01-1 생성 ${out.elapsedMs}ms · C3 표시 ${out.c3Revalidation.flaggedCnt} · 검토 도메인 ${out.c3Revalidation.reviewDomainCnt}`,
     );

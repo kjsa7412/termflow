@@ -8,6 +8,8 @@ export { isoTs, likePattern, rowsOf, type ExecQ } from '../project/sql-util.js';
 /**
  * 표준 사전 목록 공통(T6.1, §9.1): 정렬 화이트리스트 → ORDER BY(마지막에 PK로 안정 정렬), LIMIT/OFFSET.
  * 식별자·정렬 필드는 문자열로 SQL에 넣지 않는다(§12.2) — 화이트리스트 값은 코드에 고정된 `sql` 조각이다.
+ * 문자열 정렬은 `collate "C"`: DB 기본 콜레이션(en_US.utf8)의 한글 비교가 느리다(도메인 4,587건 정렬 약 0.8초 → 수 ms).
+ * 한글 음절(U+AC00~)은 코드 포인트 순서가 가나다순이라 결과 순서도 같다(CR-05 C7).
  */
 export function orderBy(
   sort: readonly string[],

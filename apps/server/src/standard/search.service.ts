@@ -37,7 +37,7 @@ export class SearchService {
              where project_id = ${ctx.projectId} and (term_kor ilike ${like} or term_physical ilike ${like})
              order by case when term_kor = ${term} or term_physical = ${up} then 0
                            when term_kor like ${prefix} or term_physical like ${prefix.toUpperCase()} then 1 else 2 end,
-                      length(term_kor), term_kor
+                      length(term_kor), term_kor collate "C"
              limit ${SEARCH_RESULTS_PER_KIND}`,
       ),
       rowsOf<{
@@ -54,7 +54,7 @@ export class SearchService {
              where project_id = ${ctx.projectId} and (logical_nm ilike ${like} or physical_nm ilike ${like})
              order by case when logical_nm = ${term} or physical_nm = ${up} then 0
                            when logical_nm like ${prefix} or physical_nm like ${prefix.toUpperCase()} then 1 else 2 end,
-                      length(logical_nm), logical_nm
+                      length(logical_nm), logical_nm collate "C"
              limit ${SEARCH_RESULTS_PER_KIND}`,
       ),
     ]);

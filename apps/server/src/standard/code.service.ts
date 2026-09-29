@@ -92,8 +92,8 @@ function mapCode(r: CodeRow): CodeItem {
 
 const SORTS = {
   bizCd: sql`b.sort_no, b.biz_cd`,
-  codeCls: sql`c.code_cls`,
-  codeClsNm: sql`c.code_cls_nm`,
+  codeCls: sql`c.code_cls collate "C"`,
+  codeClsNm: sql`c.code_cls_nm collate "C"`,
   updatedAt: sql`c.updated_at`,
 } as const;
 
@@ -125,7 +125,7 @@ export class CodeService {
       rowsOf<ClsRow>(
         this.db,
         sql`select ${CLS_COLUMNS} from ${CLS_FROM} where ${where}
-            order by ${orderBy(q.sort, SORTS, sql`b.sort_no, b.biz_cd, c.code_cls`, sql`c.code_cls_id`)} ${limitOffset(q)}`,
+            order by ${orderBy(q.sort, SORTS, sql`b.sort_no, b.biz_cd, c.code_cls collate "C"`, sql`c.code_cls_id`)} ${limitOffset(q)}`,
       ),
       rowsOf<{ n: number }>(this.db, sql`select count(*)::int n from ${CLS_FROM} where ${where}`),
     ]);
@@ -176,7 +176,7 @@ export class CodeService {
                ? sql`(x.code ilike ${likePattern(opts.q)} or x.code_nm ilike ${likePattern(opts.q)})`
                : undefined,
            ])}
-           order by x.sort_order nulls last, x.code, x.code_id`,
+           order by x.sort_order nulls last, x.code collate "C", x.code_id`,
     );
     return rows.map(mapCode);
   }

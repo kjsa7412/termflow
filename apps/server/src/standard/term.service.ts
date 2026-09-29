@@ -83,15 +83,18 @@ export function mapTerm(r: TermRow): TermItem {
 }
 
 const SORTS = {
-  termKor: sql`t.term_kor`,
-  termPhysical: sql`t.term_physical`,
+  termKor: sql`t.term_kor collate "C"`,
+  termPhysical: sql`t.term_physical collate "C"`,
   status: sql`t.status`,
   createdAt: sql`t.created_at`,
   updatedAt: sql`t.updated_at`,
 } as const;
 
-const SHARED = sql`exists (select 1 from std_term o where o.project_id = t.project_id
-  and o.term_physical = t.term_physical and o.term_id <> t.term_id)`;
+/** 물리약어를 공유하는 용어(R8): 프로젝트의 중복 물리약어 집합(해시 서브플랜 1회)으로 판정 — 행마다 상관 서브쿼리를 돌리지 않는다. */
+const sharedCond = (
+  projectId: number,
+) => sql`t.term_physical in (select s.term_physical from std_term s
+  where s.project_id = ${projectId} and s.term_physical is not null group by s.term_physical having count(*) > 1)`;
 
 /** 같은 물리약어를 쓰는 다른 용어(R8 — 허용하되 경고). */
 export async function physicalUsers(
@@ -111,7 +114,7 @@ export async function physicalUsers(
     sql`select term_id, term_kor, term_physical, status from std_term
          where project_id = ${projectId} and term_physical = ${physical}
            ${exceptId !== undefined ? sql`and term_id <> ${exceptId}` : sql``}
-         order by term_kor limit 20`,
+         order by term_kor collate "C" limit 20`,
   );
   return rows.map((r) => ({
     termId: r.term_id,
@@ -153,27 +156,31 @@ export class TermService {
     const search = q.q
       ? sql`(t.term_kor ilike ${likePattern(q.q)} or t.term_physical ilike ${likePattern(q.q)})`
       : undefined;
-    const base = [sql`t.project_id = ${pid}`, search, q.shared ? SHARED : undefined];
+    const base = [sql`t.project_id = ${pid}`, search, q.shared ? sharedCond(pid) : undefined];
     const where = whereAll([
       ...base,
       q.status ? sql`t.status = ${q.status}` : undefined,
       q.review === undefined ? undefined : sql`t.review_yn = ${q.review}`,
     ]);
-    const [rows, [cnt], [counts]] = await Promise.all([
+    const countBase = whereAll([sql`t.project_id = ${pid}`, search]);
+    const [rows, [cnt], [counts], [shared]] = await Promise.all([
       rowsOf<TermRow>(
         this.db,
         sql`select ${TERM_COLUMNS} from std_term t where ${where}
-            order by ${orderBy(q.sort, SORTS, sql`t.term_kor asc`, sql`t.term_id asc`)} ${limitOffset(q)}`,
+            order by ${orderBy(q.sort, SORTS, sql`t.term_kor collate "C" asc`, sql`t.term_id asc`)} ${limitOffset(q)}`,
       ),
       rowsOf<{ n: number }>(this.db, sql`select count(*)::int n from std_term t where ${where}`),
-      rowsOf<TermPage['counts']>(
+      rowsOf<Omit<TermPage['counts'], 'shared'>>(
         this.db,
         sql`select count(*)::int "all",
                    count(*) filter (where t.status = 'APPROVED')::int approved,
                    count(*) filter (where t.status = 'PENDING')::int pending,
-                   count(*) filter (where t.status = 'REJECTED')::int rejected,
-                   count(*) filter (where ${SHARED})::int shared
-              from std_term t where ${whereAll([sql`t.project_id = ${pid}`, search])}`,
+                   count(*) filter (where t.status = 'REJECTED')::int rejected
+              from std_term t where ${countBase}`,
+      ),
+      rowsOf<{ n: number }>(
+        this.db,
+        sql`select count(*)::int n from std_term t where ${countBase} and ${sharedCond(pid)}`,
       ),
     ]);
     return {
@@ -181,7 +188,10 @@ export class TermService {
       page: q.page,
       size: q.size,
       total: cnt?.n ?? 0,
-      counts: counts ?? { all: 0, approved: 0, pending: 0, rejected: 0, shared: 0 },
+      counts: {
+        ...(counts ?? { all: 0, approved: 0, pending: 0, rejected: 0 }),
+        shared: shared?.n ?? 0,
+      },
     };
   }
 

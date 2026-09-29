@@ -52,14 +52,18 @@ interface ClsRow {
 }
 
 const COLUMNS = sql`c.domain_cls_id, c.suffix, c.cls_nm, c.col_type, c.col_length, c.col_scale, c.description,
-  c.review_yn,
-  (select count(*) from std_domain d where d.project_id = c.project_id and d.domain_cls_id = c.domain_cls_id)::int domain_cnt,
-  s.logical_nm sample_logical, s.physical_nm sample_physical,
+  c.review_yn, coalesce(u.n, 0)::int domain_cnt, u.sample_logical, u.sample_physical,
   c.updated_by, ${isoTs(sql`c.updated_at`)} updated_at`;
-const FROM = sql`std_domain_cls c
-  left join lateral (select d.logical_nm, d.physical_nm from std_domain d
-                      where d.project_id = c.project_id and d.domain_cls_id = c.domain_cls_id
-                      order by d.review_yn, d.logical_nm limit 1) s on true`;
+/**
+ * 사용 도메인 수·예시는 프로젝트 도메인을 한 번 집계해 붙인다(분류마다 상관 서브쿼리를 돌리면 도메인 4,587건 × 84분류).
+ * 예시 = 검토가 아닌 도메인 중 논리명 첫 번째.
+ */
+const from = (projectId: number) => sql`std_domain_cls c
+  left join (select d.domain_cls_id, count(*) n,
+                    (array_agg(d.logical_nm order by d.review_yn, d.logical_nm collate "C"))[1] sample_logical,
+                    (array_agg(d.physical_nm order by d.review_yn, d.logical_nm collate "C"))[1] sample_physical
+               from std_domain d where d.project_id = ${projectId} and d.domain_cls_id is not null
+              group by d.domain_cls_id) u on u.domain_cls_id = c.domain_cls_id`;
 
 function mapCls(r: ClsRow): DomainClsItem {
   return {
@@ -82,8 +86,8 @@ function mapCls(r: ClsRow): DomainClsItem {
 }
 
 const SORTS = {
-  suffix: sql`c.suffix`,
-  clsNm: sql`c.cls_nm`,
+  suffix: sql`c.suffix collate "C"`,
+  clsNm: sql`c.cls_nm collate "C"`,
   colType: sql`c.col_type`,
   domainCnt: sql`domain_cnt`,
   updatedAt: sql`c.updated_at`,
@@ -131,8 +135,8 @@ export class DomainClsService {
     const [rows, [cnt], [counts]] = await Promise.all([
       rowsOf<ClsRow>(
         this.db,
-        sql`select ${COLUMNS} from ${FROM} where ${where}
-            order by ${orderBy(q.sort, SORTS, sql`c.suffix asc`, sql`c.domain_cls_id asc`)} ${limitOffset(q)}`,
+        sql`select ${COLUMNS} from ${from(pid)} where ${where}
+            order by ${orderBy(q.sort, SORTS, sql`c.suffix collate "C" asc`, sql`c.domain_cls_id asc`)} ${limitOffset(q)}`,
       ),
       rowsOf<{ n: number }>(
         this.db,
@@ -156,7 +160,7 @@ export class DomainClsService {
   async item(ctx: ProjectCtx, id: number): Promise<DomainClsItem> {
     const [r] = await rowsOf<ClsRow>(
       this.db,
-      sql`select ${COLUMNS} from ${FROM} where c.project_id = ${ctx.projectId} and c.domain_cls_id = ${id}`,
+      sql`select ${COLUMNS} from ${from(ctx.projectId)} where c.project_id = ${ctx.projectId} and c.domain_cls_id = ${id}`,
     );
     if (!r) throw new NotFoundProblem('도메인분류를 찾을 수 없습니다');
     return mapCls(r);

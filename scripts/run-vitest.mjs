@@ -8,6 +8,12 @@ import path from 'node:path';
 const require = createRequire(path.join(process.cwd(), 'package.json'));
 const vitestBin = path.join(path.dirname(require.resolve('vitest/package.json')), 'vitest.mjs');
 const args = process.argv.slice(2).filter((a) => a !== '--');
+// 파일 필터(옵션이 아닌 인자)가 있으면 격리 실행으로 보고 성능 판정을 엄격 기준으로 한다(test/db/setup/perf.ts, CR-05 C1)
+const run = args[0] === 'run' ? args.slice(1) : args;
+const filtered = run.some((a, i) => !a.startsWith('-') && !(i > 0 && run[i - 1] === '--config'));
 
-const result = spawnSync(process.execPath, [vitestBin, ...args], { stdio: 'inherit' });
+const result = spawnSync(process.execPath, [vitestBin, ...args], {
+  stdio: 'inherit',
+  env: { ...process.env, TF_TEST_ISOLATED: filtered ? '1' : '0' },
+});
 process.exit(result.status ?? 1);

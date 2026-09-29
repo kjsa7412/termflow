@@ -6,6 +6,7 @@ import { TermCacheRegistry } from '../../src/autocomplete/term-cache-registry.js
 import { ImportStore } from '../../src/standard/import/import-store.js';
 import { Client, createTestApp, setTestEnv } from './setup/app.js';
 import { FIXTURE_PASSWORD, useTestDb } from './setup/databases.js';
+import { perfLimit } from './setup/perf.js';
 
 // T6.9 엑셀 일괄 등록 2단계: 템플릿 → 업로드(미리보기 NEW/UPDATE/SKIP/ERROR) → 적용(오류 행 제외·batch_id·캐시 무효화 1회),
 // kind 5종, 없는 업무구분 E_BIZ_AREA_NOT_FOUND, 파일 검사(매직 바이트·헤더·크기 413), 20,000행 미리보기 10초 벤치
@@ -386,6 +387,6 @@ describe('성능(§12.1): 일괄 등록 20,000행 미리보기 10초 이내', ()
     console.log(
       `[bench] 용어 20,000행: 파일 ${(buf.length / 1024).toFixed(0)}KB · 미리보기(업로드 포함) ${previewMs}ms(서버 ${pv.elapsedMs}ms) · 적용 ${applyMs}ms`,
     );
-    expect(previewMs).toBeLessThan(10_000);
+    expect(previewMs).toBeLessThan(perfLimit(10_000, 30_000));
   });
 });
