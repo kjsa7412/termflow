@@ -13,6 +13,7 @@ import { DbModule } from './db/db.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UserModule } from './user/user.module.js';
+import { ProjectModule } from './project/project.module.js';
 import { webStaticModules } from './web-static.js';
 
 @Module({
@@ -32,6 +33,7 @@ import { webStaticModules } from './web-static.js';
     HealthModule,
     AuthModule,
     UserModule,
+    ProjectModule,
     ...webStaticModules(),
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemDetailFilter }],
