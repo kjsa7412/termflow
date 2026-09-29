@@ -144,7 +144,7 @@ export async function runSeed(
   for (const s of opts.steps) {
     if (!deps.steps.has(s)) {
       throw new Error(
-        `step ${s}는 아직 구현되지 않았습니다(단계 5: COPY_TO_RMS·TABLE, 단계 7: DDL_REGRESSION)`,
+        `step ${s}는 아직 구현되지 않았습니다(단계 7: DDL_REGRESSION)`,
       );
     }
   }

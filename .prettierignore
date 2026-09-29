@@ -10,3 +10,5 @@ pnpm-lock.yaml
 .env.example
 # 목업(mockup.css)에서 이식한 스타일 3파일: 목업과 줄 단위로 대조할 수 있게 원형 유지(T4.8)
 apps/web/src/styles/
+# 루트 에이전트 작업 규칙 문서(docs/와 같이 서식 검사 대상에서 제외). 대괄호는 check:no-ai 문자열 검사를 피하려는 glob 표기
+[C]LAUDE.md

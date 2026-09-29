@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useSessionStore } from '../../stores/session.js';
+import TfIcon from '../ui/TfIcon.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
 
@@ -10,6 +12,12 @@ import AppTopbar from './AppTopbar.vue';
  */
 const RAIL_KEY = 'tf.sidebarRail';
 const route = useRoute();
+const session = useSessionStore();
+/** 시스템 관리자가 템플릿(`/projects/{templateKey}/…`)을 편집 중이면 배너(§10.2). */
+const editingTemplate = computed(() => {
+  const key = route.params['projectKey'];
+  return session.projects.find((p) => p.key === key && p.kind === 'TEMPLATE') ?? null;
+});
 function stored(): boolean {
   try {
     return localStorage.getItem(RAIL_KEY) === '1';
@@ -38,6 +46,16 @@ function toggleRail(): void {
     <div class="app-body">
       <AppTopbar @toggle-rail="toggleRail" />
       <main id="main" class="content" tabindex="-1">
+        <div v-if="editingTemplate" class="alert alert-warning mb-4" role="status">
+          <TfIcon name="layers" />
+          <div class="alert-body">
+            <div class="alert-title">
+              템플릿 편집 중 — {{ editingTemplate.nm }}({{ editingTemplate.key }})
+            </div>
+            이미 만든 프로젝트에는 반영되지 않습니다(스냅샷 복사). 개정은 새 템플릿으로 게시하는
+            것을 권장합니다.
+          </div>
+        </div>
         <slot />
       </main>
     </div>

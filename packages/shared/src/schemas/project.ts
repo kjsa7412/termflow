@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { DIALECTS, PROJECT_STATUSES } from '../enums.js';
 import { BIZ_CD_RE } from '../validation/identifier.js';
-import { idSchema, optionalText, projectKeySchema, text } from './common.js';
+import { boolQuery, idSchema, optionalText, projectKeySchema, text } from './common.js';
 import { memberInputSchema } from './member.js';
 
 /**
@@ -63,5 +63,27 @@ export const templatePublishSchema = z.object({
   sourceProjectKey: projectKeySchema,
   projectKey: projectKeySchema,
   projectNm: text(100, 1),
+  description: optionalText(4000),
   approvedOnly: z.boolean().default(true),
 });
+
+/** GET /projects?q&status&includeArchived&mine (§9.3). */
+export const projectListQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: z.enum(PROJECT_STATUSES).optional(),
+  includeArchived: boolQuery,
+  /** 시스템 관리자도 멤버인 프로젝트만(목업 02 '내 프로젝트'). */
+  mine: boolQuery,
+});
+
+/** GET /projects/check-key?key= — 형식은 서비스가 판정해 `{available:false, reason}`으로 돌려준다. */
+export const checkKeyQuerySchema = z.object({ key: z.string().trim().max(20).default('') });
+
+/** GET /admin/projects?status&q. */
+export const adminProjectQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: z.enum(PROJECT_STATUSES).optional(),
+});
+
+/** GET P/member-candidates?q= */
+export const memberCandidateQuerySchema = z.object({ q: z.string().trim().max(50).default('') });

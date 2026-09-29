@@ -1,52 +1,14 @@
 import { count, eq } from 'drizzle-orm';
-import type { StdType } from '@termflow/shared';
-import type {
-  DomainClsEntry,
-  L1Snapshot,
-  TermEntry,
-} from '../../autocomplete/domain-calculator.js';
+import { loadL1Snapshot } from '../../autocomplete/l1-snapshot.js';
 import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertMigrated } from '../../db/audit.js';
-import { stdDomain, stdDomainCls, stdTerm } from '../../db/schema.js';
-import { StepFailure, stdv1Has, stdv1Id, type StepDef, type Tx } from '../context.js';
+import { stdDomain } from '../../db/schema.js';
+import { StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
 import { readDomains } from '../legacy-reader.js';
 import { decideDomain, type DomainReport } from '../rules/r05-r15-domain.js';
 import { migratedTimes } from '../rules/r13-audit.js';
-import type { Db } from '../../db/client.js';
 
-/** STDV1 메모리 스냅샷(§11.1 step 6: "L1은 STDV1 캐시로 재계산"). 단계 9 TermCache와 같은 인터페이스. */
-export async function loadL1Snapshot(q: Db | Tx, projectId: number): Promise<L1Snapshot> {
-  const terms = await q
-    .select({ kor: stdTerm.termKor, physical: stdTerm.termPhysical, id: stdTerm.termId })
-    .from(stdTerm)
-    .where(eq(stdTerm.projectId, projectId));
-  const cls = await q
-    .select({
-      id: stdDomainCls.domainClsId,
-      suffix: stdDomainCls.suffix,
-      colType: stdDomainCls.colType,
-      colLength: stdDomainCls.colLength,
-      colScale: stdDomainCls.colScale,
-    })
-    .from(stdDomainCls)
-    .where(eq(stdDomainCls.projectId, projectId));
-  return {
-    termByKor: new Map<string, TermEntry>(
-      terms.map((t) => [t.kor, { physical: t.physical, termId: t.id }]),
-    ),
-    clsBySuffix: new Map<string, DomainClsEntry>(
-      cls.map((c) => [
-        c.suffix,
-        {
-          domainClsId: c.id,
-          colType: c.colType as StdType,
-          colLength: c.colLength,
-          colScale: c.colScale,
-        },
-      ]),
-    ),
-  };
-}
+export { loadL1Snapshot };
 
 /** step 6 DOMAIN(T3.10): R1·R5(+R5-b)·R9·R12·R13·R15 → STDV1 `std_domain`. */
 export const domainStep: StepDef = {

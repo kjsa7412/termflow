@@ -6,7 +6,7 @@ import type { ReportWriter } from './report-writer.js';
 
 /**
  * 승계 러너 공용 타입(설계서 §2.5.9·§11.1·§11.5). step 이름·순서는 §11.1 표와 같다.
- * 단계 3(3a)은 1~8 + RECONCILE(1차 범위)을 구현하고, 9·10은 단계 5, 12는 단계 7이 잇는다.
+ * 단계 3(3a)은 1~8 + RECONCILE(1차 범위), 단계 5(3b)는 9 COPY_TO_RMS·10 TABLE·11 RECONCILE(전체 범위), 12는 단계 7.
  */
 export const STEP_ORDER = [
   'LOAD_LEGACY',
@@ -26,7 +26,7 @@ export type StepName = (typeof STEP_ORDER)[number];
 
 /** 템플릿 "TermFlow 기본 표준 v1"(§11.1 step 2). */
 export const STDV1 = { key: 'STDV1', nm: 'TermFlow 기본 표준 v1' } as const;
-/** 승계 첫 프로젝트(§11.1 step 9, 단계 5). `--reset`은 두 키를 모두 지운다. */
+/** 승계 첫 프로젝트(§11.1 step 9, CR-01 A5). `--reset`은 두 키를 모두 지운다. */
 export const RMS = { key: 'RMS', nm: '연구관리시스템(이관)' } as const;
 
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
@@ -39,6 +39,8 @@ export interface RunOptions {
   dumpPath: string;
   reportRoot: string;
   workDir: string;
+  /** COPY_TO_RMS: RMS 프로젝트 관리자 로그인 ID(기본: 부트스트랩 관리자 TERMFLOW_ADMIN_LOGIN, §11.1 step 9). */
+  rmsAdmin?: string;
   /** LOAD_LEGACY 전용 연결 설정(풀과 같은 대상). */
   connection: pg.ClientConfig;
 }

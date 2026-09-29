@@ -15,6 +15,8 @@ const props = withDefaults(
     confirmLabel?: string;
     secondaryLabel?: string;
     busy?: boolean;
+    /** 확인 조건(예: 키 재입력)이 맞을 때까지 위험 버튼 비활성. */
+    confirmDisabled?: boolean;
   }>(),
   { confirmLabel: '삭제' },
 );
@@ -43,7 +45,12 @@ useFocusTrap(toRef(props, 'open'), box, () => emit('cancel'));
         <TfButton v-if="secondaryLabel" variant="secondary" @click="emit('secondary')">
           {{ secondaryLabel }}
         </TfButton>
-        <TfButton variant="danger" :loading="busy" @click="emit('confirm')">
+        <TfButton
+          variant="danger"
+          :loading="busy"
+          :disabled="confirmDisabled"
+          @click="emit('confirm')"
+        >
           {{ confirmLabel }}
         </TfButton>
       </div>

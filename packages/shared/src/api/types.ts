@@ -89,14 +89,65 @@ export interface PasswordResetResponse {
 }
 
 // ── 프로젝트 ────────────────────────────────────────────────────────────────
+/** 프로젝트 카드(GET /projects, 목업 02_projects). §9.3 필드 + 업무구분별 테이블 수·멤버 수·최근 변경자. */
 export interface ProjectCard {
   key: string;
   nm: string;
+  description: string | null;
+  /** 시스템 관리자는 멤버가 아니어도 ADMIN. 멤버가 아닌 시스템 관리자 보기면 isMember=false. */
   myRole: MemberRole;
-  bizAreas: { bizCd: string; bizNm: string }[];
+  isMember: boolean;
+  bizAreas: { bizCd: string; bizNm: string; tableCnt: number; useYn: boolean }[];
   tableCnt: number;
+  memberCnt: number;
   lastChangedAt: string | null;
+  lastChangedBy: string | null;
   status: ProjectStatus;
+  defaultDialect: Dialect;
+}
+
+/** 항목별 건수(업무구분·표준 사전 7종). */
+export interface StdCounts {
+  bizArea: number;
+  term: number;
+  termApproved: number;
+  domainCls: number;
+  domain: number;
+  codeCls: number;
+  code: number;
+  defaultColSet: number;
+  defaultCol: number;
+}
+
+/** 마법사 원본 후보(GET /projects/copy-sources). */
+export interface CopySourceItem {
+  key: string;
+  nm: string;
+  kind: ProjectKind;
+  status: ProjectStatus;
+  counts: StdCounts;
+  bizAreas: { bizCd: string; bizNm: string; codeClsCnt: number; codeCnt: number }[];
+}
+export interface CopySourcesResponse {
+  templates: CopySourceItem[];
+  projects: CopySourceItem[];
+}
+
+/** 항목별 미리보기(POST /projects/copy-preview) — 실제 복사 건수와 같은 SQL 조건으로 센다. */
+export interface CopyPreviewItem {
+  item: StdEntityType;
+  sourceKind: CopySourceKind;
+  sourceKey: string | null;
+  sourceCnt: number;
+  toCopy: number;
+  toSkip: number;
+  warnings: ValidationIssue[];
+}
+export interface CopyPreviewResponse {
+  items: CopyPreviewItem[];
+  /** 용어·도메인분류·도메인 원본이 달라 C3 재검증을 하게 되는지. */
+  c3Expected: boolean;
+  warnings: ValidationIssue[];
 }
 
 export interface CopyItemResult {
@@ -107,6 +158,17 @@ export interface CopyItemResult {
   copied: number;
   skipped: number;
   flagged: number;
+  elapsedMs?: number;
+}
+export interface C3Revalidation {
+  performed: boolean;
+  reason?: string;
+  /** 새 프로젝트의 검토필요 도메인 전체 수(원본에서 온 review 포함). 목록 링크와 같은 건수. */
+  reviewDomainCnt: number;
+  /** 이번 C3 재검증으로 새로 표시한 도메인 수(= DOMAIN 항목 flagged). */
+  flaggedCnt: number;
+  reviewListUrl: string;
+  samples: { domainId: number; logicalNm: string; reason: string }[];
 }
 export interface ProjectCreateResponse {
   projectKey: string;
@@ -114,14 +176,177 @@ export interface ProjectCreateResponse {
   batchId: string;
   elapsedMs: number;
   items: CopyItemResult[];
-  c3Revalidation: {
-    performed: boolean;
-    reason?: string;
-    reviewDomainCnt: number;
-    reviewListUrl: string;
-    samples: { domainId: number; logicalNm: string; reason: string }[];
-  };
+  c3Revalidation: C3Revalidation;
   warnings: ValidationIssue[];
+}
+
+export interface BizAreaSummary {
+  bizAreaId: number;
+  bizCd: string;
+  bizNm: string;
+  tablePrefix: string | null;
+  useYn: boolean;
+  sortNo: number;
+  tableCnt: number;
+  draftCnt: number;
+  finalCnt: number;
+  reviewCnt: number;
+  lastChangedAt: string | null;
+  lastChangedBy: string | null;
+}
+
+/** 프로젝트 홈 요약(GET P, 목업 03_dashboard). */
+export interface ProjectHome {
+  project: {
+    key: string;
+    nm: string;
+    description: string | null;
+    kind: ProjectKind;
+    status: ProjectStatus;
+    defaultDialect: Dialect;
+    includeDefaultCols: boolean;
+    defaultColSetNm: string | null;
+    copiedFrom: { key: string; nm: string } | null;
+    createdAt: string;
+    createdBy: string;
+  };
+  myRole: MemberRole;
+  memberCnt: number;
+  bizAreas: BizAreaSummary[];
+  tables: { total: number; draft: number; final: number; review: number };
+  recentChanges: {
+    tableId: number;
+    tableNm: string;
+    tableLogicalNm: string;
+    version: number;
+    action: string;
+    changeSummary: string | null;
+    savedBy: string;
+    savedAt: string;
+  }[];
+  reviewDomainCnt: number;
+  pendingTermCnt: number;
+}
+
+export interface DefaultColSetInfo {
+  setId: number;
+  setNm: string;
+  isDefault: boolean;
+  columns: {
+    colSeq: number;
+    logicalNm: string;
+    physicalNm: string;
+    typeText: string | null;
+    defaultVal: string | null;
+    isPk: boolean;
+  }[];
+}
+
+/** 프로젝트 설정(GET P/settings). 키는 읽기 전용. */
+export interface ProjectSettings {
+  projectKey: string;
+  projectNm: string;
+  description: string | null;
+  kind: ProjectKind;
+  status: ProjectStatus;
+  defaultDialect: Dialect;
+  includeDefaultCols: boolean;
+  defaultColSetId: number | null;
+  defaultColSets: DefaultColSetInfo[];
+  copiedFrom: { key: string; nm: string } | null;
+  createdAt: string;
+  createdBy: string;
+}
+
+/** 생성·게시 복사 기록(GET P/copy-log). */
+export interface CopyLogItem {
+  batchId: string;
+  operation: 'CREATE' | 'PUBLISH';
+  item: StdEntityType;
+  sourceKind: CopySourceKind;
+  sourceKey: string | null;
+  options: Record<string, unknown>;
+  sourceCnt: number;
+  copiedCnt: number;
+  skippedCnt: number;
+  flaggedCnt: number;
+  warnings: ValidationIssue[];
+  elapsedMs: number;
+  copiedBy: string;
+  copiedAt: string;
+}
+
+// ── 멤버 ────────────────────────────────────────────────────────────────────
+export interface MemberItem {
+  userId: number;
+  loginId: string;
+  userNm: string;
+  role: MemberRole;
+  isSysAdmin: boolean;
+  isActive: boolean;
+  addedAt: string;
+  lastLoginAt: string | null;
+}
+export interface MemberCandidate {
+  userId: number;
+  loginId: string;
+  userNm: string;
+  isSysAdmin: boolean;
+  isMember: boolean;
+}
+
+// ── 업무구분 ────────────────────────────────────────────────────────────────
+export interface BizAreaItem {
+  bizAreaId: number;
+  bizCd: string;
+  bizNm: string;
+  tablePrefix: string | null;
+  sortNo: number;
+  useYn: boolean;
+  description: string | null;
+  tableCnt: number;
+  codeClsCnt: number;
+  /** 테이블이 1개 이상이면 코드·접두어·사용 중지 잠금(§4.2). */
+  locked: boolean;
+  origin: { projectKey: string | null; projectNm: string | null } | null;
+}
+export interface BizAreaDeletePreview {
+  tableCnt: number;
+  codeClsCnt: number;
+  codeCnt: number;
+  referencingColumnCnt: number;
+}
+export interface BizAreaDeleteResponse {
+  deletedCodeCls: number;
+  deletedCodes: number;
+  affectedColumns: number;
+}
+
+// ── 시스템: 프로젝트·템플릿 ───────────────────────────────────────────────
+export interface AdminProjectItem {
+  key: string;
+  nm: string;
+  description: string | null;
+  status: ProjectStatus;
+  memberCnt: number;
+  tableCnt: number;
+  bizCds: string[];
+  copiedFrom: { key: string; nm: string } | null;
+  lastChangedAt: string | null;
+  createdAt: string;
+  createdBy: string;
+}
+export interface TemplateItem {
+  key: string;
+  nm: string;
+  description: string | null;
+  status: ProjectStatus;
+  counts: StdCounts;
+  /** 이 템플릿을 원본으로 복사한 프로젝트·템플릿 수(project_copy_log·copied_from 기준). 1 이상이면 삭제 불가. */
+  derivedCnt: number;
+  publishedFrom: { key: string; nm: string } | null;
+  createdAt: string;
+  createdBy: string;
 }
 
 // ── 테이블 ──────────────────────────────────────────────────────────────────

@@ -99,8 +99,8 @@ export class Client {
   put(path: string, body?: object, opts?: { csrf?: boolean }) {
     return this.send('put', path, body, opts);
   }
-  delete(path: string, opts?: { csrf?: boolean }) {
-    return this.send('delete', path, undefined, opts);
+  delete(path: string, body?: object, opts?: { csrf?: boolean }) {
+    return this.send('delete', path, body, opts);
   }
 
   /** GET /auth/csrf → 토큰 보관. */

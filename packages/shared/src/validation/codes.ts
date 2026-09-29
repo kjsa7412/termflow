@@ -243,5 +243,25 @@ export const API_ERROR_CODES = {
   E_LAST_SYS_ADMIN: '마지막 시스템 관리자는 해제·비활성화할 수 없습니다',
   E_SELF_DEACTIVATE: '자기 계정은 비활성화할 수 없습니다',
   E_PROJECT_READONLY: '보관된 프로젝트·템플릿은 수정할 수 없습니다',
+  // 프로젝트·멤버·업무구분·템플릿(단계 5, CR-04)
+  E_PROJECT_ACTIVE: '보관된 프로젝트만 삭제할 수 있습니다',
+  E_CONFIRM_KEY_MISMATCH: '확인용 키가 일치하지 않습니다',
+  E_COPY_SOURCE_INVALID: '가져오기 원본을 찾을 수 없거나 사용할 수 없습니다',
+  E_COPY_FAILED: '프로젝트 복사 중 오류가 발생해 아무것도 만들지 않았습니다',
+  E_MEMBER_DUP: '이미 이 프로젝트의 멤버입니다',
+  E_USER_INACTIVE: '비활성 사용자는 멤버로 추가할 수 없습니다',
+  E_DEFAULT_COL_SET_NOT_FOUND: '이 프로젝트의 기본컬럼 세트가 아닙니다',
 } as const;
 export type ApiErrorCode = keyof typeof API_ERROR_CODES;
+
+/**
+ * 복사 엔진 경고(설계서 §4.3·§4.4, `project_copy_log.warnings`·생성 응답 `warnings[]`).
+ * §5.7 표(테이블·컬럼 검증) 밖의 코드라 VALIDATION_CODES와 따로 둔다.
+ */
+export const COPY_WARNING_CODES = {
+  W_COPY_SOURCE_MIXED: '용어·도메인분류·도메인의 원본이 서로 다릅니다',
+  W_COPY_BIZ_AREA_MISSING: '새 프로젝트에 없는 업무구분의 코드구분은 복사하지 않습니다',
+  W_COPY_CODES_EMPTIED: '업무구분을 비우면 코드도 비웁니다',
+  W_COPY_NO_DEFAULT_COL_SET: '기본컬럼 세트가 없어 프로젝트 기본 세트를 지정하지 않았습니다',
+} as const;
+export type CopyWarningCode = keyof typeof COPY_WARNING_CODES;
