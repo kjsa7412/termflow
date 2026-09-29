@@ -51,6 +51,7 @@ beforeAll(async () => {
     bizRpId: bizId('RP'),
     bizPsId: bizId('PS'),
     paUserId: pa.rows[0].user_id as number,
+    tableId: await one(`select table_id id from prj_table where project_id = ${PRJA}`),
     std,
   };
   setTestEnv(t.url);
@@ -77,7 +78,7 @@ describe('권한 매트릭스(§7.3)', () => {
     console.log(
       `[authz-matrix] 행 ${AUTHZ_MATRIX.length} × 역할 ${ROLES.length} = ${cases.length}건`,
     );
-    expect(AUTHZ_MATRIX.length).toBeGreaterThanOrEqual(84);
+    expect(AUTHZ_MATRIX.length).toBeGreaterThanOrEqual(90);
   });
 
   it.each(cases.map((c) => [`${c.row.method} ${c.row.path}`, c.role, c] as const))(

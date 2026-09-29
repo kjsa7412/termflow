@@ -42,6 +42,8 @@ export interface MatrixCtx {
   /** PRJA 프로젝트 관리자(유일한 ADMIN) user_id — 제거 시도는 409 E_LAST_PROJECT_ADMIN. */
   paUserId: number;
   /** PRJA 표준 사전 ID(단계 6 행): 승인 용어·검토대기 2건·도메인·도메인분류·코드구분·기본컬럼 세트. */
+  /** PRJA 테이블(RP_RSCH_PRJ_MST) — 단계 7 DDL 행. */
+  tableId: number;
   std: {
     termId: number;
     pendingApproveId: number;
@@ -495,6 +497,61 @@ const STANDARD_ROWS: readonly MatrixRow[] = [
   },
 ];
 
+/**
+ * 단계 7 테이블 목록·DDL 행(§7.3: `P/tables`(GET)·`P/ddl/**`·`P/tables/{id}/ddl`·`P/export-logs` = 조회자 이상).
+ * DDL·정보 추출·복사 기록은 조회성 POST(보관 프로젝트 허용) — 기록 행이 늘 뿐 상태는 바뀌지 않는다.
+ */
+const DDL_ROWS: readonly MatrixRow[] = [
+  {
+    path: 'P/tables',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${P}/tables`),
+  },
+  {
+    path: 'P/tables/{id}/ddl',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${P}/tables/${x.tableId}/ddl`),
+  },
+  {
+    path: 'P/ddl',
+    method: 'POST',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${P}/ddl`, { tableIds: [x.tableId] }),
+  },
+  {
+    path: 'P/ddl/extract',
+    method: 'POST',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${P}/ddl/extract`, { tableIds: [x.tableId] }),
+  },
+  {
+    path: 'P/export-logs',
+    method: 'POST',
+    allow: VIEWER_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${P}/export-logs`, { kind: 'COPY', tableIds: [x.tableId] }),
+  },
+  {
+    path: 'P/export-logs',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.get(`${P}/export-logs`),
+  },
+];
+
 export const AUTHZ_MATRIX: readonly MatrixRow[] = [
   // ── 인증(§7.3 1행) ─────────────────────────────────────────────
   {
@@ -817,4 +874,5 @@ export const AUTHZ_MATRIX: readonly MatrixRow[] = [
     run: (c) => c.delete('/api/v1/admin/templates/STDS', { confirmKey: 'STDS' }),
   },
   ...STANDARD_ROWS,
+  ...DDL_ROWS,
 ];
