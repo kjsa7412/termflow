@@ -1,9 +1,11 @@
 import {
+  createMemoryHistory,
   createRouter,
   createWebHistory,
   type RouteLocationNormalized,
   type RouteLocationRaw,
   type RouteRecordRaw,
+  type Router,
   type RouterHistory,
 } from 'vue-router';
 
@@ -39,10 +41,28 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '프로젝트' },
   },
   {
+    path: '/projects/new',
+    name: 'project-new',
+    component: () => import('./pages/ProjectNewPage.vue'),
+    meta: { sysAdmin: true, title: '새 프로젝트' },
+  },
+  {
     path: '/projects/:projectKey',
     name: 'project-home',
     component: () => import('./pages/ProjectHomePage.vue'),
     meta: { title: '프로젝트 홈' },
+  },
+  {
+    path: '/projects/:projectKey/biz-areas',
+    name: 'project-biz-areas',
+    component: () => import('./pages/BizAreasPage.vue'),
+    meta: { title: '업무구분' },
+  },
+  {
+    path: '/projects/:projectKey/settings',
+    name: 'project-settings',
+    component: () => import('./pages/ProjectSettingsPage.vue'),
+    meta: { title: '프로젝트 설정' },
   },
   {
     path: '/me',
@@ -55,6 +75,18 @@ export const routes: RouteRecordRaw[] = [
     name: 'admin-users',
     component: () => import('./pages/AdminUsersPage.vue'),
     meta: { sysAdmin: true, title: '사용자' },
+  },
+  {
+    path: '/admin/projects',
+    name: 'admin-projects',
+    component: () => import('./pages/AdminProjectsPage.vue'),
+    meta: { sysAdmin: true, title: '프로젝트(관리)' },
+  },
+  {
+    path: '/admin/templates',
+    name: 'admin-templates',
+    component: () => import('./pages/AdminTemplatesPage.vue'),
+    meta: { sysAdmin: true, title: '템플릿' },
   },
   {
     path: '/forbidden',
@@ -104,6 +136,13 @@ export async function authGuard(
   }
   if (to.meta.sysAdmin && !session.isSysAdmin) return { path: '/forbidden' };
   return true;
+}
+
+/** 앱에 있는 화면 경로인지(아직 없는 화면 링크를 404로 보내지 않기 위해, 예: C3 검토 도메인 목록 — 단계 6). */
+let probe: Router | null = null;
+export function hasScreen(path: string): boolean {
+  probe ??= createRouter({ history: createMemoryHistory(), routes });
+  return probe.resolve(path).name !== 'not-found';
 }
 
 export function createAppRouter(history: RouterHistory = createWebHistory()) {

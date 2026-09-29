@@ -91,9 +91,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         label: '업무구분',
         icon: 'folder',
         projectPath: '/biz-areas',
-        pending: true,
       },
-      { id: 'settings', label: '설정', icon: 'settings', projectPath: '/settings', pending: true },
+      { id: 'settings', label: '설정', icon: 'settings', projectPath: '/settings' },
     ],
   },
   {
@@ -107,9 +106,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         label: '프로젝트',
         icon: 'database',
         to: '/admin/projects',
-        pending: true,
       },
-      { id: 'templates', label: '템플릿', icon: 'layers', to: '/admin/templates', pending: true },
+      { id: 'templates', label: '템플릿', icon: 'layers', to: '/admin/templates' },
     ],
   },
 ];

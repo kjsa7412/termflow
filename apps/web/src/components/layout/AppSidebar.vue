@@ -21,8 +21,26 @@ const current = computed<MyProject | null>(
 );
 const switchable = computed(() => session.projects.filter((p) => p.kind === 'PROJECT'));
 
+/** 템플릿 편집 중이면 [설계] 그룹을 숨긴다(§10.2: 템플릿에는 테이블이 없다). */
+const isTemplate = computed(() => current.value?.kind === 'TEMPLATE');
+/**
+ * 프로젝트 전환 시 같은 하위 경로 유지(§10.2, 예: 업무구분 → 다른 프로젝트의 업무구분).
+ * 하위 경로가 없는 화면(단계 이후 추가될 상세 ID 경로 등)은 첫 조각까지만 유지한다.
+ */
+function switchTarget(key: string): string {
+  const cur = currentKey.value;
+  if (!cur) return `/projects/${key}`;
+  const rest = route.path.slice(`/projects/${cur}`.length);
+  const first = rest.split('/').filter(Boolean)[0];
+  return first ? `/projects/${key}/${first}` : `/projects/${key}`;
+}
+
 const groups = computed(() =>
-  NAV_GROUPS.filter((g) => (g.scope === 'system' ? session.isSysAdmin : current.value !== null))
+  NAV_GROUPS.filter((g) =>
+    g.scope === 'system'
+      ? session.isSysAdmin
+      : current.value !== null && !(g.id === 'design' && isTemplate.value),
+  )
     .map((g) => ({
       ...g,
       items: g.items.filter(
@@ -79,7 +97,7 @@ const version = __APP_VERSION__;
             v-for="p in switchable"
             :key="p.key"
             :class="['dropdown-item', { 'is-active': p.key === currentKey }]"
-            :to="`/projects/${p.key}`"
+            :to="switchTarget(p.key)"
             role="menuitem"
             @click="close()"
           >
