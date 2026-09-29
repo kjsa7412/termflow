@@ -53,6 +53,18 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '프로젝트 홈' },
   },
   {
+    path: '/projects/:projectKey/tables',
+    name: 'project-tables',
+    component: () => import('./pages/TablesPage.vue'),
+    meta: { title: '테이블' },
+  },
+  {
+    path: '/projects/:projectKey/export',
+    name: 'project-export',
+    component: () => import('./pages/DdlExportPage.vue'),
+    meta: { title: 'DDL 내보내기' },
+  },
+  {
     path: '/projects/:projectKey/biz-areas',
     name: 'project-biz-areas',
     component: () => import('./pages/BizAreasPage.vue'),

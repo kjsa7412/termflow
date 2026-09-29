@@ -13,6 +13,9 @@ const args = process.argv.slice(2).filter((a) => a !== '--');
 const run = args[0] === 'run' ? args.slice(1) : args;
 const filters = run.filter((a, i) => !a.startsWith('-') && !(i > 0 && run[i - 1] === '--config'));
 const filtered = filters.length === 1;
+// 루트 `pnpm test -- ddl-golden`처럼 파일 필터를 주면 필터에 맞는 파일이 없는 패키지(web·shared)는 통과로 본다.
+// 필터 없는 전체 실행은 그대로(0건이면 실패 — 설정 누락을 숨기지 않는다).
+if (filters.length > 0 && !args.includes('--passWithNoTests')) args.push('--passWithNoTests');
 
 const result = spawnSync(process.execPath, [vitestBin, ...args], {
   stdio: 'inherit',

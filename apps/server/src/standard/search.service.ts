@@ -14,7 +14,7 @@ import { likePattern, rowsOf } from './std-sql.js';
 
 /**
  * 전역 검색(T6.10, 설계서 §10.2 상단 바, §9.3 `P/search`) — **현재 프로젝트 범위만**(CR-01 6절). 종류별 최대 5건,
- * 정확 일치 → 앞부분 일치 → 부분 일치 순. 테이블은 T7.9에서 추가(지금은 빈 배열).
+ * 정확 일치 → 앞부분 일치 → 부분 일치 순. 테이블(물리명·논리명)은 T7.9에서 추가.
  */
 @Injectable()
 export class SearchService {
@@ -25,7 +25,7 @@ export class SearchService {
     const like = likePattern(term);
     const prefix = `${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const up = term.toUpperCase();
-    const [terms, domains] = await Promise.all([
+    const [terms, domains, tables] = await Promise.all([
       rowsOf<{
         term_id: number;
         term_kor: string;
@@ -57,6 +57,16 @@ export class SearchService {
                       length(logical_nm), logical_nm collate "C"
              limit ${SEARCH_RESULTS_PER_KIND}`,
       ),
+      rowsOf<{ table_id: number; table_nm: string; table_logical_nm: string; biz_cd: string }>(
+        this.db,
+        sql`select t.table_id, t.table_nm, t.table_logical_nm, b.biz_cd
+              from prj_table t join prj_biz_area b on b.biz_area_id = t.biz_area_id
+             where t.project_id = ${ctx.projectId} and (t.table_nm ilike ${like} or t.table_logical_nm ilike ${like})
+             order by case when t.table_nm = ${up} or t.table_logical_nm = ${term} then 0
+                           when t.table_nm like ${prefix.toUpperCase()} or t.table_logical_nm like ${prefix} then 1 else 2 end,
+                      length(t.table_nm), t.table_nm collate "C"
+             limit ${SEARCH_RESULTS_PER_KIND}`,
+      ),
     ]);
     return {
       terms: terms.map((t) => ({
@@ -72,7 +82,12 @@ export class SearchService {
         typeText: typeText(d.col_type, d.col_length, d.col_scale),
         reviewYn: d.review_yn,
       })),
-      tables: [],
+      tables: tables.map((t) => ({
+        tableId: t.table_id,
+        tableNm: t.table_nm,
+        logicalNm: t.table_logical_nm,
+        bizCd: t.biz_cd,
+      })),
     };
   }
 }

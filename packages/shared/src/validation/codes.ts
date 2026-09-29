@@ -280,6 +280,10 @@ export const API_ERROR_CODES = {
   E_IMPORT_EMPTY: '데이터 행이 없습니다',
   E_IMPORT_HAS_ERRORS: '오류 행이 있어 적용하지 않았습니다',
   E_IMPORT_FILE_DUP: '파일 안에서 같은 키가 앞 행에 있습니다',
+  // DDL(단계 7, CR-06)
+  E_DIALECT_UNSUPPORTED: '지원하지 않는 방언입니다(MVP는 PostgreSQL만, D2)',
+  E_DDL_TABLES_MAX: '한 번에 내보낼 수 있는 테이블 수(200)를 넘었습니다',
+  E_DDL_NO_TABLES: '내보낼 테이블이 없습니다',
 } as const;
 export type ApiErrorCode = keyof typeof API_ERROR_CODES;
 
@@ -307,3 +311,12 @@ export const STD_WARNING_CODES = {
   W_DOMAIN_CLS_IN_USE: '이 접미어를 쓰는 도메인의 분류 연결이 해제됩니다',
 } as const;
 export type StdWarningCode = keyof typeof STD_WARNING_CODES;
+
+/**
+ * DDL 생성 경고(단계 7, 설계서 §6.3·§6.8, CR-06). §5.7 검증 코드표(W_*)와 함께 DDL 응답 `warnings[]`·파일 상단 요약에 실린다.
+ */
+export const DDL_WARNING_CODES = {
+  W_CONSTRAINT_NM_SHORTENED: '제약명이 방언 길이를 넘어 축약했습니다',
+  W_TYPE_OVERFLOW: '방언 길이 상한을 넘어 대체 타입으로 생성했습니다',
+} as const;
+export type DdlWarningCode = keyof typeof DDL_WARNING_CODES;

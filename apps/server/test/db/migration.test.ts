@@ -162,10 +162,12 @@ describe('러너 골격(T3.2)', () => {
       runSeed(options('', 'run-d', ['DDL_REGRESSION']), {
         pool,
         db,
-        steps: SEED_STEPS,
+        // 단계 7에서 12개 step이 모두 구현됐다 → 일부만 등록한 맵으로 거부 규칙을 검사
+        steps: new Map([...SEED_STEPS].filter(([n]) => n !== 'DDL_REGRESSION')),
         log: () => {},
       }),
     ).rejects.toThrow(/구현되지 않았습니다/);
+    expect(SEED_STEPS.size).toBe(12);
     await expect(
       runSeed(options('', 'run-e', ['TEMPLATE'], { reset: true, nodeEnv: 'production' }), {
         pool,

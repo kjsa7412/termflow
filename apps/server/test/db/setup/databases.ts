@@ -46,7 +46,7 @@ export async function truncateAll(pool: pg.Pool): Promise<void> {
 const SEED_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../seed');
 
 /** test/seed/<name>.sql 적재(여러 문장 → 단순 질의 1회, 한 트랜잭션). */
-export async function loadFixture(pool: pg.Pool, name: 'std_small'): Promise<void> {
+export async function loadFixture(pool: pg.Pool, name: 'std_small' | 'rp33'): Promise<void> {
   const sqlText = readFileSync(path.join(SEED_DIR, `${name}.sql`), 'utf8');
   await pool.query(`BEGIN;\n${sqlText}\nCOMMIT;`);
 }
@@ -66,7 +66,7 @@ export interface TestDb {
  */
 export function useTestDb(
   database: string,
-  opts: { truncateEach?: boolean; fixture?: 'std_small' } = {},
+  opts: { truncateEach?: boolean; fixture?: 'std_small' | 'rp33' } = {},
 ): TestDb {
   const ctx = {} as TestDb;
   beforeAll(async () => {

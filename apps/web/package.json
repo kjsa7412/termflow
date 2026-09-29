@@ -9,7 +9,7 @@
     "build": "vue-tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "node ../../scripts/run-vitest.mjs run"
   },
   "dependencies": {
     "@termflow/shared": "workspace:*",

@@ -35,14 +35,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     scope: 'project',
     items: [
       { id: 'home', label: '홈', icon: 'home', projectPath: '' },
-      { id: 'tables', label: '테이블', icon: 'table', projectPath: '/tables', pending: true },
-      {
-        id: 'export',
-        label: 'DDL 내보내기',
-        icon: 'export',
-        projectPath: '/export',
-        pending: true,
-      },
+      { id: 'tables', label: '테이블', icon: 'table', projectPath: '/tables' },
+      { id: 'export', label: 'DDL 내보내기', icon: 'export', projectPath: '/export' },
     ],
   },
   {

@@ -20,7 +20,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "node ../../scripts/run-vitest.mjs run"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",

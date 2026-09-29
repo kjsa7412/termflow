@@ -1,0 +1,25 @@
+# 표준 타입 → PostgreSQL 17 매핑(설계서 §6.3, D2: MVP 구현·CI 방언).
+# pattern 자리표시자: {n} 길이, {p} 정밀도(=길이), {s} 스케일. [ … ]는 안의 자리표시자 값이 모두 있을 때만 출력한다.
+# 변경 시 골든 파일(test/ddl/golden/postgresql/**)을 UPDATE_GOLDEN=1로 갱신하고 test:db -- ddl-regression을 통과시킨다(§6.12).
+dialect: POSTGRESQL
+identifierMaxLength: 63
+quote: '"'
+types:
+  VARCHAR: { pattern: 'VARCHAR({n})' }
+  CHAR: { pattern: 'CHAR({n})' }
+  TEXT: { pattern: 'TEXT' }
+  SMALLINT: { pattern: 'SMALLINT' }
+  INT: { pattern: 'INTEGER' }
+  BIGINT: { pattern: 'BIGINT' }
+  NUMERIC: { pattern: 'NUMERIC({p}[,{s}])' }
+  DATE: { pattern: 'DATE' }
+  TIMESTAMP: { pattern: 'TIMESTAMP[({n})]' }
+  BOOLEAN: { pattern: 'BOOLEAN' }
+  JSONB: { pattern: 'JSONB' }
+  BYTEA: { pattern: 'BYTEA' }
+defaults:
+  CURRENT_TIMESTAMP: 'CURRENT_TIMESTAMP'
+  CURRENT_DATE: 'CURRENT_DATE'
+  'TRUE': 'TRUE'
+  'FALSE': 'FALSE'
+columnAttributeOrder: [NULLABILITY, DEFAULT]

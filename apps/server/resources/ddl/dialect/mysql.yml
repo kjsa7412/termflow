@@ -1,0 +1,24 @@
+# 표준 타입 → MySQL 8 매핑(설계서 §6.3). D2 확정: MVP는 PostgreSQL만 구현 — 이 파일은 **데이터로만** 유지한다(2차 구현 대상).
+# pattern 자리표시자: {n} 길이, {p} 정밀도(=길이), {s} 스케일. [ … ]는 안의 자리표시자 값이 모두 있을 때만 출력한다.
+dialect: MYSQL
+identifierMaxLength: 64
+quote: '`'
+types:
+  VARCHAR: { pattern: 'VARCHAR({n})', maxLength: 16383, overflow: 'TEXT' }
+  CHAR: { pattern: 'CHAR({n})' }
+  TEXT: { pattern: 'LONGTEXT' }
+  SMALLINT: { pattern: 'SMALLINT' }
+  INT: { pattern: 'INT' }
+  BIGINT: { pattern: 'BIGINT' }
+  NUMERIC: { pattern: 'DECIMAL({p}[,{s}])' }
+  DATE: { pattern: 'DATE' }
+  TIMESTAMP: { pattern: 'DATETIME[({n})]' }
+  BOOLEAN: { pattern: 'TINYINT(1)' }
+  JSONB: { pattern: 'JSON' }
+  BYTEA: { pattern: 'LONGBLOB' }
+defaults:
+  CURRENT_TIMESTAMP: 'CURRENT_TIMESTAMP'
+  CURRENT_DATE: '(CURRENT_DATE)'
+  'TRUE': '1'
+  'FALSE': '0'
+columnAttributeOrder: [NULLABILITY, DEFAULT]

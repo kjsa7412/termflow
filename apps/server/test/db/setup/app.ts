@@ -132,6 +132,22 @@ export class Client {
       });
   }
 
+  /** 바이너리 응답 POST(DDL ZIP 다운로드) + CSRF 헤더. */
+  async downloadPost(path: string, body: object): Promise<request.Response> {
+    let req = request(this.server as Parameters<typeof request>[0])
+      .post(path)
+      .set('Cookie', this.header());
+    if (this.csrf) req = req.set('X-XSRF-TOKEN', this.csrf);
+    return req
+      .send(body)
+      .buffer(true)
+      .parse((res, cb) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (d: Buffer) => chunks.push(d));
+        res.on('end', () => cb(null, Buffer.concat(chunks)));
+      });
+  }
+
   /** GET /auth/csrf → 토큰 보관. */
   async fetchCsrf(): Promise<string> {
     const res = await this.get('/api/v1/auth/csrf');

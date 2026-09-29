@@ -37,6 +37,8 @@ export interface ValidationIssue {
   field?: string;
   rowIndex?: number;
   columnId?: number | null;
+  /** 컬럼 물리명(DDL 경고 목록·편집기 행 포커스). */
+  columnNm?: string;
   tableId?: number;
   tableNm?: string;
 }

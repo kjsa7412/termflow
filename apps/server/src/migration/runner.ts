@@ -86,6 +86,7 @@ export async function resetTargets(
 }
 
 const round = (ms: number) => Math.round(ms / 10) / 100;
+const READ_ONLY_STEPS: ReadonlySet<StepName> = new Set(['RECONCILE', 'DDL_REGRESSION']);
 
 async function writeLog(
   pool: pg.Pool,
@@ -143,9 +144,7 @@ export async function runSeed(
 
   for (const s of opts.steps) {
     if (!deps.steps.has(s)) {
-      throw new Error(
-        `step ${s}는 아직 구현되지 않았습니다(단계 7: DDL_REGRESSION)`,
-      );
+      throw new Error(`step ${s}는 구현되지 않았습니다`);
     }
   }
   if (opts.reset) {
@@ -215,7 +214,8 @@ export async function runSeed(
   }
 
   // 대량 적재 직후에는 통계가 없어(autovacuum 전) 목록·검색 쿼리가 나쁜 계획을 고른다 → 적재한 표를 바로 ANALYZE(CR-05 C7)
-  if (logs.some((l) => l.status === 'SUCCESS')) {
+  // 읽기 전용 검증 step(RECONCILE·DDL_REGRESSION)만 돌았으면 적재가 없으므로 생략
+  if (logs.some((l) => l.status === 'SUCCESS' && !READ_ONLY_STEPS.has(l.step))) {
     await deps.pool.query(
       'ANALYZE prj_biz_area, std_term, std_domain_cls, std_domain, std_code_cls, std_code, std_default_col_set, std_default_col, prj_table, prj_column',
     );
