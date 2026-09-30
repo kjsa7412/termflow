@@ -105,7 +105,7 @@ describe('④ composed', () => {
     expect(r.warnings).toEqual([]);
   });
 
-  it('대안 ≤ 2', () => {
+  it('대안 ≤ 2, 대표와 조각 수가 같은 읽기만(CR-10 C3)', () => {
     const s = makeSnapshot({
       terms: [
         ['가나다', 'X'],
@@ -113,12 +113,29 @@ describe('④ composed', () => {
         ['마', 'M'],
         ['가나', 'A'],
         ['다라마', 'B'],
+        ['라마', 'C'],
       ],
     });
     const r = runAutocomplete(s, '가나다라마');
     expect(r.type).toBe('composed');
-    expect(r.applied!.physicalNm).toBe('A_B');
-    expect(r.alternatives).toEqual([{ physicalNm: 'X_R_M', segments: expect.any(Array) }]);
+    // 대표 가나다|라마([3,2] — 앞 조각이 긴 쪽), 가나|다라마(2조각)는 대안, 가나다|라|마(3조각 — 라마를 쪼갬)는 빠진다
+    expect(r.applied!.physicalNm).toBe('X_C');
+    expect(r.alternatives).toEqual([{ physicalNm: 'A_B', segments: expect.any(Array) }]);
+  });
+
+  it('대표보다 조각이 많은 쪼갬(구분 → 구+분)만 있으면 대안 없음(CR-10 C3)', () => {
+    const s = makeSnapshot({
+      terms: [
+        ['검증', 'VRFC'],
+        ['구분', 'TP'],
+        ['구', 'OLD'],
+        ['분', 'MI'],
+      ],
+    });
+    const r = runAutocomplete(s, '검증구분');
+    expect(r.type).toBe('composed');
+    expect(r.applied!.physicalNm).toBe('VRFC_TP');
+    expect(r.alternatives).toEqual([]);
   });
 
   it('접미어 미등록 → 타입 NULL + W_SUFFIX_UNREGISTERED', () => {

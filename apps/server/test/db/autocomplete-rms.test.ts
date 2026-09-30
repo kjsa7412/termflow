@@ -115,6 +115,50 @@ describe('T9.2·T9.3 승계 649 논리명(실데이터)', () => {
     expect(composedSame).toBe(369);
   });
 
+  it('분절 대안 표시 기준(CR-10 C3): 대표보다 조각이 많은 쪼갬(구분 → 구+분)은 대안에서 빠진다', async () => {
+    const { rows } = await pool.query<{ logical_nm: string }>(
+      'select distinct logical_nm from prj_column where project_id = $1',
+      [rmsId],
+    );
+    let rawRows = 0;
+    let rawAlts = 0;
+    let shownRows = 0;
+    let shownAlts = 0;
+    const examples: string[] = [];
+    for (const r of rows) {
+      const a = runAutocomplete(snap, r.logical_nm);
+      if (a.type !== 'composed') continue;
+      const full = segmentFull(a.normalized, snap);
+      const raw = full.slice(1, 3);
+      if (raw.length > 0 && examples.length < 5)
+        examples.push(`${a.normalized} ${a.applied!.physicalNm} → ${joinPhysical(raw[0]!)}`);
+      if (raw.length > 0) rawRows++;
+      rawAlts += raw.length;
+      if (a.alternatives!.length > 0) shownRows++;
+      shownAlts += a.alternatives!.length;
+      for (const alt of a.alternatives!) {
+        // 대표와 같은 조각 수 · 1글자 조각 절반 이하 · 물리명이 대표와 다름
+        expect(alt.segments).toHaveLength(full[0]!.length);
+        expect(alt.physicalNm).not.toBe(a.applied!.physicalNm);
+      }
+    }
+    process.stderr.write(
+      `[autocomplete-rms] 분절 대안(고유 composed 논리명) 기준 전 ${rawRows}행 ${rawAlts}개 → 후 ${shownRows}행 ${shownAlts}개 · 빠진 예: ${examples.join(' / ')}\n`,
+    );
+    // 승계 RMS에는 대표와 조각 수가 같은 다른 읽기가 없다 — 이전 대안 21개는 모두 대표 조각을 1글자로 더 쪼갠 것
+    expect({ rawRows, rawAlts, shownRows, shownAlts }).toEqual({
+      rawRows: 21,
+      rawAlts: 21,
+      shownRows: 0,
+      shownAlts: 0,
+    });
+    // 편집기에서 보고된 노이즈: 연구게이트검증구분 → 구분을 구(OLD)+분(MI)로 쪼갠 대안
+    const gate = runAutocomplete(snap, '연구과제검증구분');
+    expect(gate.alternatives?.map((x) => x.physicalNm) ?? []).not.toContainEqual(
+      expect.stringMatching(/_OLD_MI$/),
+    );
+  });
+
   it('EXACT가 아닌 행(승계 match_type ≠ EXACT)의 분절 결과 스냅샷(고유 논리명)', async () => {
     const { rows } = await pool.query<{ logical_nm: string; physical_nm: string; mt: string }>(
       `select distinct logical_nm, physical_nm, match_type mt from prj_column
