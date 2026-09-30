@@ -434,7 +434,9 @@ const COLS = 7;
                 }}</span>
               </td>
               <td class="text-muted">
-                {{ t.updatedBy }} · {{ fmtTs(t.updatedAt).slice(0, 10) }}
+                <span class="nowrap"
+                  >{{ t.updatedBy }} · {{ fmtTs(t.updatedAt).slice(0, 10) }}</span
+                >
                 <template v-if="t.status === 'REJECTED' && t.reviewNote">
                   · 사유: {{ t.reviewNote }}</template
                 >

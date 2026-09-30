@@ -170,7 +170,7 @@ defineExpose({ refresh });
   <aside class="panel" aria-label="DDL 미리보기 패널" data-testid="ddl-panel">
     <div class="panel-header">
       <TfIcon name="code" />DDL 미리보기
-      <span v-if="loading" class="spinner" aria-label="갱신 중" />
+      <span v-if="loading" class="spinner" role="status" aria-label="갱신 중" />
       <span class="spacer" />
       <button
         class="btn btn-ghost btn-sm btn-icon"

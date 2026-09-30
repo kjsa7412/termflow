@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   joinPhysical,
+  pickAlternatives,
   segmentFull,
   segmentPartial,
   suffixOf,
@@ -83,6 +84,48 @@ describe('segmentFull — 최장일치 + 백트래킹, 조각 수 최소 우선'
 
   it('빈 입력', () => {
     expect(segmentFull('', snap)).toEqual([]);
+  });
+});
+
+describe('pickAlternatives — 편집기 대안 표시 기준(CR-10 C3)', () => {
+  it('대표와 조각 수가 같은 후보만, 최대 max', () => {
+    const d = dict({ 가: 'A', 가가: 'B', 가가가: 'C' });
+    // 후보: 가가가|가, 가가|가가, 가|가가가 — 모두 2조각
+    const full = segmentFull('가가가가', d);
+    expect(pickAlternatives(full, 2).map(kors)).toEqual(['가가|가가', '가|가가가']);
+    expect(pickAlternatives(full, 1).map(kors)).toEqual(['가가|가가']);
+  });
+
+  it('대표보다 조각이 많은 쪼갬은 뺀다: 검증|구분 대표 → 검증|구|분(OLD_MI) 제외', () => {
+    const d = dict({ 검증: 'VRFC', 구분: 'TP', 구: 'OLD', 분: 'MI' });
+    const full = segmentFull('검증구분', d);
+    expect(full.map(kors)).toEqual(['검증|구분', '검증|구|분']);
+    expect(pickAlternatives(full, 2)).toEqual([]);
+  });
+
+  it('1글자 조각이 절반을 넘는 후보는 뺀다, 절반 이하는 남긴다(총|사업비)', () => {
+    const d = dict({ 총사: 'A', 업비: 'B', 총: 'TOT', 사업비: 'BIZ_EXP' });
+    const full = segmentFull('총사업비', d);
+    expect(full.map(kors)).toEqual(['총사|업비', '총|사업비']);
+    expect(pickAlternatives(full, 2).map(kors)).toEqual(['총|사업비']);
+    const d2 = dict({ 가나다: 'X', 가: 'A', 나: 'B', 다: 'C', 나다: 'D', 가나: 'E' });
+    // 가나다(1조각) 대표 → 다른 1조각 없음. 3글자를 2조각으로: 가|나다, 가나|다 = 대표보다 많음 → 없음
+    expect(pickAlternatives(segmentFull('가나다', d2), 2)).toEqual([]);
+    const d3 = dict({ 가: 'A', 나: 'B', 다라: 'C', 가나: 'D', 라: 'E', 다: 'F' });
+    // 가나|다라(대표, 1글자 0) · 가|나|다라는 3조각 → 제외 · 가나|다|라도 3조각 → 제외
+    expect(pickAlternatives(segmentFull('가나다라', d3), 2)).toEqual([]);
+  });
+
+  it('물리명이 대표와 같으면 뺀다', () => {
+    const d = dict({ 가나: 'X_Y', 가: 'X', 나: 'Y', 다라: 'Z', 나다라: 'Q', 다: 'P', 라: 'R' });
+    const full = segmentFull('가나다라', d);
+    // 대표 가나|다라 = X_Y_Z, 가|나다라 = X_Q(다름 → 남음)
+    expect(full.map(kors).slice(0, 2)).toEqual(['가나|다라', '가|나다라']);
+    const alts = pickAlternatives(full, 2);
+    expect(alts.map(joinPhysical)).toEqual(['X_Q']);
+    const same = dict({ 가나: 'X_Y', 가: 'X', 나다라: 'Y_Z', 다라: 'Z' });
+    // 가나|다라 = X_Y_Z, 가|나다라 = X_Y_Z → 같은 물리명 제외
+    expect(pickAlternatives(segmentFull('가나다라', same), 2)).toEqual([]);
   });
 });
 

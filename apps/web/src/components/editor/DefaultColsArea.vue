@@ -19,17 +19,17 @@ const excluded = computed(() => ed.defaultRows.length - included.value);
 
 <template>
   <div :class="['default-cols', { 'is-collapsed': !open }]" data-testid="default-cols">
-    <div
-      class="default-cols-head"
-      role="button"
-      tabindex="0"
-      :aria-expanded="open"
-      @click="open = !open"
-      @keydown.enter.prevent="open = !open"
-      @keydown.space.prevent="open = !open"
-    >
-      <TfIcon name="chevron-down" class="chev" />
-      <span class="fw-600">기본컬럼 {{ ed.defaultRows.length }}개</span>
+    <!-- 머리 줄 클릭 = 접기(마우스), 키보드·보조기기는 안의 버튼(링크를 품은 role=button은 중첩 상호작용 — CR-10 C5) -->
+    <div class="default-cols-head" @click="open = !open">
+      <button
+        type="button"
+        class="default-cols-toggle"
+        :aria-expanded="open"
+        aria-controls="default-cols-body"
+      >
+        <TfIcon name="chevron-down" class="chev" />
+        <span class="fw-600">기본컬럼 {{ ed.defaultRows.length }}개</span>
+      </button>
       <TfBadge v-if="setNm" kind="outline">세트 '{{ setNm }}'</TfBadge>
       <span class="text-sm text-muted"
         >하단에 자동 포함 · {{ included }} 포함 · {{ excluded }} 제외 · 개별 제외 가능</span
@@ -37,7 +37,7 @@ const excluded = computed(() => ed.defaultRows.length - included.value);
       <span class="spacer" />
       <RouterLink class="text-sm" :to="settingsLink" @click.stop>프로젝트 설정</RouterLink>
     </div>
-    <div class="default-cols-body">
+    <div id="default-cols-body" class="default-cols-body">
       <p v-if="ed.defaultRows.length === 0" class="text-sm text-muted card-pad">
         이 프로젝트는 기본컬럼을 자동 포함하지 않거나 기본 세트가 없습니다.
       </p>

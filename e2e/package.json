@@ -1,0 +1,19 @@
+{
+  "name": "@termflow/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TermFlow 브라우저 E2E(Playwright, T10.4·T10.7) — dev 서버 + dev DB(RMS) 대상",
+  "scripts": {
+    "e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.4",
+    "exceljs": "^4.4.0",
+    "jszip": "3.10.2",
+    "typescript": "^5.9.3"
+  }
+}

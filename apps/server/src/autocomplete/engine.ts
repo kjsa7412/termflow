@@ -14,7 +14,14 @@ import {
   type ValidationIssue,
 } from '@termflow/shared';
 import { calculateDomain } from './domain-calculator.js';
-import { joinPhysical, segmentFull, segmentPartial, suffixOf, type Seg } from './segmenter.js';
+import {
+  joinPhysical,
+  pickAlternatives,
+  segmentFull,
+  segmentPartial,
+  suffixOf,
+  type Seg,
+} from './segmenter.js';
 import { normalizeLogical, type SnapDomain, type TermSnapshot } from './term-snapshot.js';
 
 /**
@@ -274,7 +281,7 @@ export function runAutocomplete(
         matchType: 'COMPOSED',
       },
       segments: toSegments(full[0]),
-      alternatives: full.slice(1, 1 + AUTOCOMPLETE_ALTERNATIVES_MAX).map((alt) => ({
+      alternatives: pickAlternatives(full, AUTOCOMPLETE_ALTERNATIVES_MAX).map((alt) => ({
         physicalNm: joinPhysical(alt),
         segments: toSegments(alt),
       })),

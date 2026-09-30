@@ -16,8 +16,8 @@
   --sh-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
   --sh-2: 0 8px 24px rgba(16, 24, 40, .14), 0 2px 6px rgba(16, 24, 40, .06);
   /* 의미 색 (배지·경고는 두 테마에서 동일) */
-  --success: #15803d; --success-bg: #dcfce7; --success-bd: #86efac;
-  --warning: #a16207; --warning-bg: #fef9c3; --warning-bd: #fde047;
+  --success: #137638; --success-bg: #dcfce7; --success-bd: #86efac; /* AA: bg-2 위 4.79 (CR-10 C5, 이전 #15803d = 4.20) */
+  --warning: #975a06; --warning-bg: #fef9c3; --warning-bd: #fde047; /* AA: bg-2 위 4.65 (CR-10 C5, 이전 #a16207 = 4.47 on bg-0) */
   --danger:  #b91c1c; --danger-bg:  #fee2e2; --danger-bd:  #fca5a5;
   --info:    #1d4ed8; --info-bg:    #dbeafe; --info-bd:    #93c5fd;
   --purple:  #6d28d9; --purple-bg:  #ede9fe; --purple-bd:  #c4b5fd;
@@ -33,7 +33,7 @@
   --bg-1: #ffffff;  /* 표면(카드·표·콘텐츠) */
   --bg-2: #e9ebef;  /* 표 머리글·호버·세그먼트 */
   --bd: #d9dde3; --bd-strong: #b8bfc9;
-  --tx-1: #171a20; --tx-2: #454b55; --tx-3: #6b7280;
+  --tx-1: #171a20; --tx-2: #454b55; --tx-3: #5f6672; /* WCAG AA 4.5:1 — bg-2(#e9ebef) 위 4.85 (CR-10 C5, 이전 #6b7280 = 4.05) */
   --accent: #4f46e5; --accent-hover: #4338ca; --accent-soft: #eef2ff; --accent-tx: #3730a3;
   --accent-ring: rgba(79, 70, 229, .25); --row-hover: rgba(79, 70, 229, .04);
   --code-kw: #4338ca;

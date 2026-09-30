@@ -28,6 +28,12 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'jsdom',
+    // 불안정 실패 원인 제거(CR-10 C1): 기본 forks 풀은 테스트 파일마다 새 프로세스에서 jsdom을 다시 만든다
+    // (단독 1.9초, 서버 테스트와 동시 실행 시 파일당 약 11초 · 11파일 합계 127초). 부하가 크면 워커 준비가
+    // vitest의 워커 시작 제한(60초)을 넘기고 파일이 테스트 0건으로 실패했다. vmThreads는 워커당 jsdom을 한 번 만들고
+    // 파일마다 새 VM 컨텍스트로 격리를 유지한다. 워커 수를 4로 묶어 서버 테스트(pnpm -r test 병렬)와의 CPU·메모리 경합도 줄인다.
+    pool: 'vmThreads',
+    maxWorkers: 4,
     // jsdom 환경 준비가 병렬 실행(서버 테스트와 동시)에서 수 초씩 걸린다 — 기본 5초 제한 대신 넉넉히(CR-05 C1).
     testTimeout: 30_000,
     hookTimeout: 60_000,

@@ -120,3 +120,79 @@ describe('권한 매트릭스(§7.3)', () => {
     },
   );
 });
+
+/**
+ * T10.1 매트릭스 완전성(CR-01-4): Nest 메타데이터(컨트롤러 경로 + 핸들러 경로·메서드)로 서버 라우트 전부를 모아
+ * 매트릭스 행(`METHOD path`)과 대조한다. 라우트가 추가됐는데 행이 없으면 실패한다. 경로 변수 이름은 무시(`:id` = `{id}`),
+ * 매트릭스 경로의 괄호 주석(`(→FINAL)` 등)은 같은 라우트의 다른 경우로 보고 지운다.
+ */
+describe('권한 매트릭스 완전성(T10.1)', () => {
+  /** 매트릭스 밖 라우트와 사유(§7.3 표 밖: 익명 공개 운영 엔드포인트). */
+  const EXEMPT: Record<string, string> = {
+    'GET /health': '헬스(§12.3, 익명·사내 모니터링 폴링) — test:db health',
+    'GET /metrics': '지표(§12.3, 익명·로컬, CR-08 C6) — test:db autocomplete /metrics',
+  };
+  const norm = (p: string) =>
+    `/${p}`
+      .replace(/\([^)]*\)/g, '')
+      .replace(/\/+/g, '/')
+      .replace(/\/$/, '')
+      .replace(/:[A-Za-z]+/g, '{}')
+      .replace(/\{[^}]*\}/g, '{}');
+
+  it('서버 라우트 전부가 매트릭스 행 또는 예외 목록에 있다(누락 0), 매트릭스에 없는 라우트 행도 0', async () => {
+    const { ModulesContainer } = await import('@nestjs/core');
+    const { METHOD_METADATA, PATH_METADATA } = await import('@nestjs/common/constants.js');
+    const { RequestMethod } = await import('@nestjs/common');
+    const routes = new Set<string>();
+    for (const mod of app.get(ModulesContainer).values()) {
+      for (const wrapper of mod.controllers.values()) {
+        const ctrl = wrapper.metatype as (new (...a: unknown[]) => unknown) | null;
+        if (!ctrl) continue;
+        const base = ([] as string[]).concat(Reflect.getMetadata(PATH_METADATA, ctrl) ?? '')[0]!;
+        const proto = ctrl.prototype as Record<string, unknown>;
+        for (const name of Object.getOwnPropertyNames(proto)) {
+          const fn = proto[name];
+          if (name === 'constructor' || typeof fn !== 'function') continue;
+          const sub = Reflect.getMetadata(PATH_METADATA, fn) as string | string[] | undefined;
+          const method = Reflect.getMetadata(METHOD_METADATA, fn) as number | undefined;
+          if (sub === undefined || method === undefined) continue;
+          // 전역 접두어 /api/v1은 매트릭스 표기에서도 생략한다(/health·/metrics는 접두어 밖)
+          for (const s of ([] as string[]).concat(sub)) {
+            routes.add(`${RequestMethod[method]} ${norm(`${base}/${s}`)}`);
+          }
+        }
+      }
+    }
+    const rows = new Set(
+      AUTHZ_MATRIX.map((r) => {
+        const p = r.path.startsWith('P') ? `/projects/{key}${r.path.slice(1)}` : r.path;
+        return `${r.method} ${norm(p)}`;
+      }),
+    );
+    const exempt = new Set(
+      Object.keys(EXEMPT).map((k) => k.replace(/ (.*)$/, (_m, p) => ` ${norm(p)}`)),
+    );
+    const missing = [...routes].filter((r) => !rows.has(r) && !exempt.has(r)).sort();
+    const stale = [...rows].filter((r) => !routes.has(r)).sort();
+    process.stderr.write(
+      `[authz-matrix] 라우트 ${routes.size}(예외 ${exempt.size}) · 매트릭스 고유 행 ${rows.size}(전체 ${AUTHZ_MATRIX.length}) · 누락 ${missing.length} · 없는 라우트 행 ${stale.length}\n`,
+    );
+    expect(missing, '매트릭스에 없는 라우트').toEqual([]);
+    expect(stale, '서버에 없는 매트릭스 행').toEqual([]);
+    expect(routes.size).toBeGreaterThanOrEqual(90);
+  });
+
+  it('비멤버 404 · 마지막 프로젝트 관리자 제거 409 행이 매트릭스에 있다(CR-01-4)', () => {
+    const projectRows = AUTHZ_MATRIX.filter((r) => r.path.startsWith('P'));
+    // 프로젝트 자원 행은 모두 비멤버(login)를 404로 판정한다(허용 역할에 login이 없는 한)
+    const notFound = projectRows.filter(
+      (r) => r.allow.includes('login') || r.denyByRole?.login === 404,
+    );
+    expect(notFound).toHaveLength(projectRows.length);
+    const lastPa = AUTHZ_MATRIX.filter(
+      (r) => r.path === 'P/members/{userId}' && r.ok.includes(409),
+    );
+    expect(lastPa.length).toBeGreaterThanOrEqual(1);
+  });
+});

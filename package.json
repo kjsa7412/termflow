@@ -20,7 +20,8 @@
     "db:reset": "pnpm --filter @termflow/server db:reset",
     "db:pull": "pnpm --filter @termflow/server db:pull",
     "migrate:seed": "pnpm --filter @termflow/server migrate:seed",
-    "check:no-ai": "node scripts/check-no-ai.mjs"
+    "check:no-ai": "node scripts/check-no-ai.mjs",
+    "e2e": "pnpm --filter @termflow/e2e e2e"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

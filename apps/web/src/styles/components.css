@@ -30,7 +30,7 @@
 .btn-sm.btn-icon { width: 26px; }
 .btn:disabled, .btn.is-disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 .btn .kbd { margin-left: 2px; }
-.btn-primary .kbd { border-color: rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .18); color: #fff; }
+.btn-primary .kbd { border-color: rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .12); color: #fff; } /* 흰 글자 대비 4.96 (CR-10 C5, .18 = 4.37) */
 .btn-link { background: none; border: 0; padding: 0; height: auto; color: var(--accent-tx); font-weight: 500; font-size: inherit; }
 .btn-link:hover { text-decoration: underline; }
 .btn-group { display: inline-flex; }
@@ -66,7 +66,7 @@
 .input.mono, .cell-input.mono { font-family: var(--mono); font-size: 12.5px; }
 .select {
   appearance: none; -webkit-appearance: none; padding-right: 28px; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6672' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;
 }
 .select-sm { padding-right: 24px; background-position: right 6px center; }
@@ -358,7 +358,7 @@
 .editor-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .editor-head { padding: 16px 24px 12px; border-bottom: 1px solid var(--bd); background: var(--bg-1); }
 .editor-body { flex: 1; padding: 16px 24px; overflow: auto; }
-.editor-foot { border-top: 1px solid var(--bd); background: var(--bg-1); position: sticky; bottom: 0; }
+.editor-foot { border-top: 1px solid var(--bd); background: var(--bg-1); position: sticky; bottom: 0; z-index: 5; } /* 그리드 고정 열(sticky-l z 2~4) 위 — CR-10 §3 V3 */
 .panel { width: 40%; min-width: 420px; flex: 0 0 auto; border-left: 1px solid var(--bd); background: var(--bg-0); display: flex; flex-direction: column; position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); align-self: flex-start; }
 .panel.is-closed { display: none; }
 .panel-resize { position: absolute; left: -3px; top: 0; bottom: 0; width: 6px; cursor: col-resize; }
@@ -458,6 +458,7 @@
 .default-cols { margin-top: 12px; border: 1px solid var(--bd); border-radius: var(--r-md); background: var(--bg-0); }
 .default-cols-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; user-select: none; }
 .default-cols-head .chev { transition: transform .15s; color: var(--tx-3); }
+.default-cols-toggle { display: inline-flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .default-cols.is-collapsed .chev { transform: rotate(-90deg); }
 .default-cols.is-collapsed .default-cols-body { display: none; }
 .default-cols-body { border-top: 1px solid var(--bd); background: var(--bg-1); border-radius: 0 0 var(--r-md) var(--r-md); }

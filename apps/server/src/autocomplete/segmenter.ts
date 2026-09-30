@@ -128,6 +128,34 @@ export function segmentFull(s: string, dict: SegDict, limit = FULL_CANDIDATES_MA
   return best;
 }
 
+const oneCharTerms = (r: readonly Seg[]) =>
+  r.filter((x) => x.kind === 'term' && x.kor.length === 1).length;
+
+/**
+ * 편집기에 보여 줄 분절 대안(CR-10 C3). 완전 분절 후보(`segmentFull`, 정렬 = 조각 수 최소 우선) 중 대표(첫 후보)를 뺀 나머지에서
+ *  ① 조각 수가 대표와 같은 것만 — 대표보다 조각이 많은 후보는 대표의 한 조각을 더 잘게 쪼갠 것('구분' → '구'+'분' =
+ *     OLD_MI)이라 현실적인 다른 읽기가 아니다(§5.3.1 "조각 수 최소 우선"과 같은 기준).
+ *  ② 1글자 용어 조각(숫자 제외)이 조각의 절반을 넘는 후보는 뺀다('총|사업비'처럼 1글자가 절반 이하인 읽기는 남긴다).
+ *  ③ 물리명이 대표·앞선 대안과 같으면 뺀다(보여 줘도 고를 차이가 없다).
+ * 최대 `max`개.
+ */
+export function pickAlternatives(full: readonly (readonly Seg[])[], max: number): Seg[][] {
+  const primary = full[0];
+  if (!primary) return [];
+  const seen = new Set([joinPhysical(primary)]);
+  const out: Seg[][] = [];
+  for (const alt of full.slice(1)) {
+    if (out.length >= max) break;
+    if (alt.length !== primary.length) continue;
+    if (oneCharTerms(alt) * 2 > alt.length) continue;
+    const phys = joinPhysical(alt);
+    if (seen.has(phys)) continue;
+    seen.add(phys);
+    out.push([...alt]);
+  }
+  return out;
+}
+
 interface Cell {
   unmatched: number;
   segs: number;
