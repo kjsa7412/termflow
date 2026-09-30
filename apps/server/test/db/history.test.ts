@@ -60,7 +60,12 @@ describe('이력·복원(T8.5)', () => {
   it('v1 생성 → v2(+C) → v3(-B) → v4(A 수정) → v2 복원 = v5(RESTORE), B는 새 ID, C·A는 ID 유지', async () => {
     const e = await as('editor');
     const c = await e.post(`${PA}/tables`, {
-      table: { bizAreaId: rp, tableNm: 'RP_HIST_MST', tableLogicalNm: '이력시험', description: 'v1 설명' },
+      table: {
+        bizAreaId: rp,
+        tableNm: 'RP_HIST_MST',
+        tableLogicalNm: '이력시험',
+        description: 'v1 설명',
+      },
       columns: [col('A', { isPk: true }), col('B')],
     });
     expect(c.status).toBe(201);
@@ -74,7 +79,10 @@ describe('이력·복원(T8.5)', () => {
     d = await get();
     const idC = d.columns.find((x) => x.physicalNm === 'C')!.columnId;
     b = toBody(d);
-    await e.put(`${PA}/tables/${id}`, { ...b, columns: b.columns.filter((x) => x.physicalNm !== 'B') }); // v3
+    await e.put(`${PA}/tables/${id}`, {
+      ...b,
+      columns: b.columns.filter((x) => x.physicalNm !== 'B'),
+    }); // v3
     d = await get();
     b = toBody(d);
     await e.put(`${PA}/tables/${id}`, {
@@ -95,7 +103,13 @@ describe('이력·복원(T8.5)', () => {
 
     const v2 = (await e.get(`${PA}/tables/${id}/history/2`)).body as TableHistoryDetail;
     expect(v2.snapshot.schemaVersion).toBe(1);
-    expect(v2.snapshot.table).toMatchObject({ tableId: id, projectKey: 'PRJA', bizCd: 'RP', version: 2, description: 'v1 설명' });
+    expect(v2.snapshot.table).toMatchObject({
+      tableId: id,
+      projectKey: 'PRJA',
+      bizCd: 'RP',
+      version: 2,
+      description: 'v1 설명',
+    });
     expect(v2.snapshot.columns.map((x) => [x.physicalNm, x.columnId, x.colSeq])).toEqual([
       ['A', v1Ids['A'], 1],
       ['B', v1Ids['B'], 2],
@@ -140,13 +154,20 @@ describe('이력·복원(T8.5)', () => {
     ).domain;
     expect(dom.domainId).toBeGreaterThan(0);
     const c = await e.post(`${PA}/tables`, {
-      table: { bizAreaId: rp, tableNm: 'RP_HIST_DOM', tableLogicalNm: '도메인 복원', description: null },
+      table: {
+        bizAreaId: rp,
+        tableNm: 'RP_HIST_DOM',
+        tableLogicalNm: '도메인 복원',
+        description: null,
+      },
       columns: [col('DOM_ID', { domainId: dom.domainId, matchType: 'EXACT' })],
     });
     const id = (c.body as TableSaveResponse).tableId;
     const d = (await e.get(`${PA}/tables/${id}`)).body as TableDetail;
     await e.put(`${PA}/tables/${id}`, { ...toBody(d), columns: [col('OTHER')] }); // v2
-    expect([200, 204]).toContain((await pa.delete(`${PA}/standards/domains/${dom.domainId}`)).status);
+    expect([200, 204]).toContain(
+      (await pa.delete(`${PA}/standards/domains/${dom.domainId}`)).status,
+    );
     const r = await e.post(`${PA}/tables/${id}/history/1/restore`, { version: 2 });
     expect(r.status, JSON.stringify(r.body)).toBe(200);
     const after = (await e.get(`${PA}/tables/${id}`)).body as TableDetail;
@@ -158,6 +179,8 @@ describe('이력·복원(T8.5)', () => {
       )
     ).rows[0].id as number;
     expect((await e.get(`${PA}/tables/${other}/history`)).status).toBe(404);
-    expect((await e.post(`${PA}/tables/${other}/history/1/restore`, { version: 1 })).status).toBe(404);
+    expect((await e.post(`${PA}/tables/${other}/history/1/restore`, { version: 1 })).status).toBe(
+      404,
+    );
   });
 });

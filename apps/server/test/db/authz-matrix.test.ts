@@ -52,7 +52,12 @@ beforeAll(async () => {
       tableId,
       JSON.stringify({
         schemaVersion: 1,
-        table: { tableId, bizAreaId: bizId('RP'), tableNm: 'RP_RSCH_PRJ_MST', tableLogicalNm: '연구과제마스터' },
+        table: {
+          tableId,
+          bizAreaId: bizId('RP'),
+          tableNm: 'RP_RSCH_PRJ_MST',
+          tableLogicalNm: '연구과제마스터',
+        },
         columns: [],
         action: 'CREATE',
       }),

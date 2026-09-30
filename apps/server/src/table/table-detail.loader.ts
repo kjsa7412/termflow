@@ -217,25 +217,23 @@ export function readSnapshot(raw: unknown): TableSnapshot {
   const s = (raw ?? {}) as Partial<TableSnapshot> & { schemaVersion?: number };
   const v = s.schemaVersion ?? 1;
   if (v !== 1) throw new Error(`알 수 없는 스냅샷 schemaVersion: ${v}`);
-  const cols = (s.columns ?? []).map(
-    (c, i): TableSnapshotColumn => ({
-      columnId: c.columnId ?? null,
-      colSeq: c.colSeq ?? i + 1,
-      logicalNm: c.logicalNm ?? '',
-      physicalNm: c.physicalNm ?? '',
-      isPk: c.isPk ?? false,
-      dataType: c.dataType ?? null,
-      dataLength: c.dataLength ?? null,
-      dataScale: c.dataScale ?? null,
-      isNullable: c.isNullable ?? true,
-      defaultVal: c.defaultVal ?? null,
-      colComment: c.colComment ?? null,
-      domainId: c.domainId ?? null,
-      codeClsId: c.codeClsId ?? null,
-      defaultColId: c.defaultColId ?? null,
-      matchType: c.matchType ?? 'MANUAL',
-    }),
-  );
+  const cols = (s.columns ?? []).map((c, i): TableSnapshotColumn => ({
+    columnId: c.columnId ?? null,
+    colSeq: c.colSeq ?? i + 1,
+    logicalNm: c.logicalNm ?? '',
+    physicalNm: c.physicalNm ?? '',
+    isPk: c.isPk ?? false,
+    dataType: c.dataType ?? null,
+    dataLength: c.dataLength ?? null,
+    dataScale: c.dataScale ?? null,
+    isNullable: c.isNullable ?? true,
+    defaultVal: c.defaultVal ?? null,
+    colComment: c.colComment ?? null,
+    domainId: c.domainId ?? null,
+    codeClsId: c.codeClsId ?? null,
+    defaultColId: c.defaultColId ?? null,
+    matchType: c.matchType ?? 'MANUAL',
+  }));
   return {
     ...(s as TableSnapshot),
     schemaVersion: 1,

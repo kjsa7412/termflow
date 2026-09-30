@@ -149,10 +149,14 @@ const snapCols = computed(() => picked.value?.snapshot.columns ?? []);
             <div class="alert-title">
               v{{ picked.version }}의 컬럼으로 새 버전 v{{ currentVersion + 1 }}을 만듭니다
             </div>
-            현재 v{{ currentVersion }}은 이력에 그대로 남습니다(선형 이력). 그 사이 삭제된 컬럼은 새 컬럼으로
-            만들어집니다.
+            현재 v{{ currentVersion }}은 이력에 그대로 남습니다(선형 이력). 그 사이 삭제된 컬럼은 새
+            컬럼으로 만들어집니다.
             <div class="row mt-3">
-              <TfButton variant="primary" :loading="busy" data-testid="confirm-restore" @click="restore"
+              <TfButton
+                variant="primary"
+                :loading="busy"
+                data-testid="confirm-restore"
+                @click="restore"
                 >복원</TfButton
               >
               <TfButton variant="ghost" @click="confirming = false">취소</TfButton>

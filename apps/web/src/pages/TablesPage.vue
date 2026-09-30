@@ -150,7 +150,8 @@ const canEdit = computed(
     project.value?.kind !== 'TEMPLATE',
 );
 /** 삭제: DRAFT 편집자 · FINAL 프로젝트 관리자(§8.4). */
-const canDelete = (t: TableListItem) => canEdit.value && (t.status === 'DRAFT' || role.value === 'ADMIN');
+const canDelete = (t: TableListItem) =>
+  canEdit.value && (t.status === 'DRAFT' || role.value === 'ADMIN');
 const editorLink = (t: TableListItem) => `/projects/${key.value}/tables/${t.tableId}`;
 const newTableLink = computed(() => ({
   path: `/projects/${key.value}/tables/new`,
@@ -228,7 +229,9 @@ const COLS = 9;
           class="btn btn-primary"
           :to="newTableLink"
           data-testid="new-table"
-          ><TfIcon name="plus" />새 테이블{{ currentBiz ? ` · ${currentBiz.bizCd}` : '' }}</RouterLink
+          ><TfIcon name="plus" />새 테이블{{
+            currentBiz ? ` · ${currentBiz.bizCd}` : ''
+          }}</RouterLink
         >
       </div>
     </div>
@@ -441,7 +444,9 @@ const COLS = 9;
                         role="menuitem"
                         :to="editorLink(t)"
                         @click="close()"
-                        ><TfIcon name="edit" />{{ canEdit && t.status === 'DRAFT' ? '편집' : '열기' }}</RouterLink
+                        ><TfIcon name="edit" />{{
+                          canEdit && t.status === 'DRAFT' ? '편집' : '열기'
+                        }}</RouterLink
                       >
                       <button
                         v-if="canEdit"
@@ -520,8 +525,9 @@ const COLS = 9;
       @cancel="deleting = null"
     >
       <p>
-        <strong>{{ deleting?.logicalNm }}</strong>({{ deleting?.status }}, 컬럼 {{ deleting?.colCnt }})과 컬럼·변경이력이
-        모두 삭제됩니다. 되돌릴 수 없습니다.
+        <strong>{{ deleting?.logicalNm }}</strong
+        >({{ deleting?.status }}, 컬럼 {{ deleting?.colCnt }})과 컬럼·변경이력이 모두 삭제됩니다.
+        되돌릴 수 없습니다.
       </p>
     </ConfirmDeleteModal>
   </template>

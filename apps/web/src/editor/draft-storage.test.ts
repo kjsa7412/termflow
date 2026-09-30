@@ -50,7 +50,10 @@ describe('임시저장(§8.7)', () => {
   it('전체 50건 상한: 오래된 것부터 삭제(방금 쓴 항목은 유지)', () => {
     const base = Date.now() - 3600_000;
     for (let i = 0; i < DRAFT_MAX_ENTRIES; i++) {
-      localStorage.setItem(draftKey('RMS', i + 100), JSON.stringify(draft(new Date(base + i * 1000).toISOString())));
+      localStorage.setItem(
+        draftKey('RMS', i + 100),
+        JSON.stringify(draft(new Date(base + i * 1000).toISOString())),
+      );
     }
     expect(saveDraft(draftKey('RMS', 999), draft(new Date().toISOString()))).toBe(true);
     const keys = listDrafts().map((d) => d.key);
@@ -60,7 +63,10 @@ describe('임시저장(§8.7)', () => {
   });
 
   it('512KB 초과 항목은 저장하지 않는다', () => {
-    const big = { ...draft(new Date().toISOString()), table: { ...draft('x').table, description: 'x'.repeat(600 * 1024) } };
+    const big = {
+      ...draft(new Date().toISOString()),
+      table: { ...draft('x').table, description: 'x'.repeat(600 * 1024) },
+    };
     expect(saveDraft(draftKey('RMS', 3), big)).toBe(false);
     expect(localStorage.getItem(draftKey('RMS', 3))).toBeNull();
   });

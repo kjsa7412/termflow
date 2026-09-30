@@ -43,13 +43,7 @@ export type RowState =
   | 'code';
 
 export type CellField =
-  | 'logicalNm'
-  | 'physicalNm'
-  | 'typeText'
-  | 'defaultVal'
-  | 'colComment'
-  | 'isPk'
-  | 'isNullable';
+  'logicalNm' | 'physicalNm' | 'typeText' | 'defaultVal' | 'colComment' | 'isPk' | 'isNullable';
 
 export interface EditorRow {
   uid: string;
@@ -221,13 +215,13 @@ export const isBlankRow = (r: EditorRow) =>
   r.typeText.trim() === '';
 
 /** 타입 셀 원문 → 3분할(StdTypeParser 공유, §6.3). 길이 규칙(E_TYPE_LEN_*)은 서버 검증이 판정. */
-export function parseTypeCell(text: string): Pick<
-  EditorRow,
-  'dataType' | 'dataLength' | 'dataScale' | 'typeError'
-> {
+export function parseTypeCell(
+  text: string,
+): Pick<EditorRow, 'dataType' | 'dataLength' | 'dataScale' | 'typeError'> {
   const r = splitStdType(text);
   if (r.ok) return { dataType: r.type, dataLength: r.length, dataScale: r.scale, typeError: null };
-  if (r.reason === 'EMPTY') return { dataType: null, dataLength: null, dataScale: null, typeError: null };
+  if (r.reason === 'EMPTY')
+    return { dataType: null, dataLength: null, dataScale: null, typeError: null };
   return {
     dataType: null,
     dataLength: null,
@@ -294,7 +288,10 @@ export function createEditorCore() {
   const mapIssue = (i: ValidationIssue, severity: 'E' | 'W'): RowIssue => ({
     ...i,
     severity,
-    uid: i.target === 'column' && i.rowIndex !== undefined ? (issueUids.value[i.rowIndex] ?? null) : null,
+    uid:
+      i.target === 'column' && i.rowIndex !== undefined
+        ? (issueUids.value[i.rowIndex] ?? null)
+        : null,
   });
   const issues = computed<RowIssue[]>(() => {
     const local = localErrors.value;
@@ -318,7 +315,8 @@ export function createEditorCore() {
     errors.value.find(
       (i) =>
         i.uid === uid &&
-        (i.field === field || (field === 'typeText' && (i.field === 'dataType' || i.field === 'dataLength'))),
+        (i.field === field ||
+          (field === 'typeText' && (i.field === 'dataType' || i.field === 'dataLength'))),
     ) ?? null;
   /** 표시 상태: E가 있으면 invalid(파생), 아니면 행 상태. */
   const displayState = (r: EditorRow): RowState | 'invalid' =>
@@ -361,8 +359,7 @@ export function createEditorCore() {
     ];
     // 세트 순서(세트에 없는 기본컬럼은 뒤)
     return merged.sort(
-      (a, b) =>
-        (byId.get(a.defaultColId ?? -1) ?? 1e6) - (byId.get(b.defaultColId ?? -1) ?? 1e6),
+      (a, b) => (byId.get(a.defaultColId ?? -1) ?? 1e6) - (byId.get(b.defaultColId ?? -1) ?? 1e6),
     );
   }
 
@@ -377,7 +374,10 @@ export function createEditorCore() {
   }
 
   /** GET P/tables/{id} 결과로 교체(최신본 새로고침도 같은 경로). */
-  function load(d: Pick<TableDetail, 'table' | 'columns'> & Partial<TableDetail>, defaultSet: readonly DefaultColItem[] = []): void {
+  function load(
+    d: Pick<TableDetail, 'table' | 'columns'> & Partial<TableDetail>,
+    defaultSet: readonly DefaultColItem[] = [],
+  ): void {
     projectKey.value = d.table.projectKey;
     tableId.value = d.table.tableId;
     version.value = d.table.version;
@@ -397,7 +397,11 @@ export function createEditorCore() {
   /** 새 테이블(§10.5 "빈 행 1개 + 기본컬럼 영역"): 업무구분 접두어로 물리명 시작, 기본 세트 9행 선삽입(§8.2). */
   function initNew(
     key: string,
-    opts: { bizAreaId: number | null; prefix: string | null; defaultSet: readonly DefaultColItem[] },
+    opts: {
+      bizAreaId: number | null;
+      prefix: string | null;
+      defaultSet: readonly DefaultColItem[];
+    },
   ): void {
     reset(key);
     header.bizAreaId = opts.bizAreaId;
@@ -464,7 +468,14 @@ export function createEditorCore() {
     const i = rows.value.findIndex((r) => r.uid === uid);
     if (i < 0) return null;
     const src = rows.value[i]!;
-    const row: EditorRow = { ...src, uid: newUid(), columnId: null, physicalNm: `${src.physicalNm}`, state: 'manual', matchType: 'MANUAL' };
+    const row: EditorRow = {
+      ...src,
+      uid: newUid(),
+      columnId: null,
+      physicalNm: `${src.physicalNm}`,
+      state: 'manual',
+      matchType: 'MANUAL',
+    };
     rows.value.splice(i + 1, 0, row);
     return row;
   }
@@ -497,7 +508,11 @@ export function createEditorCore() {
     if (r) r.included = included ?? !r.included;
   }
   /** 업무구분 변경(§8.4): 물리명이 이전 업무구분 접두어로 시작하면 새 접두어로 바꾼다(§5.5 "접두어만 교체"). */
-  function changeBizArea(bizAreaId: number | null, oldPrefix: string | null, newPrefix: string | null): void {
+  function changeBizArea(
+    bizAreaId: number | null,
+    oldPrefix: string | null,
+    newPrefix: string | null,
+  ): void {
     header.bizAreaId = bizAreaId;
     const nm = header.tableNm;
     if (oldPrefix && nm.toUpperCase().startsWith(oldPrefix.toUpperCase())) {
@@ -535,12 +550,16 @@ export function createEditorCore() {
     status.value = r.status;
     setServerIssues([], r.warnings, sentUids);
     // 저장 중에 편집이 계속됐으면 그만큼은 dirty로 남는다
-    baseline.value = sentJson === payloadJson.value ? payloadJson.value : sentJsonWithIds(sentJson, r);
+    baseline.value =
+      sentJson === payloadJson.value ? payloadJson.value : sentJsonWithIds(sentJson, r);
   }
   function sentJsonWithIds(sentJson: string, r: TableSaveResponse): string {
     try {
       const p = JSON.parse(sentJson) as { table: unknown; columns: ColumnInput[] };
-      p.columns = p.columns.map((c, i) => ({ ...c, columnId: r.columns[i]?.columnId ?? c.columnId }));
+      p.columns = p.columns.map((c, i) => ({
+        ...c,
+        columnId: r.columns[i]?.columnId ?? c.columnId,
+      }));
       return JSON.stringify(p);
     } catch {
       return sentJson;

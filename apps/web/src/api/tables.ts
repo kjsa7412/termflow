@@ -70,11 +70,8 @@ export function tablesApi(client: ApiClient = api) {
       client.post<TableSaveResponse>(`${p(key)}/tables`, body),
     save: (key: string, id: number, body: TableCreateBody & { version: number }) =>
       client.put<TableSaveResponse>(`${p(key)}/tables/${id}`, body),
-    validate: (
-      key: string,
-      body: TableCreateBody & { tableId?: number },
-      signal?: AbortSignal,
-    ) => client.post<TableValidateResponse>(`${p(key)}/tables/validate`, body, { signal }),
+    validate: (key: string, body: TableCreateBody & { tableId?: number }, signal?: AbortSignal) =>
+      client.post<TableValidateResponse>(`${p(key)}/tables/validate`, body, { signal }),
     remove: (key: string, id: number) => client.del<void>(`${p(key)}/tables/${id}`),
     setStatus: (
       key: string,

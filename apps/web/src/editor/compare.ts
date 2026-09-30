@@ -99,7 +99,14 @@ export function alignColumns(
     for (let j = lastRight + 1; j < limit; j++) {
       if (!used.has(j)) {
         used.add(j);
-        rows.push({ kind: 'right', leftNo: null, rightNo: j + 1, left: null, right: right[j]!, changes: [] });
+        rows.push({
+          kind: 'right',
+          leftNo: null,
+          rightNo: j + 1,
+          left: null,
+          right: right[j]!,
+          changes: [],
+        });
       }
     }
   };
@@ -128,4 +135,5 @@ export function alignColumns(
 }
 
 /** 차이 건수(동일 행 제외) — 충돌 모달 "변경 n건을 되돌린다". */
-export const diffCount = (rows: readonly CompareRow[]) => rows.filter((r) => r.kind !== 'same').length;
+export const diffCount = (rows: readonly CompareRow[]) =>
+  rows.filter((r) => r.kind !== 'same').length;

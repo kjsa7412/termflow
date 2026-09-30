@@ -10,7 +10,12 @@ import { normalizeInput } from '../../src/table/table.service.js';
 import { readSnapshot } from '../../src/table/table-detail.loader.js';
 
 // T8.2 저장 diff(§8.2): 삽입·수정·삭제·순서·덮어쓰기 시 남이 지운 ID
-const col = (id: number, seq: number, nm: string, over: Partial<ExistingColumn> = {}): ExistingColumn => ({
+const col = (
+  id: number,
+  seq: number,
+  nm: string,
+  over: Partial<ExistingColumn> = {},
+): ExistingColumn => ({
   columnId: id,
   colSeq: seq,
   logicalNm: `${nm} 논리`,
@@ -37,7 +42,10 @@ const EXIST = [col(11, 1, 'A'), col(12, 2, 'B'), col(13, 3, 'C')];
 
 describe('planColumnDiff(§8.2)', () => {
   it('변경 없음: 전부 keep, 요약 +0 ~0 -0', () => {
-    const p = planColumnDiff(EXIST, EXIST.map((c) => inp(c)));
+    const p = planColumnDiff(
+      EXIST,
+      EXIST.map((c) => inp(c)),
+    );
     expect(p.ops.map((o) => o.kind)).toEqual(['keep', 'keep', 'keep']);
     expect(p.deletes).toEqual([]);
     expect(p.summary).toEqual({ ins: 0, upd: 0, del: 0, reordered: false });
@@ -92,7 +100,10 @@ describe('planColumnDiff(§8.2)', () => {
   });
 
   it('덮어쓰기: 남이 지운 columnId(기존에 없음) → 신규 삽입, 다른 테이블 ID도 신규', () => {
-    const p = planColumnDiff([EXIST[0]!], [inp(EXIST[0]!), inp(EXIST[1]!), { ...fresh('Z'), columnId: 999 }]);
+    const p = planColumnDiff(
+      [EXIST[0]!],
+      [inp(EXIST[0]!), inp(EXIST[1]!), { ...fresh('Z'), columnId: 999 }],
+    );
     expect(p.ops.map((o) => o.kind)).toEqual(['keep', 'insert', 'insert']);
     expect(p.summary.ins).toBe(2);
     expect(p.deletes).toEqual([]);
@@ -106,7 +117,12 @@ describe('planColumnDiff(§8.2)', () => {
 
   it('전부 삭제·빈 테이블 신규', () => {
     expect(planColumnDiff(EXIST, []).summary).toEqual({ ins: 0, upd: 0, del: 3, reordered: false });
-    expect(planColumnDiff([], [fresh('A')]).summary).toEqual({ ins: 1, upd: 0, del: 0, reordered: false });
+    expect(planColumnDiff([], [fresh('A')]).summary).toEqual({
+      ins: 1,
+      upd: 0,
+      del: 0,
+      reordered: false,
+    });
   });
 });
 
@@ -131,9 +147,19 @@ describe('저장 정규화·복제 이름·스냅샷 읽기', () => {
   });
 
   it('스냅샷 schemaVersion: 없으면 1판으로 보고 빠진 필드 기본값, 모르는 판은 오류', () => {
-    const s = readSnapshot({ table: { tableId: 1 }, columns: [{ physicalNm: 'A' }], action: 'MIGRATE' });
+    const s = readSnapshot({
+      table: { tableId: 1 },
+      columns: [{ physicalNm: 'A' }],
+      action: 'MIGRATE',
+    });
     expect(s.schemaVersion).toBe(1);
-    expect(s.columns[0]).toMatchObject({ physicalNm: 'A', colSeq: 1, isNullable: true, matchType: 'MANUAL', columnId: null });
+    expect(s.columns[0]).toMatchObject({
+      physicalNm: 'A',
+      colSeq: 1,
+      isNullable: true,
+      matchType: 'MANUAL',
+      columnId: null,
+    });
     expect(() => readSnapshot({ schemaVersion: 2 })).toThrow(/schemaVersion/);
   });
 });

@@ -66,8 +66,9 @@ const excluded = computed(() => ed.defaultRows.length - included.value);
                   :checked="r.included"
                   :disabled="readOnly"
                   :aria-label="`기본컬럼 ${r.physicalNm} 포함`"
-                  @change="ed.toggleDefault(r.uid, ($event.target as HTMLInputElement).checked)"
-                /><span class="check-box" aria-hidden="true"
+                  @change="
+                    ed.toggleDefault(r.uid, ($event.target as HTMLInputElement).checked)
+                  " /><span class="check-box" aria-hidden="true"
               /></label>
             </td>
             <td />

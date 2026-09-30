@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue';
-import { useEditorStore, type CellField, type EditorRow, type RowState } from '../../stores/editor.js';
+import {
+  useEditorStore,
+  type CellField,
+  type EditorRow,
+  type RowState,
+} from '../../stores/editor.js';
 import TfBadge from '../ui/TfBadge.vue';
 import TfIcon from '../ui/TfIcon.vue';
 import TfPopover from '../ui/TfPopover.vue';
@@ -16,8 +21,17 @@ const props = defineProps<{ readOnly: boolean }>();
 const ed = useEditorStore();
 const root = ref<HTMLElement | null>(null);
 
-type TextField = Extract<CellField, 'logicalNm' | 'physicalNm' | 'typeText' | 'defaultVal' | 'colComment'>;
-const TEXT_FIELDS: TextField[] = ['logicalNm', 'physicalNm', 'typeText', 'defaultVal', 'colComment'];
+type TextField = Extract<
+  CellField,
+  'logicalNm' | 'physicalNm' | 'typeText' | 'defaultVal' | 'colComment'
+>;
+const TEXT_FIELDS: TextField[] = [
+  'logicalNm',
+  'physicalNm',
+  'typeText',
+  'defaultVal',
+  'colComment',
+];
 const LABEL: Record<TextField, string> = {
   logicalNm: '논리명',
   physicalNm: '물리명',
@@ -28,7 +42,8 @@ const LABEL: Record<TextField, string> = {
 
 async function focusCell(uid: string, field: string = 'logicalNm'): Promise<void> {
   await nextTick();
-  const f = field === 'dataType' || field === 'dataLength' || field === 'dataScale' ? 'typeText' : field;
+  const f =
+    field === 'dataType' || field === 'dataLength' || field === 'dataScale' ? 'typeText' : field;
   const el =
     root.value?.querySelector<HTMLElement>(`[data-uid="${uid}"][data-field="${f}"]`) ??
     root.value?.querySelector<HTMLElement>(`[data-uid="${uid}"][data-field="logicalNm"]`);
@@ -127,7 +142,11 @@ const err = (r: EditorRow, f: string) => ed.fieldError(r.uid, f);
 const rowWarnings = (r: EditorRow) => ed.issuesOf(r.uid).filter((i) => i.severity === 'W');
 const rowErrors = (r: EditorRow) => ed.issuesOf(r.uid).filter((i) => i.severity === 'E');
 const codeText = (r: EditorRow) =>
-  r.codeCls ? `${r.codeCls.bizCd}/${r.codeCls.codeCls} ${r.codeCls.codeClsNm}` : r.codeClsId !== null ? `#${r.codeClsId}` : null;
+  r.codeCls
+    ? `${r.codeCls.bizCd}/${r.codeCls.codeCls} ${r.codeCls.codeClsNm}`
+    : r.codeClsId !== null
+      ? `#${r.codeClsId}`
+      : null;
 </script>
 
 <template>
@@ -178,20 +197,23 @@ const codeText = (r: EditorRow) =>
                 :aria-label="`${i + 1}행 PK`"
                 data-field="isPk"
                 :data-uid="r.uid"
-                @change="input(r, 'isPk', $event)"
-              /><span class="check-box" aria-hidden="true"
+                @change="input(r, 'isPk', $event)" /><span class="check-box" aria-hidden="true"
             /></label>
           </td>
           <td
             v-for="f in TEXT_FIELDS.slice(0, 3)"
             :key="f"
-            :class="f === 'logicalNm' ? 'c-logical sticky-l' : f === 'physicalNm' ? 'c-phys' : 'c-type'"
+            :class="
+              f === 'logicalNm' ? 'c-logical sticky-l' : f === 'physicalNm' ? 'c-phys' : 'c-type'
+            "
           >
             <input
               :class="['cell-input', { mono: f !== 'logicalNm', 'is-invalid': err(r, f) }]"
               :value="r[f]"
               :readonly="readOnly"
-              :placeholder="f === 'logicalNm' ? '논리명 입력' : f === 'typeText' ? 'VARCHAR(20)' : '—'"
+              :placeholder="
+                f === 'logicalNm' ? '논리명 입력' : f === 'typeText' ? 'VARCHAR(20)' : '—'
+              "
               :aria-label="`${i + 1}행 ${LABEL[f]}`"
               :aria-invalid="err(r, f) ? 'true' : undefined"
               :title="err(r, f)?.message"
@@ -212,11 +234,16 @@ const codeText = (r: EditorRow) =>
                 :aria-label="`${i + 1}행 NULL 허용`"
                 data-field="isNullable"
                 :data-uid="r.uid"
-                @change="input(r, 'isNullable', $event)"
-              /><span class="check-box" aria-hidden="true"
+                @change="input(r, 'isNullable', $event)" /><span
+                class="check-box"
+                aria-hidden="true"
             /></label>
           </td>
-          <td v-for="f in TEXT_FIELDS.slice(3)" :key="f" :class="f === 'defaultVal' ? 'c-def' : 'c-comment'">
+          <td
+            v-for="f in TEXT_FIELDS.slice(3)"
+            :key="f"
+            :class="f === 'defaultVal' ? 'c-def' : 'c-comment'"
+          >
             <input
               :class="['cell-input', { mono: f === 'defaultVal', 'is-invalid': err(r, f) }]"
               :value="r[f]"
@@ -244,18 +271,33 @@ const codeText = (r: EditorRow) =>
                 v-if="rowErrors(r).length > 0"
                 kind="danger"
                 icon="alert-circle"
-                :title="rowErrors(r).map((x) => x.message).join('\n')"
-                >{{ rowErrors(r).length === 1 ? rowErrors(r)[0]!.message : `오류 ${rowErrors(r).length}` }}</TfBadge
+                :title="
+                  rowErrors(r)
+                    .map((x) => x.message)
+                    .join('\n')
+                "
+                >{{
+                  rowErrors(r).length === 1
+                    ? rowErrors(r)[0]!.message
+                    : `오류 ${rowErrors(r).length}`
+                }}</TfBadge
               >
-              <TfBadge v-else-if="BADGE[r.state]" :kind="BADGE[r.state]!.kind" :title="r.domainNm ?? undefined">{{
-                BADGE[r.state]!.text
-              }}</TfBadge>
+              <TfBadge
+                v-else-if="BADGE[r.state]"
+                :kind="BADGE[r.state]!.kind"
+                :title="r.domainNm ?? undefined"
+                >{{ BADGE[r.state]!.text }}</TfBadge
+              >
               <span v-else class="text-sm text-muted">입력 대기</span>
               <TfBadge
                 v-if="rowWarnings(r).length > 0"
                 kind="warning"
                 icon="alert-triangle"
-                :title="rowWarnings(r).map((x) => x.message).join('\n')"
+                :title="
+                  rowWarnings(r)
+                    .map((x) => x.message)
+                    .join('\n')
+                "
                 >경고 {{ rowWarnings(r).length }}</TfBadge
               >
             </span>
@@ -276,7 +318,12 @@ const codeText = (r: EditorRow) =>
                 </button>
               </template>
               <template #default="{ close }">
-                <button class="dropdown-item" type="button" role="menuitem" @click="(ed.duplicateRow(r.uid), close())">
+                <button
+                  class="dropdown-item"
+                  type="button"
+                  role="menuitem"
+                  @click="(ed.duplicateRow(r.uid), close())"
+                >
                   <TfIcon name="duplicate" />행 복제
                 </button>
                 <button

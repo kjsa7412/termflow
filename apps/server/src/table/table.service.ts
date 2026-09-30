@@ -249,7 +249,10 @@ export class TableService {
     const bizBad = refErrors.some((e) => e.target === 'table');
     return {
       input,
-      errors: [...refErrors, ...v.errors.filter((e) => !(bizBad && e.code === 'E_BIZ_AREA_REQUIRED'))],
+      errors: [
+        ...refErrors,
+        ...v.errors.filter((e) => !(bizBad && e.code === 'E_BIZ_AREA_REQUIRED')),
+      ],
       warnings: v.warnings,
     };
   }
@@ -488,7 +491,11 @@ export class TableService {
         tx,
         ctx,
         id,
-        { action: mode.action, changeSummary: summary, ...(mode.extra ? { extra: mode.extra } : {}) },
+        {
+          action: mode.action,
+          changeSummary: summary,
+          ...(mode.extra ? { extra: mode.extra } : {}),
+        },
         a,
       );
       return { conflict: false as const, h, summary, warnings: c.warnings };
@@ -534,11 +541,9 @@ export class TableService {
     const r = await this.db.transaction(async (tx) => {
       const cur = await this.header(tx, ctx, id);
       if (cur.status === input.status) {
-        throw new ConflictProblem(
-          'E_TABLE_STATUS_INVALID',
-          `이미 ${input.status} 상태입니다`,
-          { currentStatus: cur.status },
-        );
+        throw new ConflictProblem('E_TABLE_STATUS_INVALID', `이미 ${input.status} 상태입니다`, {
+          currentStatus: cur.status,
+        });
       }
       if (cur.version !== input.version) return { conflict: true as const };
       if (input.status === 'FINAL') {
@@ -595,7 +600,9 @@ export class TableService {
       return { conflict: false as const, header: h.header };
     });
     if (r.conflict) return this.conflict(ctx, id, input.version);
-    this.logger.log(`테이블 상태: ${ctx.projectKey} ${r.header.tableNm} → ${input.status} by ${a.actor}`);
+    this.logger.log(
+      `테이블 상태: ${ctx.projectKey} ${r.header.tableNm} → ${input.status} by ${a.actor}`,
+    );
     return {
       tableId: id,
       version: r.header.version,

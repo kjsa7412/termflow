@@ -137,5 +137,7 @@ export function sameContent(
   a: Pick<EditorDraft, 'table' | 'columns'>,
   b: Pick<EditorDraft, 'table' | 'columns'>,
 ): boolean {
-  return JSON.stringify({ t: a.table, c: a.columns }) === JSON.stringify({ t: b.table, c: b.columns });
+  return (
+    JSON.stringify({ t: a.table, c: a.columns }) === JSON.stringify({ t: b.table, c: b.columns })
+  );
 }

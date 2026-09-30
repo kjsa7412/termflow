@@ -27,8 +27,9 @@ beforeAll(async () => {
       [users[login], role],
     );
   }
-  mstId = (await t.pool.query("select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MST'")).rows[0]
-    .id as number;
+  mstId = (
+    await t.pool.query("select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MST'")
+  ).rows[0].id as number;
   setTestEnv(t.url);
   app = await createTestApp();
 });
@@ -79,7 +80,11 @@ describe('RMS 실데이터 편집기(T8.15)', () => {
     const pa = await as('pa');
     const e = await as('editor');
     const d0 = (await e.get(`${P}/tables/${mstId}`)).body as TableDetail;
-    const u = await pa.put(`${P}/tables/${mstId}/status`, { status: 'DRAFT', version: d0.table.version, note: '편집기 시험' });
+    const u = await pa.put(`${P}/tables/${mstId}/status`, {
+      status: 'DRAFT',
+      version: d0.table.version,
+      note: '편집기 시험',
+    });
     expect(u.status, JSON.stringify(u.body)).toBe(200);
     const d1 = (await e.get(`${P}/tables/${mstId}`)).body as TableDetail;
     const same = await e.put(`${P}/tables/${mstId}`, toBody(d1));
@@ -91,7 +96,10 @@ describe('RMS 실데이터 편집기(T8.15)', () => {
     expect(dflt.length).toBeGreaterThan(0);
     const drop = dflt.at(-1)!.physicalNm;
     const b = toBody(d2);
-    const r = await e.put(`${P}/tables/${mstId}`, { ...b, columns: b.columns.filter((c) => c.physicalNm !== drop) });
+    const r = await e.put(`${P}/tables/${mstId}`, {
+      ...b,
+      columns: b.columns.filter((c) => c.physicalNm !== drop),
+    });
     expect(r.status).toBe(200);
     expect((r.body as TableSaveResponse).changeSummary).toBe('컬럼 +0 ~0 -1');
     const ddl = (await e.post(`${P}/ddl`, { tableIds: [mstId] })).body as DdlResponse;

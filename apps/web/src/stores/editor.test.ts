@@ -43,9 +43,63 @@ const detail = (): TableDetail => ({
     updatedAt: '2026-09-29T10:00:00',
   },
   columns: [
-    { columnId: 1, colSeq: 1, logicalNm: '아이디', physicalNm: 'A_ID', isPk: true, dataType: 'VARCHAR', dataLength: 20, dataScale: null, isNullable: false, defaultVal: null, colComment: '아이디', domainId: 9, codeClsId: null, defaultColId: null, matchType: 'EXACT', domainNm: '아이디', codeCls: null },
-    { columnId: 2, colSeq: 2, logicalNm: '상태코드', physicalNm: 'STAT_CD', isPk: false, dataType: 'VARCHAR', dataLength: 10, dataScale: null, isNullable: true, defaultVal: null, colComment: null, domainId: null, codeClsId: 4, defaultColId: null, matchType: 'CODE', domainNm: null, codeCls: { codeClsId: 4, bizCd: 'RP', codeCls: '030', codeClsNm: '상태' } },
-    { columnId: 3, colSeq: 3, logicalNm: 'FIRS_REG_DTS', physicalNm: 'FIRS_REG_DTS', isPk: false, dataType: 'TIMESTAMP', dataLength: 0, dataScale: null, isNullable: true, defaultVal: 'CURRENT_TIMESTAMP', colComment: 'FIRS_REG_DTS', domainId: null, codeClsId: null, defaultColId: 100, matchType: 'DEFAULT', domainNm: null, codeCls: null },
+    {
+      columnId: 1,
+      colSeq: 1,
+      logicalNm: '아이디',
+      physicalNm: 'A_ID',
+      isPk: true,
+      dataType: 'VARCHAR',
+      dataLength: 20,
+      dataScale: null,
+      isNullable: false,
+      defaultVal: null,
+      colComment: '아이디',
+      domainId: 9,
+      codeClsId: null,
+      defaultColId: null,
+      matchType: 'EXACT',
+      domainNm: '아이디',
+      codeCls: null,
+    },
+    {
+      columnId: 2,
+      colSeq: 2,
+      logicalNm: '상태코드',
+      physicalNm: 'STAT_CD',
+      isPk: false,
+      dataType: 'VARCHAR',
+      dataLength: 10,
+      dataScale: null,
+      isNullable: true,
+      defaultVal: null,
+      colComment: null,
+      domainId: null,
+      codeClsId: 4,
+      defaultColId: null,
+      matchType: 'CODE',
+      domainNm: null,
+      codeCls: { codeClsId: 4, bizCd: 'RP', codeCls: '030', codeClsNm: '상태' },
+    },
+    {
+      columnId: 3,
+      colSeq: 3,
+      logicalNm: 'FIRS_REG_DTS',
+      physicalNm: 'FIRS_REG_DTS',
+      isPk: false,
+      dataType: 'TIMESTAMP',
+      dataLength: 0,
+      dataScale: null,
+      isNullable: true,
+      defaultVal: 'CURRENT_TIMESTAMP',
+      colComment: 'FIRS_REG_DTS',
+      domainId: null,
+      codeClsId: null,
+      defaultColId: 100,
+      matchType: 'DEFAULT',
+      domainNm: null,
+      codeCls: null,
+    },
   ],
   errors: [],
   warnings: [],
@@ -83,13 +137,21 @@ describe('행 상태 머신(§10.4)', () => {
     s.setCell(ex.uid, 'colComment', '바꿈');
     expect(s.find(ex.uid)!.state).toBe('exact');
     s.setCell(ex.uid, 'typeText', 'VARCHAR(30)');
-    expect(s.find(ex.uid)!).toMatchObject({ state: 'manual', matchType: 'MANUAL', dataLength: 30, domainId: 9 });
+    expect(s.find(ex.uid)!).toMatchObject({
+      state: 'manual',
+      matchType: 'MANUAL',
+      dataLength: 30,
+      domainId: 9,
+    });
   });
 
   it('default 행은 편집 불가·포함/제외만 → 제외하면 저장 본문에서 빠진다', () => {
     const s = createEditorCore();
     s.initNew('RMS', { bizAreaId: 6, prefix: 'RP_', defaultSet: DEF });
-    expect(s.payload.value.columns.map((c) => c.physicalNm)).toEqual(['FIRS_REG_DTS', 'FINA_REG_DTS']);
+    expect(s.payload.value.columns.map((c) => c.physicalNm)).toEqual([
+      'FIRS_REG_DTS',
+      'FINA_REG_DTS',
+    ]);
     const d = s.defaultRows.value[1]!;
     s.setCell(d.uid, 'physicalNm', 'X');
     expect(s.find(d.uid)!.physicalNm).toBe('FINA_REG_DTS');
@@ -205,7 +267,14 @@ describe('dirty·서버 응답 병합', () => {
     const sent = s.payloadJson.value;
     s.setCell(s.rows.value[0]!.uid, 'colComment', '저장 중 편집');
     s.applySaved(
-      { tableId: 7, version: 4, status: 'DRAFT', columns: [1, 2, 3].map((i) => ({ columnId: i, colSeq: i })), changeSummary: '', warnings: [] },
+      {
+        tableId: 7,
+        version: 4,
+        status: 'DRAFT',
+        columns: [1, 2, 3].map((i) => ({ columnId: i, colSeq: i })),
+        changeSummary: '',
+        warnings: [],
+      },
       uids,
       sent,
     );
@@ -225,8 +294,16 @@ describe('dirty·서버 응답 병합', () => {
 
   it('타입 셀 파싱(StdTypeParser 공유): 별칭·공백·길이 누락 허용(서버가 E_TYPE_LEN_MISSING)', () => {
     expect(parseTypeCell('integer')).toMatchObject({ dataType: 'INT', typeError: null });
-    expect(parseTypeCell('NUMERIC(13, 2)')).toMatchObject({ dataType: 'NUMERIC', dataLength: 13, dataScale: 2 });
-    expect(parseTypeCell('VARCHAR')).toMatchObject({ dataType: 'VARCHAR', dataLength: null, typeError: null });
+    expect(parseTypeCell('NUMERIC(13, 2)')).toMatchObject({
+      dataType: 'NUMERIC',
+      dataLength: 13,
+      dataScale: 2,
+    });
+    expect(parseTypeCell('VARCHAR')).toMatchObject({
+      dataType: 'VARCHAR',
+      dataLength: null,
+      typeError: null,
+    });
     expect(parseTypeCell('')).toMatchObject({ dataType: null, typeError: null });
     expect(parseTypeCell('FOO(1)').typeError).toMatch(/알 수 없는 타입/);
     expect(parseTypeCell('VARCHAR(')).toMatchObject({ dataType: null });
@@ -242,7 +319,9 @@ describe('두 버전 비교(충돌 병합·이력)', () => {
       { ...base[2]!, columnId: null, physicalNm: 'MY_ONLY' },
     ];
     const rows = alignColumns(base, mine);
-    expect(rows.map((r) => [r.kind, r.left?.physicalNm ?? null, r.right?.physicalNm ?? null])).toEqual([
+    expect(
+      rows.map((r) => [r.kind, r.left?.physicalNm ?? null, r.right?.physicalNm ?? null]),
+    ).toEqual([
       ['chg', 'A_ID', 'A_ID'],
       ['same', 'STAT_CD', 'STAT_CD'],
       ['left', 'FIRS_REG_DTS', null],

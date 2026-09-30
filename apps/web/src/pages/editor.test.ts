@@ -24,8 +24,32 @@ import TableEditorPage from './TableEditorPage.vue';
 // T8.8~T8.14 편집기 화면: 키보드 10컬럼 입력·저장, 기본컬럼 제외, DDL 패널(S3 단일), 409 병합, 임시저장 복원, 역할별 읽기 전용, 이력 복원
 const P = '/api/v1/projects/RMS';
 const BIZ: BizAreaItem[] = [
-  { bizAreaId: 6, bizCd: 'RP', bizNm: '연구과제', tablePrefix: 'RP_', sortNo: 1, useYn: true, description: null, tableCnt: 1, codeClsCnt: 0, locked: true, origin: null },
-  { bizAreaId: 9, bizCd: 'PS', bizNm: '인사', tablePrefix: 'PS_', sortNo: 2, useYn: true, description: null, tableCnt: 0, codeClsCnt: 0, locked: false, origin: null },
+  {
+    bizAreaId: 6,
+    bizCd: 'RP',
+    bizNm: '연구과제',
+    tablePrefix: 'RP_',
+    sortNo: 1,
+    useYn: true,
+    description: null,
+    tableCnt: 1,
+    codeClsCnt: 0,
+    locked: true,
+    origin: null,
+  },
+  {
+    bizAreaId: 9,
+    bizCd: 'PS',
+    bizNm: '인사',
+    tablePrefix: 'PS_',
+    sortNo: 2,
+    useYn: true,
+    description: null,
+    tableCnt: 0,
+    codeClsCnt: 0,
+    locked: false,
+    origin: null,
+  },
 ];
 const SETTINGS: ProjectSettings = {
   projectKey: 'RMS',
@@ -65,7 +89,12 @@ const SET: DefaultColSetItem = {
     colComment: nm,
   })),
 };
-const col = (id: number, seq: number, nm: string, over: Partial<TableColumnItem> = {}): TableColumnItem => ({
+const col = (
+  id: number,
+  seq: number,
+  nm: string,
+  over: Partial<TableColumnItem> = {},
+): TableColumnItem => ({
   columnId: id,
   colSeq: seq,
   logicalNm: `${nm} 논리`,
@@ -85,7 +114,10 @@ const col = (id: number, seq: number, nm: string, over: Partial<TableColumnItem>
   codeCls: null,
   ...over,
 });
-function detail(over: Partial<TableDetail['table']> = {}, columns?: TableColumnItem[]): TableDetail {
+function detail(
+  over: Partial<TableDetail['table']> = {},
+  columns?: TableColumnItem[],
+): TableDetail {
   return {
     table: {
       tableId: 17,
@@ -114,33 +146,83 @@ function detail(over: Partial<TableDetail['table']> = {}, columns?: TableColumnI
     columns: columns ?? [
       col(1, 1, 'TEST_ID', { isPk: true, isNullable: false, matchType: 'EXACT', domainId: 5 }),
       col(2, 2, 'TEST_NM'),
-      col(3, 3, 'FIRS_REG_DTS', { dataType: 'TIMESTAMP', dataLength: 0, defaultColId: 100, matchType: 'DEFAULT', defaultVal: 'CURRENT_TIMESTAMP' }),
-      col(4, 4, 'FINA_REG_DTS', { dataType: 'TIMESTAMP', dataLength: 0, defaultColId: 101, matchType: 'DEFAULT', defaultVal: 'CURRENT_TIMESTAMP' }),
+      col(3, 3, 'FIRS_REG_DTS', {
+        dataType: 'TIMESTAMP',
+        dataLength: 0,
+        defaultColId: 100,
+        matchType: 'DEFAULT',
+        defaultVal: 'CURRENT_TIMESTAMP',
+      }),
+      col(4, 4, 'FINA_REG_DTS', {
+        dataType: 'TIMESTAMP',
+        dataLength: 0,
+        defaultColId: 101,
+        matchType: 'DEFAULT',
+        defaultVal: 'CURRENT_TIMESTAMP',
+      }),
     ],
     errors: [],
     warnings: [],
   };
 }
-const ddlResp = (draft: { table: { tableNm: string }; columns: { physicalNm: string }[] }): DdlResponse => {
+const ddlResp = (draft: {
+  table: { tableNm: string };
+  columns: { physicalNm: string }[];
+}): DdlResponse => {
   const sql = `CREATE TABLE ${draft.table.tableNm} (\n${draft.columns.map((c) => `    ${c.physicalNm}                VARCHAR(20)`).join(',\n')}\n);\n`;
   return {
     dialect: 'POSTGRESQL',
     tableCnt: 1,
     sql,
     files: [],
-    tables: [{ tableId: null, tableNm: draft.table.tableNm, logicalNm: '', bizCd: 'RP', status: null, version: null, colCnt: draft.columns.length, sql, warningCnt: 1 }],
-    warnings: [{ code: 'W_PK_NONE', target: 'column', rowIndex: 1, columnNm: draft.columns[1]?.physicalNm, message: '경고 예시' }],
+    tables: [
+      {
+        tableId: null,
+        tableNm: draft.table.tableNm,
+        logicalNm: '',
+        bizCd: 'RP',
+        status: null,
+        version: null,
+        colCnt: draft.columns.length,
+        sql,
+        warningCnt: 1,
+      },
+    ],
+    warnings: [
+      {
+        code: 'W_PK_NONE',
+        target: 'column',
+        rowIndex: 1,
+        columnNm: draft.columns[1]?.physicalNm,
+        message: '경고 예시',
+      },
+    ],
   };
 };
 
-async function setup(path: string, role: MemberRole, routes: Record<string, Handler>, sysAdmin = false) {
+async function setup(
+  path: string,
+  role: MemberRole,
+  routes: Record<string, Handler>,
+  sysAdmin = false,
+) {
   const pinia = createPinia();
   setActivePinia(pinia);
-  const proj: MyProject = { key: 'RMS', nm: '연구관리시스템', role, kind: 'PROJECT', status: 'ACTIVE' };
+  const proj: MyProject = {
+    key: 'RMS',
+    nm: '연구관리시스템',
+    role,
+    kind: 'PROJECT',
+    status: 'ACTIVE',
+  };
   const f = fakeFetch({
     'GET /api/v1/auth/csrf': () => json(200, { token: 'T' }),
     'GET /api/v1/me': () =>
-      json(200, { user: { id: 3, loginId: 'u', userNm: '사용자', isSysAdmin: sysAdmin }, mustChangePassword: false, projects: [proj] }),
+      json(200, {
+        user: { id: 3, loginId: 'u', userNm: '사용자', isSysAdmin: sysAdmin },
+        mustChangePassword: false,
+        projects: [proj],
+      }),
     [`GET ${P}/biz-areas`]: () => json(200, BIZ),
     [`GET ${P}/settings`]: () => json(200, SETTINGS),
     [`GET ${P}/standards/default-column-sets`]: () => json(200, [SET]),
@@ -154,9 +236,14 @@ async function setup(path: string, role: MemberRole, routes: Record<string, Hand
   await useSessionStore().refresh();
   await router.push(path);
   await router.isReady();
-  const w = mount(TableEditorPage, { global: { plugins: [pinia, router] }, attachTo: document.body });
+  const w = mount(TableEditorPage, {
+    global: { plugins: [pinia, router] },
+    attachTo: document.body,
+  });
   mounted.push(w);
-  await until(() => !w.find('.skeleton').exists() && w.find('[data-testid="column-grid"]').exists());
+  await until(
+    () => !w.find('.skeleton').exists() && w.find('[data-testid="column-grid"]').exists(),
+  );
   return { w, router, calls: f.calls };
 }
 const until = (cond: () => boolean, label = '') =>
@@ -170,9 +257,12 @@ const bodies = (calls: FakeRequest[], method: string, path: string) =>
   calls.filter((c) => c.method === method && c.path === path).map((c) => JSON.parse(c.body!));
 const cell = (w: VueWrapper, row: number, field: string) =>
   w.get<HTMLInputElement>(`tbody tr[data-row="${row}"] [data-field="${field}"]`);
-const button = (w: VueWrapper, text: string) => w.findAll('button').find((b) => b.text().includes(text))!;
+const button = (w: VueWrapper, text: string) =>
+  w.findAll('button').find((b) => b.text().includes(text))!;
 const key = (target: Element, k: string, opts: KeyboardEventInit = {}) =>
-  target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...opts }));
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...opts }),
+  );
 
 /** 실패한 테스트가 남긴 화면(디바운스 타이머)이 다음 테스트의 fetch를 부르지 않게 전부 해제한다. */
 const mounted: VueWrapper[] = [];
@@ -203,7 +293,11 @@ describe('편집기 그리드·키보드(T8.8)', () => {
           warnings: [],
         });
       },
-      [`GET ${P}/tables/70`]: () => json(200, detail({ tableId: 70, version: 1, tableNm: 'PS_KBD_MST', bizAreaId: 9, bizCd: 'PS' })),
+      [`GET ${P}/tables/70`]: () =>
+        json(
+          200,
+          detail({ tableId: 70, version: 1, tableNm: 'PS_KBD_MST', bizAreaId: 9, bizCd: 'PS' }),
+        ),
     });
     await until(() => router.currentRoute.value.query['draft'] !== undefined);
     // 업무구분 PS 접두어로 시작
@@ -225,11 +319,22 @@ describe('편집기 그리드·키보드(T8.8)', () => {
     await until(() => bodies(calls, 'POST', `${P}/tables`).length === 1);
     const sent = bodies(calls, 'POST', `${P}/tables`)[0] as {
       table: { bizAreaId: number; tableNm: string };
-      columns: { physicalNm: string; isPk: boolean; isNullable: boolean; dataType: string; defaultColId: number | null }[];
+      columns: {
+        physicalNm: string;
+        isPk: boolean;
+        isNullable: boolean;
+        dataType: string;
+        defaultColId: number | null;
+      }[];
     };
     expect(sent.table).toMatchObject({ bizAreaId: 9, tableNm: 'PS_KBD_MST' });
     expect(sent.columns).toHaveLength(12); // 빈 11행(입력 대기)은 보내지 않음
-    expect(sent.columns[0]).toMatchObject({ physicalNm: 'COL_1', isPk: true, isNullable: false, dataType: 'VARCHAR' });
+    expect(sent.columns[0]).toMatchObject({
+      physicalNm: 'COL_1',
+      isPk: true,
+      isNullable: false,
+      dataType: 'VARCHAR',
+    });
     expect(sent.columns.slice(10).map((c) => c.defaultColId)).toEqual([100, 101]);
     await until(() => router.currentRoute.value.path === '/projects/RMS/tables/70');
     expect(useToastStore().items.map((t) => t.text)).toContain('v1 저장됨');
@@ -241,7 +346,15 @@ describe('편집기 그리드·키보드(T8.8)', () => {
       [`GET ${P}/tables/17`]: () => json(200, detail()),
       [`POST ${P}/tables/validate`]: () =>
         json(200, {
-          errors: [{ code: 'E_PHYS_DUP', target: 'column', rowIndex: 1, field: 'physicalNm', message: '물리명 TEST_NM이(가) 1행과 중복됩니다' }],
+          errors: [
+            {
+              code: 'E_PHYS_DUP',
+              target: 'column',
+              rowIndex: 1,
+              field: 'physicalNm',
+              message: '물리명 TEST_NM이(가) 1행과 중복됩니다',
+            },
+          ],
           warnings: [],
         }),
     });
@@ -272,7 +385,9 @@ describe('편집기 그리드·키보드(T8.8)', () => {
 describe('기본컬럼 영역·DDL 패널(T8.10·T8.11)', () => {
   it('기본컬럼 제외 → DDL 미리보기 본문과 저장 본문에서 빠짐, S3 단일: [DDL](1) → [복사](2) = 클립보드 + 기록 COPY', async () => {
     const writes: string[] = [];
-    vi.stubGlobal('navigator', { clipboard: { writeText: (t: string) => (writes.push(t), Promise.resolve()) } });
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: (t: string) => (writes.push(t), Promise.resolve()) },
+    });
     const { w, calls } = await setup('/projects/RMS/tables/17', 'EDITOR', {
       [`GET ${P}/tables/17`]: () => json(200, detail()),
       [`POST ${P}/export-logs`]: () => json(201, { exportId: 1 }),
@@ -281,24 +396,33 @@ describe('기본컬럼 영역·DDL 패널(T8.10·T8.11)', () => {
           tableId: 17,
           version: 4,
           status: 'DRAFT',
-          columns: (JSON.parse(r.body!) as { columns: unknown[] }).columns.map((_, i) => ({ columnId: i + 1, colSeq: i + 1 })),
+          columns: (JSON.parse(r.body!) as { columns: unknown[] }).columns.map((_, i) => ({
+            columnId: i + 1,
+            colSeq: i + 1,
+          })),
           changeSummary: '컬럼 +0 ~0 -1',
           warnings: [],
         }),
     });
     expect(w.get('[data-testid="default-cols"]').text()).toContain('기본컬럼 2개');
     // S3 단일: 패널이 닫힌 상태에서 [DDL] → [복사]
-    if (w.find('[data-testid="ddl-panel"]').exists()) await w.get('[data-testid="toggle-ddl"]').trigger('click');
+    if (w.find('[data-testid="ddl-panel"]').exists())
+      await w.get('[data-testid="toggle-ddl"]').trigger('click');
     let clicks = 0;
     await w.get('[data-testid="toggle-ddl"]').trigger('click');
     clicks++;
-    await until(() => w.find('[data-testid="ddl-code"]').text().includes('CREATE TABLE RP_TEST_MST'));
+    await until(() =>
+      w.find('[data-testid="ddl-code"]').text().includes('CREATE TABLE RP_TEST_MST'),
+    );
     await button(w, '복사').trigger('click');
     clicks++;
     await until(() => bodies(calls, 'POST', `${P}/export-logs`).length === 1);
     expect(clicks).toBe(2);
     expect(writes[0]).toContain('CREATE TABLE RP_TEST_MST');
-    expect(bodies(calls, 'POST', `${P}/export-logs`)[0]).toMatchObject({ kind: 'COPY', tableIds: [17] });
+    expect(bodies(calls, 'POST', `${P}/export-logs`)[0]).toMatchObject({
+      kind: 'COPY',
+      tableIds: [17],
+    });
     // 경고 클릭 → 해당 행 포커스(rowIndex 1 = 2행)
     await w.get('[data-testid="ddl-panel-warnings"] button').trigger('click');
     await flushPromises();
@@ -307,7 +431,9 @@ describe('기본컬럼 영역·DDL 패널(T8.10·T8.11)', () => {
     // 기본컬럼 FINA_REG_DTS 제외 → DDL 요청 본문에서 빠짐
     await w.get('input[aria-label="기본컬럼 FINA_REG_DTS 포함"]').setValue(false);
     await until(() => {
-      const last = bodies(calls, 'POST', `${P}/ddl`).at(-1) as { draft: { columns: { physicalNm: string }[] } };
+      const last = bodies(calls, 'POST', `${P}/ddl`).at(-1) as {
+        draft: { columns: { physicalNm: string }[] };
+      };
       return !last.draft.columns.some((c) => c.physicalNm === 'FINA_REG_DTS');
     });
     await until(() => !w.get('[data-testid="ddl-code"]').text().includes('FINA_REG_DTS'));
@@ -317,7 +443,10 @@ describe('기본컬럼 영역·DDL 패널(T8.10·T8.11)', () => {
     expect(bodies(calls, 'POST', `${P}/export-logs`)).toHaveLength(1);
     await w.get('[data-testid="save"]').trigger('click');
     await until(() => bodies(calls, 'PUT', `${P}/tables/17`).length === 1);
-    const put = bodies(calls, 'PUT', `${P}/tables/17`)[0] as { version: number; columns: { physicalNm: string }[] };
+    const put = bodies(calls, 'PUT', `${P}/tables/17`)[0] as {
+      version: number;
+      columns: { physicalNm: string }[];
+    };
     expect(put.version).toBe(3);
     expect(put.columns.map((c) => c.physicalNm)).toEqual(['TEST_ID', 'TEST_NM', 'FIRS_REG_DTS']);
     w.unmount();
@@ -327,10 +456,10 @@ describe('기본컬럼 영역·DDL 패널(T8.10·T8.11)', () => {
 describe('저장 충돌(T8.12)·임시저장(T8.13)', () => {
   it('409 → 충돌 병합 모달(최신본 ↔ 내 편집본 나란히) → 확인 체크 후 덮어쓰기 = currentVersion으로 재전송', async () => {
     let puts = 0;
-    const current = detail({ version: 4, updatedByNm: '김민수', updatedAt: '2026-09-29T12:31:00' }, [
-      ...detail().columns.slice(0, 2),
-      col(9, 3, 'THEIR_ONLY'),
-    ]);
+    const current = detail(
+      { version: 4, updatedByNm: '김민수', updatedAt: '2026-09-29T12:31:00' },
+      [...detail().columns.slice(0, 2), col(9, 3, 'THEIR_ONLY')],
+    );
     const { w, calls } = await setup('/projects/RMS/tables/17', 'EDITOR', {
       [`GET ${P}/tables/17`]: () => json(200, puts > 1 ? detail({ version: 5 }) : detail()),
       [`PUT ${P}/tables/17`]: (r) => {
@@ -345,7 +474,14 @@ describe('저장 충돌(T8.12)·임시저장(T8.13)', () => {
             savedAt: '2026-09-29T12:31:00',
             current: { table: current.table, columns: current.columns },
           });
-        return json(200, { tableId: 17, version: 5, status: 'DRAFT', columns: b.columns.map((_, i) => ({ columnId: i + 1, colSeq: i + 1 })), changeSummary: '', warnings: [] });
+        return json(200, {
+          tableId: 17,
+          version: 5,
+          status: 'DRAFT',
+          columns: b.columns.map((_, i) => ({ columnId: i + 1, colSeq: i + 1 })),
+          changeSummary: '',
+          warnings: [],
+        });
       },
     });
     await cell(w, 2, 'colComment').setValue('내 변경');
@@ -357,7 +493,9 @@ describe('저장 충돌(T8.12)·임시저장(T8.13)', () => {
     expect(modal.text()).toContain('THEIR_ONLY');
     expect(modal.get('[data-testid="compare-summary"]').text()).toMatch(/차이 \d+건/);
     // 편집본은 이미 임시저장(아무것도 잃지 않음)
-    expect(loadDraft(draftKey('RMS', 17))?.columns.find((c) => c.physicalNm === 'TEST_NM')?.colComment).toBe('내 변경');
+    expect(
+      loadDraft(draftKey('RMS', 17))?.columns.find((c) => c.physicalNm === 'TEST_NM')?.colComment,
+    ).toBe('내 변경');
     const over = button(w, '내 편집본으로 덮어쓰기');
     expect(over.attributes('disabled')).toBeDefined();
     await modal.get('input[type="checkbox"]').setValue(true);
@@ -371,7 +509,10 @@ describe('저장 충돌(T8.12)·임시저장(T8.13)', () => {
   });
 
   it('409 → [최신본 새로고침]: 편집기를 current로 교체(재조회 없음), 내 편집본은 임시저장에 남는다', async () => {
-    const current = detail({ version: 4 }, [col(1, 1, 'TEST_ID', { isPk: true, isNullable: false }), col(9, 2, 'THEIR_ONLY')]);
+    const current = detail({ version: 4 }, [
+      col(1, 1, 'TEST_ID', { isPk: true, isNullable: false }),
+      col(9, 2, 'THEIR_ONLY'),
+    ]);
     const { w, calls } = await setup('/projects/RMS/tables/17', 'EDITOR', {
       [`GET ${P}/tables/17`]: () => json(200, detail()),
       [`PUT ${P}/tables/17`]: () =>
@@ -389,7 +530,9 @@ describe('저장 충돌(T8.12)·임시저장(T8.13)', () => {
     const gets = calls.filter((c) => c.path === `${P}/tables/17` && c.method === 'GET').length;
     await button(w, '최신본 새로고침').trigger('click');
     await until(() => !w.find('[aria-modal="true"]').exists());
-    expect(calls.filter((c) => c.path === `${P}/tables/17` && c.method === 'GET').length).toBe(gets);
+    expect(calls.filter((c) => c.path === `${P}/tables/17` && c.method === 'GET').length).toBe(
+      gets,
+    );
     expect(cell(w, 2, 'physicalNm').element.value).toBe('THEIR_ONLY');
     expect(w.get('[data-testid="editor-status"]').text()).toContain('v4');
     expect(loadDraft(draftKey('RMS', 17))).not.toBeNull();
@@ -433,15 +576,22 @@ describe('역할·상태별 화면(T8.9)', () => {
     expect(w.find('[data-testid="readonly-banner"]').exists()).toBe(true);
     expect(cell(w, 1, 'logicalNm').attributes('readonly')).toBeDefined();
     expect(w.get<HTMLSelectElement>('#ed-biz').element.disabled).toBe(true);
-    if (!w.find('[data-testid="ddl-panel"]').exists()) await w.get('[data-testid="toggle-ddl"]').trigger('click');
+    if (!w.find('[data-testid="ddl-panel"]').exists())
+      await w.get('[data-testid="toggle-ddl"]').trigger('click');
     await until(() => bodies(calls, 'POST', `${P}/ddl`).length > 0);
     expect(calls.some((c) => c.path === `${P}/tables/validate`)).toBe(false);
     w.unmount();
   });
 
   it('FINAL: 편집자는 배너만(해제 없음), 프로젝트 관리자는 [확정 해제] → PUT status DRAFT(사유)', async () => {
-    const fin = detail({ status: 'FINAL', finalizedBy: 'editor', finalizedAt: '2026-09-29T13:00:00' });
-    const ed = await setup('/projects/RMS/tables/17', 'EDITOR', { [`GET ${P}/tables/17`]: () => json(200, fin) });
+    const fin = detail({
+      status: 'FINAL',
+      finalizedBy: 'editor',
+      finalizedAt: '2026-09-29T13:00:00',
+    });
+    const ed = await setup('/projects/RMS/tables/17', 'EDITOR', {
+      [`GET ${P}/tables/17`]: () => json(200, fin),
+    });
     expect(ed.w.get('[data-testid="final-banner"]').text()).toContain('프로젝트 관리자에게');
     expect(ed.w.find('[data-testid="save"]').exists()).toBe(false);
     expect(button(ed.w, '확정 해제')).toBeUndefined();
@@ -452,13 +602,23 @@ describe('역할·상태별 화면(T8.9)', () => {
       [`GET ${P}/tables/17`]: () => json(200, status === 'FINAL' ? fin : detail({ version: 5 })),
       [`PUT ${P}/tables/17/status`]: () => {
         status = 'DRAFT';
-        return json(200, { tableId: 17, version: 5, status: 'DRAFT', finalizedAt: null, finalizedBy: null });
+        return json(200, {
+          tableId: 17,
+          version: 5,
+          status: 'DRAFT',
+          finalizedAt: null,
+          finalizedBy: null,
+        });
       },
     });
     await pa.w.get('input[aria-label="확정 해제 사유"]').setValue('컬럼 추가');
     await button(pa.w, '확정 해제').trigger('click');
     await until(() => bodies(pa.calls, 'PUT', `${P}/tables/17/status`).length === 1);
-    expect(bodies(pa.calls, 'PUT', `${P}/tables/17/status`)[0]).toEqual({ status: 'DRAFT', version: 3, note: '컬럼 추가' });
+    expect(bodies(pa.calls, 'PUT', `${P}/tables/17/status`)[0]).toEqual({
+      status: 'DRAFT',
+      version: 3,
+      note: '컬럼 추가',
+    });
     await until(() => pa.w.find('[data-testid="save"]').exists());
     pa.w.unmount();
   });
@@ -466,16 +626,29 @@ describe('역할·상태별 화면(T8.9)', () => {
   it('DRAFT → [FINAL로 확정](상태 배지 메뉴) → PUT status FINAL → 편집 차단 배너', async () => {
     let status = 'DRAFT';
     const { w, calls } = await setup('/projects/RMS/tables/17', 'EDITOR', {
-      [`GET ${P}/tables/17`]: () => json(200, status === 'DRAFT' ? detail() : detail({ status: 'FINAL', version: 4, finalizedBy: 'u' })),
+      [`GET ${P}/tables/17`]: () =>
+        json(
+          200,
+          status === 'DRAFT' ? detail() : detail({ status: 'FINAL', version: 4, finalizedBy: 'u' }),
+        ),
       [`PUT ${P}/tables/17/status`]: () => {
         status = 'FINAL';
-        return json(200, { tableId: 17, version: 4, status: 'FINAL', finalizedAt: '2026-09-29T13:00:00', finalizedBy: 'u' });
+        return json(200, {
+          tableId: 17,
+          version: 4,
+          status: 'FINAL',
+          finalizedAt: '2026-09-29T13:00:00',
+          finalizedBy: 'u',
+        });
       },
     });
     await w.get('[data-testid="status-badge"]').trigger('click');
     await button(w, 'FINAL로 확정').trigger('click');
     await until(() => w.find('[data-testid="final-banner"]').exists());
-    expect(bodies(calls, 'PUT', `${P}/tables/17/status`)[0]).toMatchObject({ status: 'FINAL', version: 3 });
+    expect(bodies(calls, 'PUT', `${P}/tables/17/status`)[0]).toMatchObject({
+      status: 'FINAL',
+      version: 3,
+    });
     expect(cell(w, 1, 'logicalNm').attributes('readonly')).toBeDefined();
     w.unmount();
   });
@@ -486,18 +659,51 @@ describe('테이블 목록 행 메뉴·새 테이블(T8.14)', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const item = (id: number, nm: string, status: 'DRAFT' | 'FINAL') => ({
-      tableId: id, bizAreaId: 6, bizCd: 'RP', tableNm: nm, logicalNm: nm, status, version: 1, colCnt: 3,
-      updatedBy: 'editor', updatedAt: '2026-09-29T10:00:00', errorCnt: 0, warningCnt: 0, issues: [], reviewYn: false, reviewNote: null,
+      tableId: id,
+      bizAreaId: 6,
+      bizCd: 'RP',
+      tableNm: nm,
+      logicalNm: nm,
+      status,
+      version: 1,
+      colCnt: 3,
+      updatedBy: 'editor',
+      updatedAt: '2026-09-29T10:00:00',
+      errorCnt: 0,
+      warningCnt: 0,
+      issues: [],
+      reviewYn: false,
+      reviewNote: null,
     });
     const items = [item(1, 'RP_DRAFT_MST', 'DRAFT'), item(2, 'RP_FINAL_MST', 'FINAL')];
     const f = fakeFetch({
       'GET /api/v1/auth/csrf': () => json(200, { token: 'T' }),
       'GET /api/v1/me': () =>
-        json(200, { user: { id: 3, loginId: 'u', userNm: '사용자', isSysAdmin: false }, mustChangePassword: false, projects: [{ key: 'RMS', nm: 'R', role: 'EDITOR', kind: 'PROJECT', status: 'ACTIVE' }] }),
+        json(200, {
+          user: { id: 3, loginId: 'u', userNm: '사용자', isSysAdmin: false },
+          mustChangePassword: false,
+          projects: [{ key: 'RMS', nm: 'R', role: 'EDITOR', kind: 'PROJECT', status: 'ACTIVE' }],
+        }),
       [`GET ${P}/biz-areas`]: () => json(200, BIZ),
       [`GET ${P}/tables`]: () =>
-        json(200, { items, page: 1, size: 50, total: items.length, bizAreaCounts: [{ bizAreaId: 6, cnt: 2 }], allCnt: 2, statusCounts: { DRAFT: 1, FINAL: 1 } }),
-      [`POST ${P}/tables/1/clone`]: () => json(201, { tableId: 33, projectKey: 'RMS', bizAreaId: 6, tableNm: 'RP_DRAFT_MST_COPY', version: 1, remapWarnings: [] }),
+        json(200, {
+          items,
+          page: 1,
+          size: 50,
+          total: items.length,
+          bizAreaCounts: [{ bizAreaId: 6, cnt: 2 }],
+          allCnt: 2,
+          statusCounts: { DRAFT: 1, FINAL: 1 },
+        }),
+      [`POST ${P}/tables/1/clone`]: () =>
+        json(201, {
+          tableId: 33,
+          projectKey: 'RMS',
+          bizAreaId: 6,
+          tableNm: 'RP_DRAFT_MST_COPY',
+          version: 1,
+          remapWarnings: [],
+        }),
       [`DELETE ${P}/tables/1`]: () => new Response(null, { status: 204 }),
     });
     vi.stubGlobal('fetch', f.fetch);
@@ -509,18 +715,30 @@ describe('테이블 목록 행 메뉴·새 테이블(T8.14)', () => {
     const w = mount(TablesPage, { global: { plugins: [pinia, router] }, attachTo: document.body });
     mounted.push(w);
     await until(() => w.findAll('tbody tr').length >= 2);
-    expect(w.get('[data-testid="new-table"]').attributes('href')).toBe('/projects/RMS/tables/new?bizAreaId=6');
+    expect(w.get('[data-testid="new-table"]').attributes('href')).toBe(
+      '/projects/RMS/tables/new?bizAreaId=6',
+    );
     expect(w.find('a[href="/projects/RMS/tables/1"]').exists()).toBe(true);
     const rowOf = (nm: string) => w.findAll('tbody tr').find((r) => r.text().includes(nm))!;
     expect(rowOf('RP_FINAL_MST').text()).not.toContain('삭제');
     // 삭제(DRAFT): 확인 모달 → DELETE
-    await rowOf('RP_DRAFT_MST').findAll('button').find((b) => b.text() === '삭제')!.trigger('click');
+    await rowOf('RP_DRAFT_MST')
+      .findAll('button')
+      .find((b) => b.text() === '삭제')!
+      .trigger('click');
     await until(() => w.find('[aria-modal="true"]').exists());
     expect(w.get('[aria-modal="true"]').text()).toContain('RP_DRAFT_MST');
-    await w.get('[aria-modal="true"]').findAll('button').find((b) => b.text() === '삭제')!.trigger('click');
+    await w
+      .get('[aria-modal="true"]')
+      .findAll('button')
+      .find((b) => b.text() === '삭제')!
+      .trigger('click');
     await until(() => f.calls.some((c) => c.method === 'DELETE' && c.path === `${P}/tables/1`));
     // 복제 → 새 테이블 편집기로
-    await rowOf('RP_DRAFT_MST').findAll('button').find((b) => b.text().startsWith('복제'))!.trigger('click');
+    await rowOf('RP_DRAFT_MST')
+      .findAll('button')
+      .find((b) => b.text().startsWith('복제'))!
+      .trigger('click');
     await until(() => router.currentRoute.value.path === '/projects/RMS/tables/33');
   });
 });
@@ -541,10 +759,25 @@ describe('이력 패널(T8.14)', () => {
       [`GET ${P}/tables/17/history/1`]: () =>
         json(200, {
           ...hist[2],
-          snapshot: { schemaVersion: 1, table: {}, columns: [col(1, 1, 'TEST_ID'), col(8, 2, 'OLD_ONLY')], action: 'CREATE', changeSummary: '', savedBy: 'editor', savedAt: '' },
+          snapshot: {
+            schemaVersion: 1,
+            table: {},
+            columns: [col(1, 1, 'TEST_ID'), col(8, 2, 'OLD_ONLY')],
+            action: 'CREATE',
+            changeSummary: '',
+            savedBy: 'editor',
+            savedAt: '',
+          },
         }),
       [`POST ${P}/tables/17/history/1/restore`]: () =>
-        json(200, { tableId: 17, version: 4, status: 'DRAFT', columns: [], changeSummary: 'v1 복원', warnings: [] }),
+        json(200, {
+          tableId: 17,
+          version: 4,
+          status: 'DRAFT',
+          columns: [],
+          changeSummary: 'v1 복원',
+          warnings: [],
+        }),
     });
     await button(w, '이력').trigger('click');
     await until(() => w.find('[data-testid="history-panel"]').exists(), '패널');
@@ -555,11 +788,17 @@ describe('이력 패널(T8.14)', () => {
     const cmp = panel.findAll('button').filter((b) => b.text() === '비교');
     expect(cmp).toHaveLength(2);
     await cmp[1]!.trigger('click');
-    await until(() => w.find('[data-testid="history-panel"] [data-testid="column-compare"]').exists(), '비교');
+    await until(
+      () => w.find('[data-testid="history-panel"] [data-testid="column-compare"]').exists(),
+      '비교',
+    );
     expect(w.get('[data-testid="history-panel"]').text()).toContain('OLD_ONLY');
     await button(w, 'v1(으)로 복원').trigger('click');
     await w.get('[data-testid="confirm-restore"]').trigger('click');
-    await until(() => bodies(calls, 'POST', `${P}/tables/17/history/1/restore`).length === 1, '복원');
+    await until(
+      () => bodies(calls, 'POST', `${P}/tables/17/history/1/restore`).length === 1,
+      '복원',
+    );
     expect(bodies(calls, 'POST', `${P}/tables/17/history/1/restore`)[0]).toEqual({ version: 3 });
     expect(w.findAll('[role="dialog"][aria-modal="true"]')).toHaveLength(0); // 모달 아님(G9)
     w.unmount();

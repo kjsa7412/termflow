@@ -58,7 +58,11 @@ async function refresh(): Promise<void> {
   ctrl = c;
   loading.value = true;
   try {
-    const r = await tapi.ddl(props.projectKey, { draft: props.body, dialect: dialect.value, options: options.value }, c.signal);
+    const r = await tapi.ddl(
+      props.projectKey,
+      { draft: props.body, dialect: dialect.value, options: options.value },
+      c.signal,
+    );
     if (c.signal.aborted) return;
     sql.value = r.sql;
     warnings.value = r.warnings;
@@ -85,11 +89,9 @@ function schedule(): void {
   clearTimeout(timer);
   timer = setTimeout(() => void refresh(), 500);
 }
-watch(
-  () => [JSON.stringify(props.body), dialect.value, JSON.stringify(options.value)],
-  schedule,
-  { immediate: true },
-);
+watch(() => [JSON.stringify(props.body), dialect.value, JSON.stringify(options.value)], schedule, {
+  immediate: true,
+});
 onBeforeUnmount(() => {
   clearTimeout(timer);
   ctrl?.abort();
@@ -238,7 +240,9 @@ defineExpose({ refresh });
       <div v-else-if="errors.length > 0" class="alert alert-danger" data-testid="ddl-panel-errors">
         <TfIcon name="alert-circle" />
         <div class="alert-body">
-          <div class="alert-title">오류 {{ errors.length }}건 — 오류를 해결하면 DDL이 만들어집니다</div>
+          <div class="alert-title">
+            오류 {{ errors.length }}건 — 오류를 해결하면 DDL이 만들어집니다
+          </div>
           <ul class="validation-list plain">
             <li v-for="(e, i) in errors" :key="`e${i}`">
               <TfBadge kind="danger">오류</TfBadge>
@@ -272,9 +276,8 @@ defineExpose({ refresh });
     </div>
     <div class="panel-footer">
       <span
-        >{{ updatedAt ? `마지막 갱신 ${updatedAt}` : '갱신 대기' }} · 컬럼 {{ colCnt }}{{
-          saved ? '' : ' · 저장 전 편집본'
-        }}</span
+        >{{ updatedAt ? `마지막 갱신 ${updatedAt}` : '갱신 대기' }} · 컬럼 {{ colCnt
+        }}{{ saved ? '' : ' · 저장 전 편집본' }}</span
       >
       <span class="spacer" />
       <TfButton variant="secondary" size="sm" icon="copy" :disabled="!canUse" @click="copy"

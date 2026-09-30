@@ -47,14 +47,20 @@ defineExpose({ diff });
       <span class="text-sm text-muted" data-testid="compare-summary"
         >차이 {{ diff }}건 · 동일 컬럼 {{ same }}건{{ showSame ? '' : '은 접힘' }}</span
       >
-      <button v-if="same > 0" class="btn btn-ghost btn-sm" type="button" @click="showSame = !showSame">
+      <button
+        v-if="same > 0"
+        class="btn btn-ghost btn-sm"
+        type="button"
+        @click="showSame = !showSame"
+      >
         동일 컬럼 {{ showSame ? '접기' : '펼치기' }}
       </button>
     </div>
     <div class="compare">
       <div class="compare-col">
         <div class="compare-head">
-          <TfIcon name="database" />{{ leftTitle }}<span v-if="leftMeta" class="meta">{{ leftMeta }}</span>
+          <TfIcon name="database" />{{ leftTitle
+          }}<span v-if="leftMeta" class="meta">{{ leftMeta }}</span>
         </div>
         <div
           v-for="(r, i) in visible"
@@ -75,7 +81,8 @@ defineExpose({ diff });
       </div>
       <div class="compare-col">
         <div class="compare-head">
-          <TfIcon name="edit" />{{ rightTitle }}<span v-if="rightMeta" class="meta">{{ rightMeta }}</span>
+          <TfIcon name="edit" />{{ rightTitle
+          }}<span v-if="rightMeta" class="meta">{{ rightMeta }}</span>
         </div>
         <div
           v-for="(r, i) in visible"

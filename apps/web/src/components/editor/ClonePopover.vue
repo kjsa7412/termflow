@@ -128,7 +128,9 @@ async function submit(close: () => void): Promise<void> {
           />
           <span class="field-help"
             >비우면 자동({{ same ? '_COPY, _COPY2 …' : '원래 이름, 겹치면 _COPY' }}) ·
-            {{ same ? '참조 그대로' : '도메인·코드구분·기본컬럼은 대상 표준에서 다시 찾습니다' }}</span
+            {{
+              same ? '참조 그대로' : '도메인·코드구분·기본컬럼은 대상 표준에서 다시 찾습니다'
+            }}</span
           >
         </div>
         <TfButton variant="primary" size="sm" icon="duplicate" type="submit" :loading="busy"

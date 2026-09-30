@@ -148,7 +148,8 @@ async function init(): Promise<void> {
   if (!key.value) return;
   if (isNew.value && !draftId.value) {
     // 새 테이블 임시저장 키(new-<uuid>)가 새로고침·재로그인 뒤에도 같도록 URL에 둔다(§8.7)
-    const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const id =
+      globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     await router.replace({ query: { ...route.query, draft: id } });
     return;
   }
@@ -165,7 +166,11 @@ async function init(): Promise<void> {
         bizAreas.value.find((x) => x.bizAreaId === want && x.useYn) ??
         bizAreas.value.find((x) => x.useYn) ??
         null;
-      ed.initNew(key.value, { bizAreaId: b?.bizAreaId ?? null, prefix: b?.tablePrefix ?? null, defaultSet: setCols.value });
+      ed.initNew(key.value, {
+        bizAreaId: b?.bizAreaId ?? null,
+        prefix: b?.tablePrefix ?? null,
+        defaultSet: setCols.value,
+      });
     } else {
       await reloadDetail();
     }
@@ -231,12 +236,15 @@ watch(
 
 // ── 저장·충돌(§8.1) ─────────────────────────────────────────────────
 const conflictDiff = computed(() =>
-  conflict.value ? diffCount(alignColumns(conflict.value.current.columns, conflict.value.mine.columns)) : 0,
+  conflict.value
+    ? diffCount(alignColumns(conflict.value.current.columns, conflict.value.mine.columns))
+    : 0,
 );
 
 async function focusIssue(i: { uid: string | null; field?: string | undefined }): Promise<void> {
   if (i.uid) return grid.value?.focusCell(i.uid, i.field ?? 'logicalNm');
-  const id = i.field === 'bizAreaId' ? 'ed-biz' : i.field === 'tableLogicalNm' ? 'ed-logical' : 'ed-phys';
+  const id =
+    i.field === 'bizAreaId' ? 'ed-biz' : i.field === 'tableLogicalNm' ? 'ed-logical' : 'ed-phys';
   document.getElementById(id)?.focus();
 }
 function focusFirstError(): void {
@@ -265,7 +273,10 @@ async function save(overwriteVersion?: number): Promise<void> {
     const r =
       ed.tableId === null
         ? await tapi.create(key.value, body)
-        : await tapi.save(key.value, ed.tableId, { ...body, version: overwriteVersion ?? ed.version! });
+        : await tapi.save(key.value, ed.tableId, {
+            ...body,
+            version: overwriteVersion ?? ed.version!,
+          });
     ed.applySaved(r, uids, sent);
     removeDraft(oldKey);
     draftBanner.value = null;
@@ -340,12 +351,21 @@ async function setStatus(status: 'FINAL' | 'DRAFT', close?: () => void): Promise
       version: ed.version,
       note: status === 'DRAFT' ? unfinalizeNote.value.trim() || null : null,
     });
-    toast.success(status === 'FINAL' ? `확정했습니다(v${r.version}) — 편집이 잠깁니다` : `확정을 해제했습니다(v${r.version})`);
+    toast.success(
+      status === 'FINAL'
+        ? `확정했습니다(v${r.version}) — 편집이 잠깁니다`
+        : `확정을 해제했습니다(v${r.version})`,
+    );
     unfinalizeNote.value = '';
     close?.();
     await reloadDetail();
   } catch (e) {
-    if (e instanceof ApiError && e.status === 422) ed.setServerIssues(errIssues(e), [], ed.payloadRows.map((r) => r.uid));
+    if (e instanceof ApiError && e.status === 422)
+      ed.setServerIssues(
+        errIssues(e),
+        [],
+        ed.payloadRows.map((r) => r.uid),
+      );
     toast.error(errMsg(e, '상태를 바꾸지 못했습니다'));
   } finally {
     statusBusy.value = false;
@@ -355,7 +375,11 @@ async function setStatus(status: 'FINAL' | 'DRAFT', close?: () => void): Promise
 function onBizChange(e: Event): void {
   const v = Number((e.target as HTMLSelectElement).value);
   const next = bizAreas.value.find((b) => b.bizAreaId === v) ?? null;
-  ed.changeBizArea(next?.bizAreaId ?? null, biz.value?.tablePrefix ?? null, next?.tablePrefix ?? null);
+  ed.changeBizArea(
+    next?.bizAreaId ?? null,
+    biz.value?.tablePrefix ?? null,
+    next?.tablePrefix ?? null,
+  );
 }
 function onCloned(r: TableCloneResponse): void {
   void router.push(`/projects/${r.projectKey}/tables/${r.tableId}`);
@@ -389,7 +413,8 @@ onBeforeUnmount(() => {
 });
 
 // ── 표시 ───────────────────────────────────────────────────────────
-const tableErr = (field: string) => ed.errors.find((i) => i.uid === null && i.field === field) ?? null;
+const tableErr = (field: string) =>
+  ed.errors.find((i) => i.uid === null && i.field === field) ?? null;
 const rowLabel = (uid: string | null) => {
   if (!uid) return '테이블';
   const i = ed.rows.findIndex((r) => r.uid === uid);
@@ -418,7 +443,8 @@ const restoreBlocked = computed(() =>
 const statusLine = computed(() => {
   const m = ed.meta;
   const parts: string[] = [];
-  if (m && ed.version !== null) parts.push(`v${ed.version} · ${m.updatedByNm ?? m.updatedBy} ${fmtTs(m.updatedAt)} 저장`);
+  if (m && ed.version !== null)
+    parts.push(`v${ed.version} · ${m.updatedByNm ?? m.updatedBy} ${fmtTs(m.updatedAt)} 저장`);
   else parts.push('새 테이블(저장 전)');
   if (ed.dirty) parts.push('저장 안 한 변경 있음');
   if (draftSavedAt.value) parts.push(`브라우저 임시저장 ${draftSavedAt.value}`);
@@ -428,14 +454,16 @@ const statusLine = computed(() => {
 
 <template>
   <EmptyState v-if="notFound" icon="table" title="테이블을 찾을 수 없습니다">
-    <RouterLink class="btn btn-secondary" :to="`/projects/${key}/tables`">테이블 목록으로</RouterLink>
+    <RouterLink class="btn btn-secondary" :to="`/projects/${key}/tables`"
+      >테이블 목록으로</RouterLink
+    >
   </EmptyState>
   <div v-else class="editor" data-testid="table-editor">
     <div class="editor-main">
       <div class="editor-head">
         <div class="breadcrumb">
-          <RouterLink :to="`/projects/${key}`">{{ project?.nm ?? key }}</RouterLink><span>›</span
-          ><RouterLink :to="`/projects/${key}/tables`">테이블</RouterLink
+          <RouterLink :to="`/projects/${key}`">{{ project?.nm ?? key }}</RouterLink
+          ><span>›</span><RouterLink :to="`/projects/${key}/tables`">테이블</RouterLink
           ><template v-if="biz"
             ><span>›</span
             ><RouterLink :to="`/projects/${key}/tables?bizAreaId=${biz.bizAreaId}`"
@@ -473,7 +501,9 @@ const statusLine = computed(() => {
               </button>
             </template>
           </TfPopover>
-          <TfBadge v-else :kind="final ? 'final' : 'draft'" lg data-testid="status-badge">{{ ed.status }}</TfBadge>
+          <TfBadge v-else :kind="final ? 'final' : 'draft'" lg data-testid="status-badge">{{
+            ed.status
+          }}</TfBadge>
           <div class="editor-status" data-testid="editor-status">
             <span v-for="(p, i) in statusLine" :key="i">{{ p }}</span>
           </div>
@@ -522,10 +552,16 @@ const statusLine = computed(() => {
           <TfIcon name="lock" />
           <div class="alert-body">
             <div class="alert-title">
-              확정됨(FINAL){{ ed.meta?.finalizedBy ? ` · ${ed.meta.finalizedBy} ${fmtTs(ed.meta.finalizedAt)}` : '' }}
+              확정됨(FINAL){{
+                ed.meta?.finalizedBy
+                  ? ` · ${ed.meta.finalizedBy} ${fmtTs(ed.meta.finalizedAt)}`
+                  : ''
+              }}
               — 편집이 잠겼습니다
             </div>
-            <template v-if="!isAdmin">프로젝트 관리자에게 확정 해제를 요청하세요. DDL 미리보기·복사는 가능합니다.</template>
+            <template v-if="!isAdmin"
+              >프로젝트 관리자에게 확정 해제를 요청하세요. DDL 미리보기·복사는 가능합니다.</template
+            >
             <div v-else class="row mt-3">
               <input
                 v-model="unfinalizeNote"
@@ -534,31 +570,59 @@ const statusLine = computed(() => {
                 placeholder="해제 사유(선택)"
                 aria-label="확정 해제 사유"
               />
-              <TfButton size="sm" variant="secondary" icon="unlock" :loading="statusBusy" @click="setStatus('DRAFT')"
+              <TfButton
+                size="sm"
+                variant="secondary"
+                icon="unlock"
+                :loading="statusBusy"
+                @click="setStatus('DRAFT')"
                 >확정 해제</TfButton
               >
             </div>
           </div>
         </div>
-        <div v-else-if="!canEditRole" class="alert alert-info mb-3" role="status" data-testid="readonly-banner">
+        <div
+          v-else-if="!canEditRole"
+          class="alert alert-info mb-3"
+          role="status"
+          data-testid="readonly-banner"
+        >
           <TfIcon name="eye" />
-          <div class="alert-body">조회자 — 읽기 전용입니다. DDL 미리보기·복사·다운로드는 가능합니다.</div>
+          <div class="alert-body">
+            조회자 — 읽기 전용입니다. DDL 미리보기·복사·다운로드는 가능합니다.
+          </div>
         </div>
         <div v-else-if="archived" class="alert alert-info mb-3" role="status">
           <TfIcon name="lock" />
           <div class="alert-body">보관된 프로젝트 — 읽기 전용입니다.</div>
         </div>
-        <div v-if="draftBanner" class="alert alert-warning mb-3" role="status" data-testid="draft-banner">
+        <div
+          v-if="draftBanner"
+          class="alert alert-warning mb-3"
+          role="status"
+          data-testid="draft-banner"
+        >
           <TfIcon name="alert-triangle" />
           <div class="alert-body">
-            <div class="alert-title">저장되지 않은 편집본({{ draftTime }})이 이 브라우저에 있습니다</div>
+            <div class="alert-title">
+              저장되지 않은 편집본({{ draftTime }})이 이 브라우저에 있습니다
+            </div>
             <template v-if="draftBanner.newer"
-              >그 사이 다른 저장이 있었습니다(v{{ draftBanner.draft.baseVersion }} → v{{ ed.version }}).
+              >그 사이 다른 저장이 있었습니다(v{{ draftBanner.draft.baseVersion }} → v{{
+                ed.version
+              }}).
             </template>
             임시저장은 이 브라우저에만 있습니다(다른 PC로 이어지지 않음).
             <div class="row mt-3">
-              <TfButton size="sm" variant="primary" :disabled="readOnly" @click="restoreDraftNow">복원</TfButton>
-              <TfButton v-if="draftBanner.newer" size="sm" variant="secondary" icon="git-merge" @click="draftCompareOpen = true"
+              <TfButton size="sm" variant="primary" :disabled="readOnly" @click="restoreDraftNow"
+                >복원</TfButton
+              >
+              <TfButton
+                v-if="draftBanner.newer"
+                size="sm"
+                variant="secondary"
+                icon="git-merge"
+                @click="draftCompareOpen = true"
                 >나란히 비교</TfButton
               >
               <TfButton size="sm" variant="ghost" @click="discardDraft">버리기</TfButton>
@@ -587,12 +651,15 @@ const statusLine = computed(() => {
               </option>
             </select>
             <span class="field-help"
-              >접두어 <span class="mono">{{ biz?.tablePrefix ?? '없음' }}</span>는 업무구분에서 옵니다 ·
+              >접두어 <span class="mono">{{ biz?.tablePrefix ?? '없음' }}</span
+              >는 업무구분에서 옵니다 ·
               <RouterLink :to="`/projects/${key}/biz-areas`">업무구분 관리</RouterLink></span
             >
           </div>
           <div class="field">
-            <label class="field-label" for="ed-logical">논리 테이블명 <span class="req">*</span></label>
+            <label class="field-label" for="ed-logical"
+              >논리 테이블명 <span class="req">*</span></label
+            >
             <input
               id="ed-logical"
               v-model="ed.header.tableLogicalNm"
@@ -603,7 +670,9 @@ const statusLine = computed(() => {
             />
           </div>
           <div class="field">
-            <label class="field-label" for="ed-phys">물리 테이블명 <span class="req">*</span></label>
+            <label class="field-label" for="ed-phys"
+              >물리 테이블명 <span class="req">*</span></label
+            >
             <!-- T9.5: 논리명 blur/Enter → suggest-name(업무구분 접두어 + 용어 분절, nmAuto)이 붙는 자리 -->
             <input
               id="ed-phys"
@@ -618,7 +687,13 @@ const statusLine = computed(() => {
           </div>
           <div class="field">
             <label class="field-label" for="ed-desc">설명</label>
-            <input id="ed-desc" v-model="ed.header.description" class="input" maxlength="4000" :readonly="readOnly" />
+            <input
+              id="ed-desc"
+              v-model="ed.header.description"
+              class="input"
+              maxlength="4000"
+              :readonly="readOnly"
+            />
           </div>
         </div>
       </div>
@@ -633,7 +708,10 @@ const statusLine = computed(() => {
         </div>
         <template v-else>
           <div
-            :class="['validation-bar', { 'has-error': ed.errors.length > 0, 'is-collapsed': !vOpen }]"
+            :class="[
+              'validation-bar',
+              { 'has-error': ed.errors.length > 0, 'is-collapsed': !vOpen },
+            ]"
             data-testid="validation-bar"
           >
             <div class="v-head">
@@ -641,33 +719,64 @@ const statusLine = computed(() => {
                 ><TfIcon name="alert-circle" />오류 {{ ed.errors.length }}</span
               >
               <span v-else class="v-count ok"><TfIcon name="check-circle" />오류 없음</span>
-              <span class="v-count warn"><TfIcon name="alert-triangle" />경고 {{ ed.warnings.length }}</span>
+              <span class="v-count warn"
+                ><TfIcon name="alert-triangle" />경고 {{ ed.warnings.length }}</span
+              >
               <span class="text-muted text-sm">{{
-                ed.errors.length > 0 ? '오류를 해결해야 저장할 수 있습니다. 경고는 저장 가능합니다.' : '경고는 저장 가능합니다.'
+                ed.errors.length > 0
+                  ? '오류를 해결해야 저장할 수 있습니다. 경고는 저장 가능합니다.'
+                  : '경고는 저장 가능합니다.'
               }}</span>
               <span class="spacer" />
-              <TfButton v-if="!readOnly" variant="ghost" size="sm" icon="refresh" @click="validateNow">다시 검증</TfButton>
-              <button class="btn btn-ghost btn-sm" type="button" :aria-expanded="vOpen" @click="vOpen = !vOpen">
+              <TfButton
+                v-if="!readOnly"
+                variant="ghost"
+                size="sm"
+                icon="refresh"
+                @click="validateNow"
+                >다시 검증</TfButton
+              >
+              <button
+                class="btn btn-ghost btn-sm"
+                type="button"
+                :aria-expanded="vOpen"
+                @click="vOpen = !vOpen"
+              >
                 {{ vOpen ? '접기' : '펼치기' }}
               </button>
             </div>
             <ul v-if="ed.issues.length > 0" class="validation-list">
               <li v-for="(i, n) in ed.issues.slice(0, 30)" :key="n">
-                <TfBadge :kind="i.severity === 'E' ? 'danger' : 'warning'">{{ i.severity === 'E' ? '오류' : '경고' }}</TfBadge>
-                <span>{{ rowLabel(i.uid) }} {{ i.columnNm ? `${i.columnNm}: ` : '' }}{{ i.message }}</span>
-                <button class="btn-link v-jump" type="button" @click="focusIssue(i)">{{ rowLabel(i.uid) }}으로 이동</button>
+                <TfBadge :kind="i.severity === 'E' ? 'danger' : 'warning'">{{
+                  i.severity === 'E' ? '오류' : '경고'
+                }}</TfBadge>
+                <span
+                  >{{ rowLabel(i.uid) }} {{ i.columnNm ? `${i.columnNm}: ` : ''
+                  }}{{ i.message }}</span
+                >
+                <button class="btn-link v-jump" type="button" @click="focusIssue(i)">
+                  {{ rowLabel(i.uid) }}으로 이동
+                </button>
               </li>
-              <li v-if="ed.issues.length > 30" class="text-muted">… {{ ed.issues.length - 30 }}건 더</li>
+              <li v-if="ed.issues.length > 30" class="text-muted">
+                … {{ ed.issues.length - 30 }}건 더
+              </li>
             </ul>
           </div>
 
           <div class="toolbar">
-            <TfButton v-if="!readOnly" variant="secondary" size="sm" icon="plus" @click="grid?.focusCell(ed.addRow().uid)"
+            <TfButton
+              v-if="!readOnly"
+              variant="secondary"
+              size="sm"
+              icon="plus"
+              @click="grid?.focusCell(ed.addRow().uid)"
               >행 추가</TfButton
             >
             <span class="spacer" />
             <span class="text-sm text-muted"
-              >컬럼 {{ ed.rows.length }} · 기본컬럼 {{ ed.defaultRows.filter((r) => r.included).length }} 포함</span
+              >컬럼 {{ ed.rows.length }} · 기본컬럼
+              {{ ed.defaultRows.filter((r) => r.included).length }} 포함</span
             >
           </div>
 
@@ -685,7 +794,10 @@ const statusLine = computed(() => {
           <span><span class="kbd">Enter</span> 다음 행(마지막이면 새 행)</span>
           <span><span class="kbd">Tab</span> 다음 셀</span>
           <span><span class="kbd">↑</span><span class="kbd">↓</span> 행 이동</span>
-          <span><span class="kbd">Alt</span>+<span class="kbd">↑</span><span class="kbd">↓</span> 순서 변경</span>
+          <span
+            ><span class="kbd">Alt</span>+<span class="kbd">↑</span><span class="kbd">↓</span> 순서
+            변경</span
+          >
           <span><span class="kbd">Ctrl</span>+<span class="kbd">S</span> 저장</span>
           <span><span class="kbd">Ctrl</span>+<span class="kbd">D</span> DDL 패널</span>
           <span class="spacer" />
@@ -740,8 +852,8 @@ const statusLine = computed(() => {
       <TfIcon name="info" />
       <div class="alert-body">
         <div class="alert-title">권장: 최신본 새로고침 후 내 변경을 다시 적용</div>
-        새로고침하면 최신본(v{{ conflict.currentVersion }}) 위에서 편집을 이어갑니다. 덮어쓰기는 최신본을 이력에 남기고 내 편집본을
-        v{{ conflict.currentVersion + 1 }}로 저장합니다.
+        새로고침하면 최신본(v{{ conflict.currentVersion }}) 위에서 편집을 이어갑니다. 덮어쓰기는
+        최신본을 이력에 남기고 내 편집본을 v{{ conflict.currentVersion + 1 }}로 저장합니다.
       </div>
     </div>
   </ConflictMergeModal>

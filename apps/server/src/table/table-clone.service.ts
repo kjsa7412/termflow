@@ -62,7 +62,11 @@ export class TableCloneService {
   ) {}
 
   /** 대상 프로젝트 문맥(가드와 같은 규칙: 비멤버·없는 키·비SA의 템플릿 404, 편집자 미만 403, 템플릿 409, 보관 409). */
-  private async target(src: ProjectCtx, key: string | undefined, user: AuthUser): Promise<ProjectCtx> {
+  private async target(
+    src: ProjectCtx,
+    key: string | undefined,
+    user: AuthUser,
+  ): Promise<ProjectCtx> {
     if (key === undefined || key === src.projectKey) {
       if (MEMBER_ROLE_RANK[src.role] < MEMBER_ROLE_RANK.EDITOR) throw new ForbiddenProblem();
       this.tables.assertNotTemplate(src);
@@ -112,8 +116,10 @@ export class TableCloneService {
       q,
       sql`select biz_area_id, biz_cd, use_yn from prj_biz_area where project_id = ${target.projectId}`,
     );
-    const bad = (code: 'E_BIZ_AREA_NOT_FOUND' | 'E_BIZ_AREA_INACTIVE' | 'E_BIZ_AREA_REQUIRED', message: string) =>
-      new ValidationProblem([{ code, target: 'table', field: 'bizAreaId', message }]);
+    const bad = (
+      code: 'E_BIZ_AREA_NOT_FOUND' | 'E_BIZ_AREA_INACTIVE' | 'E_BIZ_AREA_REQUIRED',
+      message: string,
+    ) => new ValidationProblem([{ code, target: 'table', field: 'bizAreaId', message }]);
     let b: (typeof rows)[number] | undefined;
     if (requested !== undefined) {
       b = rows.find((r) => r.biz_area_id === requested);
@@ -140,7 +146,9 @@ export class TableCloneService {
     targetId: number,
     cols: Awaited<ReturnType<typeof loadColumns>>,
   ): Promise<{ columns: ColumnInput[]; warnings: RemapWarning[] }> {
-    const srcDomainIds = [...new Set(cols.map((c) => c.domainId).filter((x): x is number => x !== null))];
+    const srcDomainIds = [
+      ...new Set(cols.map((c) => c.domainId).filter((x): x is number => x !== null)),
+    ];
     const [srcDomains, tgtCodes, tgtDefaults] = await Promise.all([
       srcDomainIds.length === 0
         ? Promise.resolve([] as { domain_id: number; logical_nm: string }[])
@@ -175,7 +183,8 @@ export class TableCloneService {
     const domainBy = new Map(tgtDomains.map((d) => [d.logical_nm, d.domain_id]));
     const codeBy = new Map(tgtCodes.map((c) => [c.key, c.code_cls_id]));
     const defaultBy = new Map<string, number>();
-    for (const d of tgtDefaults) if (!defaultBy.has(d.physical_nm)) defaultBy.set(d.physical_nm, d.default_col_id);
+    for (const d of tgtDefaults)
+      if (!defaultBy.has(d.physical_nm)) defaultBy.set(d.physical_nm, d.default_col_id);
 
     const warnings: RemapWarning[] = [];
     const warn = (
@@ -235,7 +244,11 @@ export class TableCloneService {
   async clone(
     src: ProjectCtx,
     tableId: number,
-    input: { targetProjectKey?: string | undefined; targetBizAreaId?: number | undefined; tableNm?: string | undefined },
+    input: {
+      targetProjectKey?: string | undefined;
+      targetBizAreaId?: number | undefined;
+      tableNm?: string | undefined;
+    },
     user: AuthUser,
     a: Audit,
   ): Promise<TableCloneResponse> {
@@ -273,28 +286,29 @@ export class TableCloneService {
         if (tableNm.length > max) throw new ValidationProblem([issue('E_PHYS_LEN')]);
         if (taken.has(tableNm)) throw new ValidationProblem([issue('E_TABLE_NM_DUP')]);
       } else {
-        tableNm = !same && !taken.has(header.tableNm) ? header.tableNm : copyName(header.tableNm, taken, max);
+        tableNm =
+          !same && !taken.has(header.tableNm)
+            ? header.tableNm
+            : copyName(header.tableNm, taken, max);
       }
       const { columns, warnings } = same
         ? {
-            columns: srcCols.map(
-              (c): ColumnInput => ({
-                columnId: null,
-                logicalNm: c.logicalNm,
-                physicalNm: c.physicalNm,
-                isPk: c.isPk,
-                dataType: c.dataType,
-                dataLength: c.dataLength,
-                dataScale: c.dataScale,
-                isNullable: c.isNullable,
-                defaultVal: c.defaultVal,
-                colComment: c.colComment,
-                domainId: c.domainId,
-                codeClsId: c.codeClsId,
-                defaultColId: c.defaultColId,
-                matchType: c.matchType,
-              }),
-            ),
+            columns: srcCols.map((c): ColumnInput => ({
+              columnId: null,
+              logicalNm: c.logicalNm,
+              physicalNm: c.physicalNm,
+              isPk: c.isPk,
+              dataType: c.dataType,
+              dataLength: c.dataLength,
+              dataScale: c.dataScale,
+              isNullable: c.isNullable,
+              defaultVal: c.defaultVal,
+              colComment: c.colComment,
+              domainId: c.domainId,
+              codeClsId: c.codeClsId,
+              defaultColId: c.defaultColId,
+              matchType: c.matchType,
+            })),
             warnings: [] as RemapWarning[],
           }
         : await this.remap(tx, tgt.projectId, srcCols);
