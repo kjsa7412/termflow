@@ -5,6 +5,7 @@ import type {
   CopySourceKind,
   DdlOutputKind,
   Dialect,
+  HistoryAction,
   MatchType,
   MemberRole,
   ProjectKind,
@@ -359,6 +360,167 @@ export interface TableSaveResponse {
   columns: { columnId: number; colSeq: number }[];
   changeSummary: string;
   warnings: ValidationIssue[];
+}
+
+/** 편집기 테이블 헤더(GET P/tables/{id}, 409 `current.table`). */
+export interface TableHeaderItem {
+  tableId: number;
+  projectKey: string;
+  bizAreaId: number;
+  bizCd: string;
+  bizNm: string;
+  tablePrefix: string | null;
+  bizUseYn: boolean;
+  tableNm: string;
+  tableLogicalNm: string;
+  description: string | null;
+  status: TableStatus;
+  version: number;
+  finalizedAt: string | null;
+  finalizedBy: string | null;
+  reviewYn: boolean;
+  reviewNote: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedBy: string;
+  /** updated_by의 사용자 이름(없으면 null — MIGRATION 등). */
+  updatedByNm: string | null;
+  updatedAt: string;
+}
+
+/** 편집기 컬럼 1행(저장 본문 ColumnInput + 표시용 참조 정보). */
+export interface TableColumnItem {
+  columnId: number;
+  colSeq: number;
+  logicalNm: string;
+  physicalNm: string;
+  isPk: boolean;
+  dataType: StdType | null;
+  dataLength: number | null;
+  dataScale: number | null;
+  isNullable: boolean;
+  defaultVal: string | null;
+  colComment: string | null;
+  domainId: number | null;
+  codeClsId: number | null;
+  defaultColId: number | null;
+  matchType: MatchType;
+  /** 연결 도메인 논리명(배지 툴팁). */
+  domainNm: string | null;
+  /** 연결 코드구분(코드 칩 `RP/030 채택결과`). */
+  codeCls: { codeClsId: number; bizCd: string; codeCls: string; codeClsNm: string } | null;
+}
+
+/** GET P/tables/{id} — 테이블 + 컬럼 + 재검증(§5.7, DDL과 같은 규칙). */
+export interface TableDetail {
+  table: TableHeaderItem;
+  columns: TableColumnItem[];
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+}
+
+/** 409 version-conflict 본문(§8.1) — ProblemDetail 확장 필드. */
+export interface TableConflict {
+  yourVersion: number;
+  currentVersion: number;
+  savedBy: string;
+  savedAt: string;
+  current: { table: TableHeaderItem; columns: TableColumnItem[] };
+}
+
+/** POST P/tables/validate 응답. */
+export interface TableValidateResponse {
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+}
+
+/** PUT P/tables/{id}/status 응답. */
+export interface TableStatusResponse {
+  tableId: number;
+  version: number;
+  status: TableStatus;
+  finalizedAt: string | null;
+  finalizedBy: string | null;
+}
+
+/** 다른 프로젝트 복제 시 자연키로 찾지 못한 참조(§8.4, NULL로 저장). */
+export interface RemapWarning {
+  code: 'W_REMAP_DOMAIN' | 'W_REMAP_CODE_CLS' | 'W_REMAP_DEFAULT_COL';
+  rowIndex: number;
+  columnNm: string;
+  field: 'domainId' | 'codeClsId' | 'defaultColId';
+  /** 원본 자연키(도메인 논리명 · `biz_cd/code_cls` · 기본컬럼 물리명). */
+  sourceKey: string;
+  message: string;
+}
+
+/** POST P/tables/{id}/clone 201. */
+export interface TableCloneResponse {
+  tableId: number;
+  projectKey: string;
+  bizAreaId: number;
+  tableNm: string;
+  version: number;
+  remapWarnings: RemapWarning[];
+}
+
+/** 이력 목록 1행(GET P/tables/{id}/history, 스냅샷 본문 제외). */
+export interface TableHistoryItem {
+  version: number;
+  action: HistoryAction;
+  changeSummary: string | null;
+  savedBy: string;
+  savedByNm: string | null;
+  savedAt: string;
+}
+
+/** 스냅샷 JSON(§8.3, schemaVersion 1). */
+export interface TableSnapshotColumn {
+  columnId: number | null;
+  colSeq: number;
+  logicalNm: string;
+  physicalNm: string;
+  isPk: boolean;
+  dataType: StdType | null;
+  dataLength: number | null;
+  dataScale: number | null;
+  isNullable: boolean;
+  defaultVal: string | null;
+  colComment: string | null;
+  domainId: number | null;
+  codeClsId: number | null;
+  defaultColId: number | null;
+  matchType: MatchType;
+}
+export interface TableSnapshot {
+  schemaVersion: 1;
+  table: {
+    tableId: number;
+    projectKey: string;
+    bizCd: string;
+    bizAreaId: number;
+    tableNm: string;
+    tableLogicalNm: string;
+    description: string | null;
+    status: TableStatus;
+    version: number;
+  };
+  columns: TableSnapshotColumn[];
+  action: HistoryAction;
+  changeSummary: string | null;
+  savedBy: string;
+  savedAt: string;
+  /** CLONE: 원본(프로젝트·테이블·버전). */
+  clonedFrom?: { projectKey: string; tableId: number; tableNm: string; version: number };
+  /** RESTORE: 복원한 버전. */
+  restoredFrom?: number;
+  /** UNFINALIZE·FINALIZE 사유(선택). */
+  note?: string | null;
+}
+
+/** GET P/tables/{id}/history/{version}. */
+export interface TableHistoryDetail extends TableHistoryItem {
+  snapshot: TableSnapshot;
 }
 
 export interface TableListItem {

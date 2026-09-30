@@ -284,6 +284,11 @@ export const API_ERROR_CODES = {
   E_DIALECT_UNSUPPORTED: '지원하지 않는 방언입니다(MVP는 PostgreSQL만, D2)',
   E_DDL_TABLES_MAX: '한 번에 내보낼 수 있는 테이블 수(200)를 넘었습니다',
   E_DDL_NO_TABLES: '내보낼 테이블이 없습니다',
+  // 테이블 편집기(단계 8, CR-07)
+  E_DOMAIN_NOT_FOUND: '도메인이 프로젝트에 없습니다',
+  E_CODE_CLS_NOT_FOUND: '코드구분이 프로젝트에 없습니다',
+  E_DEFAULT_COL_NOT_FOUND: '기본컬럼이 프로젝트에 없습니다',
+  E_TABLE_STATUS_INVALID: '현재 상태에서 할 수 없는 전이입니다',
 } as const;
 export type ApiErrorCode = keyof typeof API_ERROR_CODES;
 
@@ -320,3 +325,13 @@ export const DDL_WARNING_CODES = {
   W_TYPE_OVERFLOW: '방언 길이 상한을 넘어 대체 타입으로 생성했습니다',
 } as const;
 export type DdlWarningCode = keyof typeof DDL_WARNING_CODES;
+
+/**
+ * 다른 프로젝트 복제 재매핑 경고(단계 8, 설계서 §8.4·§3.5.12). 자연키로 찾지 못한 참조는 NULL로 저장하고 응답 `remapWarnings[]`에 싣는다.
+ */
+export const CLONE_WARNING_CODES = {
+  W_REMAP_DOMAIN: '대상 프로젝트에 같은 논리명의 도메인이 없어 연결을 해제했습니다',
+  W_REMAP_CODE_CLS: '대상 프로젝트에 같은 업무구분·코드구분이 없어 연결을 해제했습니다',
+  W_REMAP_DEFAULT_COL: '대상 프로젝트에 같은 물리명의 기본컬럼이 없어 연결을 해제했습니다',
+} as const;
+export type CloneWarningCode = keyof typeof CLONE_WARNING_CODES;

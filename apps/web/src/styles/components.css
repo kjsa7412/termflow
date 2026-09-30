@@ -523,3 +523,11 @@
 .search-pop .dropdown-item { width: 100%; }
 .history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-12); }
 .history-list li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+/* 테이블 편집기(단계 8): 비교 범례 · 드래그 순서 변경 표시 · 읽기 전용 셀 */
+.diff-legend i.legend-add { background: var(--success-bg); }
+.diff-legend i.legend-chg { background: var(--warning-bg); }
+.diff-legend i.legend-empty { background: repeating-linear-gradient(45deg, var(--bg-0) 0 3px, var(--bg-1) 3px 6px); }
+.grid tr.is-dragging td { opacity: .45; }
+.grid tr.is-drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
+.grid .drag-handle { cursor: grab; }
+.grid .cell-input[readonly] { color: var(--tx-2); }

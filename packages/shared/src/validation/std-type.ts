@@ -70,6 +70,59 @@ export function stdTypeProblemIssue(
 }
 
 /**
+ * 표준 타입 3분할 파서(R16, 설계서 §11.2·§6.3) — 승계 러너·엑셀 입력(서버)과 편집기 타입 셀(화면, T8.8)이 같은 구현을 쓴다.
+ * 정규식(§11.2 R16): `^([A-Z]+)(?:\((\d+)(?:\.0)?(?:,(\d+))?\))?$` → (type, length, scale).
+ *  - `VARCHAR(5.0)` → VARCHAR, 5 (소수 표기 흡수) · `INTEGER` → INT · `TIMESTAMP`(n 없음) → length NULL
+ *  - 별칭(CR-03 C2): `VARCHAR2` → VARCHAR
+ * 파싱 전 정리: trim, 대문자, 공백 제거(`NUMERIC(13, 2)` 허용).
+ */
+const TYPE_RE = /^([A-Z][A-Z0-9]*)(?:\((\d+)(?:\.0)?(?:,(\d+))?\))?$/;
+const TYPE_ALIASES: Readonly<Record<string, StdType>> = { INTEGER: 'INT', VARCHAR2: 'VARCHAR' };
+
+export interface StdTypeParts {
+  type: StdType;
+  length: number | null;
+  scale: number | null;
+}
+export type StdTypeParseFailure = 'EMPTY' | 'FORMAT' | 'UNKNOWN_TYPE' | StdTypePartsProblem;
+export type StdTypeParseResult =
+  | ({ ok: true; normalized: string } & StdTypeParts)
+  | { ok: false; reason: StdTypeParseFailure; input: string };
+export type StdTypeSplitResult =
+  | ({ ok: true } & StdTypeParts)
+  | { ok: false; reason: 'EMPTY' | 'FORMAT' | 'UNKNOWN_TYPE'; input: string };
+
+/** 구조만 분리(길이 규칙 검사 없음). 편집기는 `VARCHAR`처럼 길이가 빠진 입력도 타입으로 받아 두고 E_TYPE_LEN_*로 보여 준다. */
+export function splitStdType(input: string | null | undefined): StdTypeSplitResult {
+  const raw = input ?? '';
+  const s = raw.trim().toUpperCase().replace(/\s+/g, '');
+  if (s === '') return { ok: false, reason: 'EMPTY', input: raw };
+  const m = TYPE_RE.exec(s);
+  if (!m) return { ok: false, reason: 'FORMAT', input: raw };
+  const name = m[1]!;
+  const type = TYPE_ALIASES[name] ?? (STD_TYPE_SET.has(name) ? (name as StdType) : null);
+  if (!type) return { ok: false, reason: 'UNKNOWN_TYPE', input: raw };
+  return {
+    ok: true,
+    type,
+    length: m[2] !== undefined ? Number(m[2]) : null,
+    scale: m[3] !== undefined ? Number(m[3]) : null,
+  };
+}
+
+/**
+ * 타입 문자열 → 3분할 + 표준 규칙(§5.7 E_TYPE_LEN_MISSING·E_TYPE_LEN_RANGE): VARCHAR/CHAR/NUMERIC 길이 필수, 길이 ≥ 1,
+ * NUMERIC scale ≤ precision, TIMESTAMP n ≤ 6, 그 외 타입은 길이 없음.
+ */
+export function parseStdType(input: string | null | undefined): StdTypeParseResult {
+  const r = splitStdType(input);
+  if (!r.ok) return r;
+  const problem = checkStdTypeParts(r.type, r.length, r.scale);
+  if (problem) return { ok: false, reason: problem, input: input ?? '' };
+  return { ...r, normalized: typeText(r.type, r.length, r.scale) ?? r.type };
+}
+
+/**
  * 표시·DDL 미리보기용 타입 텍스트(L1 9단계, §5.2). 저장은 항상 3분할.
  * VARCHAR/CHAR → `T(n)`, NUMERIC → `T(p,s)`(s 없으면 `T(p)`), TIMESTAMP → n이 있으면 `T(n)`, 그 외 타입명.
  */
