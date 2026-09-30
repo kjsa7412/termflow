@@ -198,7 +198,11 @@ describe('단일 DDL GET P/tables/{id}/ddl', () => {
     expect(low.text.startsWith('CREATE TABLE rp.rp_rsch_prj_mast (')).toBe(true);
     const j = (await v.get(`${P}/tables/${id}/ddl?format=json`)).body as DdlResponse;
     expect(j).toMatchObject({ dialect: 'POSTGRESQL', tableCnt: 1 });
-    expect(j.tables[0]).toMatchObject({ tableId: id, tableNm: 'RP_RSCH_PRJ_MAST', status: 'FINAL' });
+    expect(j.tables[0]).toMatchObject({
+      tableId: id,
+      tableNm: 'RP_RSCH_PRJ_MAST',
+      status: 'FINAL',
+    });
     expect((await v.get(`${P}/tables/${id}/ddl?dialect=ORACLE`)).status).toBe(422);
     expect((await v.get(`${P}/tables/${id}/ddl?schemaName=1x`)).status).toBe(400);
     expect((await v.get(`${P}/tables/${other.tableId}/ddl`)).status).toBe(404);

@@ -82,10 +82,12 @@ pnpm --filter @termflow/server migrate:scan   # dump 민감값 사전 점검 →
 pnpm migrate:seed                             # 기본 --steps=LOAD_LEGACY..DEFAULT_COL + RECONCILE(1차 대사)
 pnpm migrate:seed -- --reset                  # dev 전용: STDV1·RMS·legacy 삭제 후 처음부터(멱등 확인용)
 pnpm migrate:seed -- --steps=RECONCILE        # 대사만 다시
+pnpm migrate:seed -- --steps=TERM_UNIFY,RECONCILE,DDL_REGRESSION   # CR-09 이전 이름(…_MST·…_REG_USER_ID)으로 적재된 DB 정정
+pnpm --filter @termflow/server cr09:sql       # 운영 DB 전환 스크립트 docs/cr09_rename_postgresql.sql 재생성
 ```
 
 - 원본: `seed/original/dump-gen_table-new.sql`(수정 금지) → 치환본 `migration/work/dump-legacy.sql` → 스키마 `legacy`
-- 리포트: `migration/report/{run_id}/`의 규칙별 `rNN_*.csv`·`summary.csv`·`reconcile.csv`(UTF-8 BOM, 엑셀에서 바로 열림)
+- 리포트: `migration/report/{run_id}/`의 규칙별 `rNN_*.csv`·`cr09-rename-map.csv`(R19 이전 → 이후)·`summary.csv`·`reconcile.csv`(UTF-8 BOM, 엑셀에서 바로 열림)
 - 이미 적재된 step은 SKIPPED, 실패·대사 불일치면 종료 코드 1. 실행 기록은 `migration_log`
 - 규칙·기대 건수와 설계 대비 차이는 `docs/CR-03_단계3_4_구현반영.md`
 

@@ -76,9 +76,14 @@ beforeAll(async () => {
   pool = new pg.Pool({ connectionString: url, max: 4 });
   db = createDb(pool);
   await insertUsers(pool);
-  first = await runSteps({ pool, db, url }, rep.dir, 'full', parseSteps('LOAD_LEGACY..DDL_REGRESSION'));
-  rmsId = (await pool.query("select project_id id from tf_project where project_key = 'RMS'")).rows[0]
-    .id as number;
+  first = await runSteps(
+    { pool, db, url },
+    rep.dir,
+    'full',
+    parseSteps('LOAD_LEGACY..DDL_REGRESSION'),
+  );
+  rmsId = (await pool.query("select project_id id from tf_project where project_key = 'RMS'"))
+    .rows[0].id as number;
 });
 afterAll(async () => {
   await pool?.end();
@@ -97,7 +102,13 @@ describe('새 적재 — R19 인라인(DEFAULT_COL·TABLE)', () => {
     expect(unify.result).toMatchObject({ loaded: 0, flagged: 0 });
     expect(unify.message).toBe('정정 대상 없음(이미 용어 기준)');
     const dflt = first.steps.find((s) => s.step === 'DEFAULT_COL')!;
-    expect(dflt.result?.rules).toContainEqual({ rule: 'R19', source: 9, loaded: 2, excluded: 0, flagged: 0 });
+    expect(dflt.result?.rules).toContainEqual({
+      rule: 'R19',
+      source: 9,
+      loaded: 2,
+      excluded: 0,
+      flagged: 0,
+    });
     const table = first.steps.find((s) => s.step === 'TABLE')!;
     expect(table.result?.rules).toContainEqual({
       rule: 'R19',
@@ -174,7 +185,13 @@ describe('새 적재 — R19 인라인(DEFAULT_COL·TABLE)', () => {
 describe('운영 DB 전환 스크립트(docs/cr09_rename_postgresql.sql)', () => {
   it('파일 = 생성기 결과(테이블 33 · 테이블명 18 · 컬럼명 66 · 제약명 PK 15 · CHECK 4)', async () => {
     const pairs = await loadRmsRenamePairs(db);
-    expect(renameCounts(pairs)).toEqual({ tables: 33, renamedTables: 18, columns: 66, pk: 15, ck: 4 });
+    expect(renameCounts(pairs)).toEqual({
+      tables: 33,
+      renamedTables: 18,
+      columns: 66,
+      pk: 15,
+      ck: 4,
+    });
     expect(readFileSync(DOC_SQL, 'utf8')).toBe(renderRenameSql(pairs));
   });
 
@@ -270,7 +287,12 @@ describe('CR-09 이전 DB(이전 이름으로 적재됨) → TERM_UNIFY 정정',
       [rmsId],
     );
     expect(t).toEqual({ n: 33, v2: 33, fin: 33, by_admin: 33, mast: 18, mst: 0 });
-    const h = await pool.query<{ action: string; change_summary: string; saved_by: string; snapshot: TableSnapshot }>(
+    const h = await pool.query<{
+      action: string;
+      change_summary: string;
+      saved_by: string;
+      snapshot: TableSnapshot;
+    }>(
       `select h.action, h.change_summary, h.saved_by, h.snapshot from prj_table_history h
          join prj_table t on t.table_id = h.table_id
         where t.project_id = $1 and t.table_nm = 'RP_RSCH_PRJ_MAST' order by h.version`,
@@ -283,7 +305,11 @@ describe('CR-09 이전 DB(이전 이름으로 적재됨) → TERM_UNIFY 정정',
       'CR-09 용어 기준 정정(R19): 테이블 RP_RSCH_PRJ_MST → RP_RSCH_PRJ_MAST, FIRS_REG_USER_ID → FIRS_RGSRT_ID, FINA_REG_USER_ID → FINA_RGSRT_ID',
     );
     expect(h.rows[0]!.snapshot.table.tableNm).toBe('RP_RSCH_PRJ_MST');
-    expect(h.rows[1]!.snapshot.table).toMatchObject({ tableNm: 'RP_RSCH_PRJ_MAST', status: 'FINAL', version: 2 });
+    expect(h.rows[1]!.snapshot.table).toMatchObject({
+      tableNm: 'RP_RSCH_PRJ_MAST',
+      status: 'FINAL',
+      version: 2,
+    });
     const cols = await q1(
       `select count(*) filter (where physical_nm = any($2))::int new, count(*) filter (where physical_nm = any($3))::int old
          from prj_column where project_id = $1 and table_id <> $4`,
@@ -333,7 +359,11 @@ describe('CR-09 이전 DB(이전 이름으로 적재됨) → TERM_UNIFY 정정',
     const cache = new TermCacheRegistry(db);
     try {
       const svc = new TableService(db, cache);
-      const id = (await q1<{ id: number }>("select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MAST'")).id;
+      const id = (
+        await q1<{ id: number }>(
+          "select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MAST'",
+        )
+      ).id;
       const ctx = {
         projectId: rmsId,
         projectKey: 'RMS',
@@ -343,7 +373,12 @@ describe('CR-09 이전 DB(이전 이름으로 적재됨) → TERM_UNIFY 정정',
         sysAdmin: true,
       };
       const a = audit('admin');
-      const un = await svc.setStatus(ctx, id, { status: 'DRAFT', version: 2, note: '복원 확인' }, a);
+      const un = await svc.setStatus(
+        ctx,
+        id,
+        { status: 'DRAFT', version: 2, note: '복원 확인' },
+        a,
+      );
       const r = await svc.restore(ctx, id, 1, un.version, a);
       expect(r.version).toBe(4);
       const d = await svc.detail(ctx, id);
