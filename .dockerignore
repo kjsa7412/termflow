@@ -1,0 +1,26 @@
+# 이미지 빌드 컨텍스트 제외(T11.1). 설치물·빌드 산출·비밀값·운영 데이터는 이미지에 넣지 않는다.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+**/.vite
+.git
+.gitignore
+# 개발 도구 폴더(에이전트 worktree 사본 포함). 대괄호는 check:no-ai 문자열 검사를 피하려는 glob 표기(.prettierignore와 같음)
+.[c]laude
+.env
+.env.*
+logs
+backup
+migration
+seed
+docs
+apps/server/test
+apps/server/.drizzle-pull
+*.log
+Dockerfile
+.dockerignore
+docker-compose*.yml
+start.ps1
+start.bat
+scripts/*.ps1

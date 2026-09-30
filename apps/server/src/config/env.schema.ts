@@ -35,6 +35,12 @@ const envObject = z.object({
   TERMFLOW_ADMIN_PASSWORD: z.string().optional(),
   TERMFLOW_SESSION_SECRET: z.string().optional(),
   TERMFLOW_SESSION_TIMEOUT: minutes,
+  /**
+   * production 쿠키 Secure·HTTPS 헤더(CR-11a C5). `auto`(기본): 요청이 HTTPS(직접 또는 프록시 X-Forwarded-Proto)일 때만
+   * 세션 쿠키 Secure — start.ps1의 http://localhost:8080 직접 접속에서도 로그인된다. `true`: 항상 Secure +
+   * upgrade-insecure-requests(TLS 종단 프록시 뒤 전용). `false`: Secure·HSTS 없음. development·test는 항상 false.
+   */
+  TERMFLOW_SECURE_COOKIE: z.enum(['auto', 'true', 'false']).default('auto'),
   LOCKOUT_MAX: z.coerce.number().int().min(1).max(100).default(PASSWORD_POLICY.lockoutMaxFailures),
   LOCKOUT_MINUTES: z.coerce.number().int().min(1).max(1440).default(PASSWORD_POLICY.lockoutMinutes),
 
