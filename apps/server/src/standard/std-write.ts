@@ -39,10 +39,23 @@ export class StdWriter {
     assertWritableState(p.status as ProjectStatus, p.kind as ProjectKind, sysAdmin);
   }
 
-  async write<T>(ctx: ProjectCtx, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  /**
+   * @param opts.prefetch 커밋·무효화 직후 캐시 재적재를 **기다리지 않고** 시작한다(인라인 등록 → 편집기 자동 재시도 경로, G2·§5.8).
+   *   재시도 요청은 진행 중 적재 Promise를 공유하므로 적재 시간이 응답 왕복과 겹친다(CR-08 C1).
+   */
+  async write<T>(
+    ctx: ProjectCtx,
+    fn: (tx: Tx) => Promise<T>,
+    opts: { prefetch?: boolean } = {},
+  ): Promise<T> {
     this.assertWritable(ctx);
     const r = await this.db.transaction(fn);
     this.cache.invalidate(ctx.projectId);
+    if (opts.prefetch) {
+      this.cache.get(ctx.projectId).catch(() => {
+        /* 적재 실패는 다음 요청이 다시 시도한다 */
+      });
+    }
     return r;
   }
 }

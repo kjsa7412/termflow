@@ -349,61 +349,69 @@ export class TermService {
       return { res: await respond(cur.termId, 'EXISTING'), written: false };
     }
     if (cur) {
-      await this.writer.write(ctx, async (tx) => {
-        const [after] = await updateAudited(
+      await this.writer.write(
+        ctx,
+        async (tx) => {
+          const [after] = await updateAudited(
+            tx,
+            stdTerm,
+            {
+              termPhysical: v.termPhysical,
+              description: v.description,
+              status: 'PENDING',
+              reviewNote: null,
+              reviewedBy: null,
+              reviewedAt: null,
+            },
+            a,
+          )
+            .where(eq(stdTerm.termId, cur.termId))
+            .returning();
+          await writeStdAudit(
+            tx,
+            {
+              projectId: ctx.projectId,
+              entityType: 'TERM',
+              entityId: cur.termId,
+              action: 'UPDATE',
+              before: auditJson(cur),
+              after: auditJson(after),
+            },
+            a,
+          );
+        },
+        { prefetch: true },
+      );
+      this.logger.log(`용어 재등록(반려 → 검토대기): ${ctx.projectKey} ${v.termKor} by ${a.actor}`);
+      return { res: await respond(cur.termId, 'REOPENED'), written: true };
+    }
+    const id = await this.writer.write(
+      ctx,
+      async (tx) => {
+        const [r] = await insertAudited(
           tx,
           stdTerm,
-          {
-            termPhysical: v.termPhysical,
-            description: v.description,
-            status: 'PENDING',
-            reviewNote: null,
-            reviewedBy: null,
-            reviewedAt: null,
-          },
+          { projectId: ctx.projectId, ...v, status: 'PENDING' },
           a,
         )
-          .where(eq(stdTerm.termId, cur.termId))
+          .onConflictDoNothing()
           .returning();
+        if (!r) throw this.dup(v.termKor);
         await writeStdAudit(
           tx,
           {
             projectId: ctx.projectId,
             entityType: 'TERM',
-            entityId: cur.termId,
-            action: 'UPDATE',
-            before: auditJson(cur),
-            after: auditJson(after),
+            entityId: r.termId,
+            action: 'INSERT',
+            after: auditJson(r),
           },
           a,
         );
-      });
-      this.logger.log(`용어 재등록(반려 → 검토대기): ${ctx.projectKey} ${v.termKor} by ${a.actor}`);
-      return { res: await respond(cur.termId, 'REOPENED'), written: true };
-    }
-    const id = await this.writer.write(ctx, async (tx) => {
-      const [r] = await insertAudited(
-        tx,
-        stdTerm,
-        { projectId: ctx.projectId, ...v, status: 'PENDING' },
-        a,
-      )
-        .onConflictDoNothing()
-        .returning();
-      if (!r) throw this.dup(v.termKor);
-      await writeStdAudit(
-        tx,
-        {
-          projectId: ctx.projectId,
-          entityType: 'TERM',
-          entityId: r.termId,
-          action: 'INSERT',
-          after: auditJson(r),
-        },
-        a,
-      );
-      return r.termId;
-    });
+        return r.termId;
+      },
+      { prefetch: true },
+    );
     this.logger.log(
       `용어 인라인 등록(검토대기): ${ctx.projectKey} ${v.termKor}=${v.termPhysical} by ${a.actor}`,
     );
