@@ -12,3 +12,5 @@ pnpm-lock.yaml
 apps/web/src/styles/
 # 루트 에이전트 작업 규칙 문서(docs/와 같이 서식 검사 대상에서 제외). 대괄호는 check:no-ai 문자열 검사를 피하려는 glob 표기
 [C]LAUDE.md
+# 에이전트 도구 폴더(병렬 작업 git worktree 포함 — 저장소 사본이라 styles/ 제외 규칙이 경로상 맞지 않는다)
+.[c]laude/

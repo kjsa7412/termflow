@@ -33,8 +33,12 @@ export const columnInputSchema = z.object({
 });
 export type ColumnInput = z.infer<typeof columnInputSchema>;
 
+/**
+ * 테이블 헤더. `bizAreaId`는 형식상 선택(null)이고 필수 판정은 업무 검증 422 `E_BIZ_AREA_REQUIRED`(§8.4, CR-07 C2) —
+ * 400이면 편집기가 행 단위 오류와 같은 경로로 보여 줄 수 없다.
+ */
 export const tableHeaderSchema = z.object({
-  bizAreaId: idSchema,
+  bizAreaId: optionalId,
   tableNm: text(100),
   tableLogicalNm: text(200, 1),
   description: optionalText(4000),
@@ -50,10 +54,12 @@ export type TableCreateInput = z.infer<typeof tableCreateSchema>;
 export const tableSaveSchema = tableCreateSchema.extend({ version: z.int().positive() });
 export type TableSaveInput = z.infer<typeof tableSaveSchema>;
 
-/** POST P/tables/validate — 저장 본문과 같다(version 선택). */
+/** POST P/tables/validate — 저장 본문과 같다(version 선택, `tableId` = 자기 자신 — E_TABLE_NM_DUP 판정에서 제외). */
 export const tableValidateSchema = tableCreateSchema.extend({
   version: z.int().positive().optional(),
+  tableId: idSchema.optional(),
 });
+export type TableValidateInput = z.infer<typeof tableValidateSchema>;
 
 export const tableStatusSchema = z.object({
   status: z.enum(TABLE_STATUSES),

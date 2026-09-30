@@ -42,8 +42,10 @@ export interface MatrixCtx {
   /** PRJA 프로젝트 관리자(유일한 ADMIN) user_id — 제거 시도는 409 E_LAST_PROJECT_ADMIN. */
   paUserId: number;
   /** PRJA 표준 사전 ID(단계 6 행): 승인 용어·검토대기 2건·도메인·도메인분류·코드구분·기본컬럼 세트. */
-  /** PRJA 테이블(RP_RSCH_PRJ_MST) — 단계 7 DDL 행. */
+  /** PRJA 테이블(RP_RSCH_PRJ_MST, DRAFT, 이력 v1) — 단계 7 DDL 행·단계 8 테이블 행. */
   tableId: number;
+  /** PRJA FINAL 테이블(단계 8: 확정 해제·FINAL 삭제 = 프로젝트 관리자). */
+  finalTableId: number;
   std: {
     termId: number;
     pendingApproveId: number;
@@ -552,6 +554,130 @@ const DDL_ROWS: readonly MatrixRow[] = [
   },
 ];
 
+/**
+ * 단계 8 테이블 설계 행(§7.3: 조회 = 조회자, 쓰기·검증·복제·복원·→FINAL = 편집자, FINAL→DRAFT·FINAL 삭제 = 프로젝트 관리자).
+ * 상태를 바꾸지 않도록: 저장은 version 1(첫 허용 역할만 200, 이후 409 충돌), 상태·복원은 없는 version(409 충돌 = 도달),
+ * DRAFT 삭제는 없는 ID(404). 확정 해제·FINAL 삭제는 역할 판정이 서비스에 있다(편집자 403) — FINAL 테이블은 PA가 지운다(SA는 404).
+ */
+const EDITOR_UP: readonly Role[] = ['editor', 'pa', 'sa'];
+const tableBody = (tableNm: string, bizAreaId: number) => ({
+  table: { bizAreaId, tableNm, tableLogicalNm: '매트릭스', description: null },
+  columns: [
+    {
+      columnId: null,
+      logicalNm: '연구과제ID',
+      physicalNm: 'RSCH_PRJ_ID',
+      isPk: true,
+      dataType: 'VARCHAR',
+      dataLength: 20,
+      colComment: '연구과제ID',
+    },
+  ],
+});
+const TABLE_ROWS: readonly MatrixRow[] = [
+  {
+    path: 'P/tables/{id}',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${P}/tables/${x.tableId}`),
+  },
+  {
+    path: 'P/tables',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${P}/tables`, tableBody(`RP_MX${x.seq()}`, x.bizRpId)),
+  },
+  {
+    path: 'P/tables/validate',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${P}/tables/validate`, tableBody('RP_MX_VALIDATE', x.bizRpId)),
+  },
+  {
+    path: 'P/tables/{id}',
+    method: 'PUT',
+    allow: EDITOR_UP,
+    ok: [200, 409],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.put(`${P}/tables/${x.tableId}`, {
+        version: 1,
+        ...tableBody('RP_RSCH_PRJ_MST', x.bizRpId),
+      }),
+  },
+  {
+    path: 'P/tables/{id}',
+    method: 'DELETE',
+    allow: EDITOR_UP,
+    ok: [404],
+    denyByRole: P_DENY,
+    run: (c) => c.delete(`${P}/tables/${MISSING}`),
+  },
+  {
+    path: 'P/tables/{id}/status(→FINAL)',
+    method: 'PUT',
+    allow: EDITOR_UP,
+    ok: [409],
+    denyByRole: P_DENY,
+    run: (c, x) => c.put(`${P}/tables/${x.tableId}/status`, { status: 'FINAL', version: MISSING }),
+  },
+  {
+    path: 'P/tables/{id}/clone',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${P}/tables/${x.tableId}/clone`, {}),
+  },
+  {
+    path: 'P/tables/{id}/history',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${P}/tables/${x.tableId}/history`),
+  },
+  {
+    path: 'P/tables/{id}/history/{v}',
+    method: 'GET',
+    allow: VIEWER_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) => c.get(`${P}/tables/${x.tableId}/history/1`),
+  },
+  {
+    path: 'P/tables/{id}/history/{v}/restore',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [409],
+    denyByRole: P_DENY,
+    run: (c, x) => c.post(`${P}/tables/${x.tableId}/history/1/restore`, { version: MISSING }),
+  },
+  {
+    path: 'P/tables/{id}/status(FINAL→DRAFT)',
+    method: 'PUT',
+    allow: PA_UP,
+    ok: [409],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.put(`${P}/tables/${x.finalTableId}/status`, { status: 'DRAFT', version: MISSING }),
+  },
+  {
+    path: 'P/tables/{id}(FINAL)',
+    method: 'DELETE',
+    allow: PA_UP,
+    ok: [204, 404],
+    denyByRole: P_DENY,
+    run: (c, x) => c.delete(`${P}/tables/${x.finalTableId}`),
+  },
+];
+
 export const AUTHZ_MATRIX: readonly MatrixRow[] = [
   // ── 인증(§7.3 1행) ─────────────────────────────────────────────
   {
@@ -875,4 +1001,5 @@ export const AUTHZ_MATRIX: readonly MatrixRow[] = [
   },
   ...STANDARD_ROWS,
   ...DDL_ROWS,
+  ...TABLE_ROWS,
 ];

@@ -43,6 +43,30 @@ beforeAll(async () => {
     ),
     setId: await one(`select set_id id from std_default_col_set where project_id = ${PRJA}`),
   };
+  // 단계 8 행: 기존 테이블의 이력 v1 + FINAL 테이블 1개(확정 해제·FINAL 삭제 = 프로젝트 관리자)
+  const tableId = await one(`select table_id id from prj_table where project_id = ${PRJA}`);
+  await t.pool.query(
+    `insert into prj_table_history (table_id, version, action, change_summary, snapshot, saved_by)
+     values ($1, 1, 'CREATE', '테이블 생성', $2::jsonb, 'editor')`,
+    [
+      tableId,
+      JSON.stringify({
+        schemaVersion: 1,
+        table: {
+          tableId,
+          bizAreaId: bizId('RP'),
+          tableNm: 'RP_RSCH_PRJ_MST',
+          tableLogicalNm: '연구과제마스터',
+        },
+        columns: [],
+        action: 'CREATE',
+      }),
+    ],
+  );
+  const finalTableId = await one(
+    `insert into prj_table (project_id, biz_area_id, table_nm, table_logical_nm, status, finalized_at, finalized_by, created_by, updated_by)
+     values (${PRJA}, ${bizId('RP')}, 'RP_FINAL_MST', '확정 테이블', 'FINAL', now(), 'editor', 'editor', 'editor') returning table_id id`,
+  );
   let n = 0;
   ctx = {
     targetUserId: rows[0].user_id as number,
@@ -51,7 +75,8 @@ beforeAll(async () => {
     bizRpId: bizId('RP'),
     bizPsId: bizId('PS'),
     paUserId: pa.rows[0].user_id as number,
-    tableId: await one(`select table_id id from prj_table where project_id = ${PRJA}`),
+    tableId,
+    finalTableId,
     std,
   };
   setTestEnv(t.url);

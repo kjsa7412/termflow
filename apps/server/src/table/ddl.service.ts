@@ -194,7 +194,9 @@ export class DdlService {
     let models: TableModel[];
     if (req.draft) {
       const bizAreas = await loadBizAreas(this.db, ctx.projectId);
-      if (!bizAreas.some((b) => b.biz_area_id === req.draft!.table.bizAreaId)) {
+      // 업무구분 미지정(null)은 검증기가 E_BIZ_AREA_REQUIRED로 보고한다(CR-07 C2). 다른 프로젝트 ID만 여기서 422.
+      const draftBiz = req.draft.table.bizAreaId;
+      if (draftBiz !== null && !bizAreas.some((b) => b.biz_area_id === draftBiz)) {
         throw new ValidationProblem([
           {
             code: 'E_BIZ_AREA_NOT_FOUND',
