@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { typeText, type StdType, type TermStatus } from '@termflow/shared';
+import { normalizeLogical, typeText, type StdType, type TermStatus } from '@termflow/shared';
 import { rowsOf, type ExecQ } from '../project/sql-util.js';
 import type { DomainClsEntry, L1Snapshot } from './domain-calculator.js';
 import type { SegDict, SegTerm } from './segmenter.js';
@@ -74,13 +74,8 @@ export interface TermSnapshot extends L1Snapshot, SegDict {
   };
 }
 
-/** 논리명 정규화(§5.3): trim → 모든 공백 제거 → NFC → 라틴 대문자. */
-export function normalizeLogical(s: string): string {
-  return s
-    .normalize('NFC')
-    .replace(/\s+/g, '')
-    .replace(/[a-z]+/g, (m) => m.toUpperCase());
-}
+/** 논리명 정규화(§5.3) — 편집기와 공유(`@termflow/shared`). */
+export { normalizeLogical };
 
 interface TermRow {
   term_id: number;

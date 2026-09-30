@@ -170,6 +170,23 @@ describe('⑤ unregistered', () => {
     expect(codes(r)).toEqual(['W_TERM_UNREGISTERED']);
   });
 
+  it('등록 후보(CR-08 C7): 미매칭 그대로(책임자) / 한 글자 미매칭은 앞 조각과 합친 낱말 우선(책임 등록 시 책임+자)', () => {
+    expect(runAutocomplete(snap, '연구책임자구분').registerCandidates).toEqual(['책임자']);
+    const withPart = makeSnapshot({ terms: [['책임', 'RSPN']] });
+    const r = runAutocomplete(withPart, '연구책임자구분');
+    expect(r.type).toBe('unregistered');
+    expect(r.applied!.physicalNm).toBe('RSCH_RSPN_?_TP');
+    expect(r.registerCandidates).toEqual(['책임자', '자']);
+    // '책임자'를 등록하면 조각 수 최소(3)로 연구|책임자|구분
+    const after = makeSnapshot({
+      terms: [
+        ['책임', 'RSPN'],
+        ['책임자', 'RESP', 'PENDING'],
+      ],
+    });
+    expect(runAutocomplete(after, '연구책임자구분').applied!.physicalNm).toBe('RSCH_RESP_TP');
+  });
+
   it('인라인 등록 후(책임자=RESP PENDING) 같은 입력 → composed RSCH_RESP_TP VARCHAR(10)(S4)', () => {
     const after = makeSnapshot({ terms: [['책임자', 'RESP', 'PENDING']] });
     // 기본 목록의 REJECTED 행보다 뒤에 넣었으므로 PENDING이 이긴다(같은 한글 = 같은 행을 갱신한 효과)
@@ -199,8 +216,28 @@ describe('⑥ 코드성 후보(§5.6)', () => {
       codeCnt: 4,
       domainId: null,
     });
-    // 코드구분명 + '코드'가 도메인과 정확일치하면 도메인 값·domainId
-    expect(c[1]).toMatchObject({ physicalNm: 'PRJ_STAT_CD', domainId: 1009 });
+    // 부분 일치 후보도 논리명·물리명은 입력 기준(CR-08 C5), 코멘트에 코드구분명을 밝힌다
+    expect(c[1]).toMatchObject({
+      logicalNm: '연구과제상태코드',
+      physicalNm: 'RSCH_PRJ_STAT_CD',
+      colComment: '연구과제상태코드(RP/042 과제상태)',
+      domainId: null,
+    });
+  });
+
+  it('입력이 도메인과 정확일치하면 도메인 값·domainId(과제상태코드 → PRJ_STAT_CD)', () => {
+    const c = codeCandidates(snap, '과제상태코드', { bizAreaId: 1 });
+    expect(c[0]).toMatchObject({
+      codeClsNm: '과제상태',
+      score: 110,
+      physicalNm: 'PRJ_STAT_CD',
+      domainId: 1009,
+      typeText: 'VARCHAR(10)',
+    });
+    expect(runAutocomplete(snap, '과제상태코드')).toMatchObject({
+      type: 'exact',
+      codeCandidates: expect.any(Array),
+    });
   });
 
   it('코드성 후보는 어떤 type에도 붙는다(…코드로 끝날 때만)', () => {

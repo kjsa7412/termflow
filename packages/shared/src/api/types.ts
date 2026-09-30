@@ -618,6 +618,8 @@ export interface AutocompleteResponse {
   candidates?: AutocompleteCandidate[];
   alternatives?: { physicalNm: string; segments: AutocompleteSegment[] }[];
   codeCandidates?: AutocompleteCodeCandidate[];
+  /** unregistered: 인라인 등록 카드의 한글 용어 후보(첫 항목이 기본값, CR-08 C7). */
+  registerCandidates?: string[];
   warnings: ValidationIssue[];
   cacheVersion: number;
   elapsedMs: number;

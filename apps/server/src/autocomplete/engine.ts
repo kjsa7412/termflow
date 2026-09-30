@@ -88,13 +88,15 @@ export function rankSimilar(
   snap: TermSnapshot,
   s: string,
   segSuffix: string | null,
-  limit = AUTOCOMPLETE_SIMILAR_MAX,
+  opts: { allowWithin?: boolean; limit?: number } = {},
 ): { d: SnapDomain; score: number }[] {
+  const limit = opts.limit ?? AUTOCOMPLETE_SIMILAR_MAX;
+  const allowWithin = opts.allowWithin ?? true;
   const out: { d: SnapDomain; score: number }[] = [];
   for (const d of snap.domains) {
     if (d.key === s) continue;
     const contains = d.key.includes(s);
-    const within = d.key.length >= 2 && s.includes(d.key);
+    const within = allowWithin && d.key.length >= 2 && s.includes(d.key);
     if (!contains && !within) continue;
     const score =
       (d.key.startsWith(s) ? 100 : 0) +
@@ -136,32 +138,45 @@ export function codeCandidates(
       (a.c.codeClsNm < b.c.codeClsNm ? -1 : a.c.codeClsNm > b.c.codeClsNm ? 1 : 0) ||
       a.c.codeClsId - b.c.codeClsId,
   );
-  const inputSegs = (): Seg[] => segmentFull(s, snap)[0] ?? segmentPartial(s, snap).segs;
-  return scored.slice(0, CODE_CANDIDATES_MAX).map(({ c, score }) => {
-    const logicalNm = `${c.key}코드`;
-    const full = segmentFull(logicalNm, snap)[0];
-    const l1 = composeOf(full ?? inputSegs(), snap);
-    const physicalNm = full ? l1.physicalNm : joinPhysical(inputSegs());
-    const dom = snap.domainByLogical.get(logicalNm);
-    return {
-      codeClsId: c.codeClsId,
-      bizCd: c.bizCd,
-      bizNm: c.bizNm,
-      codeCls: c.codeCls,
-      codeClsNm: c.codeClsNm,
-      logicalNm,
-      physicalNm: dom?.physicalNm ?? physicalNm,
-      dataType: dom?.physicalNm ? dom.colType : l1.colType,
-      dataLength: dom?.physicalNm ? dom.colLength : l1.colLength,
-      dataScale: dom?.physicalNm ? dom.colScale : l1.colScale,
-      typeText: dom?.physicalNm ? dom.typeText : l1.typeText,
-      colComment: `${c.codeClsNm}코드(${c.bizCd}/${c.codeCls})`,
-      domainId: dom?.physicalNm ? dom.domainId : null,
-      codeCnt: c.codeCnt,
-      codes: [...c.codes],
-      score,
-    };
-  });
+  if (scored.length === 0) return [];
+  // 논리명·물리명·타입은 **입력 기준**(CR-08 C5): 정확일치(a)면 설계서의 `{code_cls_nm}코드`와 같고, 부분 일치(b·c)에서
+  // 코드구분명으로 바꾸면 입력의 앞부분('연구과제')이 사라진다. 입력이 도메인과 정확일치하면 그 도메인 값·domainId.
+  const dom = snap.domainByLogical.get(s);
+  const useDom = dom !== undefined && dom.physicalNm !== null;
+  const full = segmentFull(s, snap)[0];
+  const segs = full ?? segmentPartial(s, snap).segs;
+  const l1 = full ? composeOf(full, snap) : null;
+  const physicalNm = useDom ? dom.physicalNm! : (l1?.physicalNm ?? joinPhysical(segs));
+  const suffix = suffixOf(segs);
+  const cls = suffix !== null ? snap.clsBySuffix.get(suffix) : undefined;
+  const t = useDom
+    ? { dataType: dom.colType, dataLength: dom.colLength, dataScale: dom.colScale }
+    : l1
+      ? { dataType: l1.colType, dataLength: l1.colLength, dataScale: l1.colScale }
+      : {
+          dataType: cls?.colType ?? null,
+          dataLength: cls?.colLength ?? null,
+          dataScale: cls?.colScale ?? null,
+        };
+  return scored.slice(0, CODE_CANDIDATES_MAX).map(({ c, score }) => ({
+    codeClsId: c.codeClsId,
+    bizCd: c.bizCd,
+    bizNm: c.bizNm,
+    codeCls: c.codeCls,
+    codeClsNm: c.codeClsNm,
+    logicalNm: s,
+    physicalNm,
+    ...t,
+    typeText: typeText(t.dataType, t.dataLength, t.dataScale),
+    colComment:
+      c.key === base
+        ? `${s}(${c.bizCd}/${c.codeCls})`
+        : `${s}(${c.bizCd}/${c.codeCls} ${c.codeClsNm})`,
+    domainId: useDom ? dom.domainId : null,
+    codeCnt: c.codeCnt,
+    codes: [...c.codes],
+    score,
+  }));
 }
 
 export function runAutocomplete(
@@ -197,8 +212,9 @@ export function runAutocomplete(
   const segSuffix = suffixOf(mainSegs);
   const composed = full[0] ? composeOf(full[0], snap) : null;
 
-  // ③ similar
-  const similar = rankSimilar(snap, s, segSuffix);
+  // ③ similar — 완전 분절이 있으면 "입력이 도메인 논리명을 포함"(짧은 범용 도메인: '여부'·'내용' 등) 방향은 후보로 보지 않는다.
+  //   승계 649 논리명에서 이 방향이 similar의 대부분이었고 첫 후보가 조합보다 틀렸다(CR-08 C3). 분절 실패 시에는 그대로 쓴다.
+  const similar = rankSimilar(snap, s, segSuffix, { allowWithin: full.length === 0 });
   if (similar.length > 0) {
     const candidates: AutocompleteCandidate[] = similar.map(({ d: x, score }) => ({
       kind: 'domain',
@@ -286,8 +302,25 @@ export function runAutocomplete(
       matchType: 'UNREGISTERED',
     },
     segments: toSegments(segs),
+    registerCandidates: registerCandidates(segs),
     warnings: [...warnings, ...pendingWarnings(segs)],
   });
+}
+
+/**
+ * 인라인 등록 카드의 한글 용어 후보(CR-08 C7). 부분 분절은 미매칭 글자 수를 최소로 잡으므로 '책임'이 사전에 있으면
+ * '연구책임자구분' → [연구][책임][자 ✗][구분]이 된다. 한 글자 미매칭은 대개 앞 조각과 한 낱말(책임+자, 연구+자)이므로
+ * "앞 조각 + 미매칭"을 첫 후보로, 미매칭 자체를 다음 후보로 준다. 두 글자 이상이면 미매칭 그대로가 첫 후보.
+ */
+export function registerCandidates(segs: readonly Seg[]): string[] {
+  const i = segs.findIndex((x) => x.kind === 'miss');
+  if (i < 0) return [];
+  const miss = segs[i]!.kor;
+  const prev = i > 0 ? segs[i - 1] : undefined;
+  const out: string[] = [];
+  if (miss.length === 1 && prev?.kind === 'term') out.push(prev.kor + miss);
+  out.push(miss);
+  return out;
 }
 
 /**

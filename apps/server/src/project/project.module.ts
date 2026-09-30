@@ -24,13 +24,7 @@ import { TemplateService } from './template.service.js';
     AdminProjectsController,
     AdminTemplatesController,
   ],
-  providers: [
-    ProjectService,
-    ProjectCopyService,
-    MemberService,
-    BizAreaService,
-    TemplateService,
-  ],
+  providers: [ProjectService, ProjectCopyService, MemberService, BizAreaService, TemplateService],
   // TermCacheRegistry는 전역 AutocompleteModule이 제공한다(단계 9)
   exports: [ProjectCopyService],
 })

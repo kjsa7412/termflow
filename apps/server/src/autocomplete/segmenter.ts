@@ -42,8 +42,12 @@ export const FULL_CANDIDATES_MAX = 3;
 const NODE_CAP = 50_000;
 const INF = Number.MAX_SAFE_INTEGER;
 
-/** 사전 조각 1개(용어 우선, 아니면 숫자 0~10). physical이 없는 용어는 미등록과 같다(§5.2 3단계). */
+/**
+ * 사전 조각 1개. 숫자 0~10은 **사전보다 먼저** 숫자 조각으로 확정한다(L1 3단계 "숫자는 사전 조회 없이 확정" — 승계 R1이
+ * '1' 같은 숫자 용어를 등록해 두었어도 물리명은 L1과 같이 앞 조각에 붙는다, CR-08 C2). physical 없는 용어는 미등록.
+ */
 function pieceSeg(dict: SegDict, piece: string): Seg | null {
+  if (isNumPart(piece)) return { kind: 'num', kor: piece, physical: piece };
   const t = dict.get(piece);
   if (t && t.physical) {
     return {
@@ -54,7 +58,6 @@ function pieceSeg(dict: SegDict, piece: string): Seg | null {
       ...(t.status !== undefined ? { status: t.status } : {}),
     };
   }
-  if (isNumPart(piece)) return { kind: 'num', kor: piece, physical: piece };
   return null;
 }
 
