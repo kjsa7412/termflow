@@ -83,11 +83,11 @@ BEGIN
         (1, '작업비고',        'WRK_RMK',          'VARCHAR',   100, NULL),
         (2, '최초등록프로그램ID', 'FIRS_REG_PGM_ID', 'VARCHAR',   50,  NULL),
         (3, '최초등록일시',     'FIRS_REG_DTS',     'TIMESTAMP', 0,   'CURRENT_TIMESTAMP'),
-        (4, '최초등록자ID',     'FIRS_REG_USER_ID', 'VARCHAR',   20,  NULL),
+        (4, '최초등록자ID',     'FIRS_RGSRT_ID',    'VARCHAR',   20,  NULL),
         (5, '최초등록IP',      'FIRS_REG_IP',      'VARCHAR',   50,  NULL),
         (6, '최종등록프로그램ID', 'FINA_REG_PGM_ID', 'VARCHAR',   50,  NULL),
         (7, '최종등록일시',     'FINA_REG_DTS',     'TIMESTAMP', 0,   'CURRENT_TIMESTAMP'),
-        (8, '최종등록자ID',     'FINA_REG_USER_ID', 'VARCHAR',   20,  NULL),
+        (8, '최종등록자ID',     'FINA_RGSRT_ID',    'VARCHAR',   20,  NULL),
         (9, '최종등록IP',      'FINA_REG_IP',      'VARCHAR',   50,  NULL)
       ) AS v(g, lnm, pnm, typ, len, dflt);
 
@@ -105,7 +105,7 @@ SELECT p.project_id, u.user_id, r.role, 'sysadmin', 'sysadmin'
 
 -- 두 프로젝트에 같은 이름의 테이블(업무구분 RP) + 컬럼 3개(자기 프로젝트의 도메인·코드구분·기본컬럼만 참조)
 INSERT INTO prj_table (project_id, biz_area_id, table_nm, table_logical_nm, created_by, updated_by)
-SELECT p.project_id, b.biz_area_id, 'RP_RSCH_PRJ_MST', '연구과제마스터', 'editor', 'editor'
+SELECT p.project_id, b.biz_area_id, 'RP_RSCH_PRJ_MAST', '연구과제마스터', 'editor', 'editor'
   FROM tf_project p JOIN prj_biz_area b ON b.project_id = p.project_id AND b.biz_cd = 'RP'
  WHERE p.kind = 'PROJECT';
 

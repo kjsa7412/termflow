@@ -37,7 +37,7 @@ beforeAll(async () => {
     );
   }
   srcId = (
-    await t.pool.query("select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MST'")
+    await t.pool.query("select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MAST'")
   ).rows[0].id as number;
   setTestEnv(t.url);
   app = await createTestApp();
@@ -100,13 +100,13 @@ describe('같은 프로젝트 복제', () => {
     const c1 = r1.body as TableCloneResponse;
     expect(c1).toMatchObject({
       projectKey: 'RMS',
-      tableNm: 'RP_RSCH_PRJ_MST_COPY',
+      tableNm: 'RP_RSCH_PRJ_MAST_COPY',
       version: 1,
       remapWarnings: [],
     });
     expect(c1.bizAreaId).toBe(src.table.bizAreaId);
     const r2 = await e.post(`${P}/tables/${srcId}/clone`, {});
-    expect((r2.body as TableCloneResponse).tableNm).toBe('RP_RSCH_PRJ_MST_COPY2');
+    expect((r2.body as TableCloneResponse).tableNm).toBe('RP_RSCH_PRJ_MAST_COPY2');
 
     const d = (await e.get(`${P}/tables/${c1.tableId}`)).body as TableDetail;
     expect(d.table).toMatchObject({
@@ -144,10 +144,10 @@ describe('같은 프로젝트 복제', () => {
     expect(snap.clonedFrom).toEqual({
       projectKey: 'RMS',
       tableId: srcId,
-      tableNm: 'RP_RSCH_PRJ_MST',
+      tableNm: 'RP_RSCH_PRJ_MAST',
       version: 1,
     });
-    expect(h[0]!.changeSummary).toBe('복제: RMS/RP_RSCH_PRJ_MST v1');
+    expect(h[0]!.changeSummary).toBe('복제: RMS/RP_RSCH_PRJ_MAST v1');
 
     const v = await as('viewer');
     expect((await v.post(`${P}/tables/${srcId}/clone`, {})).status).toBe(403);
@@ -161,12 +161,12 @@ describe('같은 프로젝트 복제', () => {
       )
     ).rows[0].id as number;
     const r = await e.post(`${P}/tables/${srcId}/clone`, {
-      tableNm: 'ps_rsch_prj_mst',
+      tableNm: 'ps_rsch_prj_mast',
       targetBizAreaId: ps,
     });
     expect(r.status).toBe(201);
-    expect(r.body).toMatchObject({ tableNm: 'PS_RSCH_PRJ_MST', bizAreaId: ps });
-    const dup = await e.post(`${P}/tables/${srcId}/clone`, { tableNm: 'PS_RSCH_PRJ_MST' });
+    expect(r.body).toMatchObject({ tableNm: 'PS_RSCH_PRJ_MAST', bizAreaId: ps });
+    const dup = await e.post(`${P}/tables/${srcId}/clone`, { tableNm: 'PS_RSCH_PRJ_MAST' });
     expect(dup.status).toBe(422);
     expect((dup.body as { errors: { code: string }[] }).errors[0]!.code).toBe('E_TABLE_NM_DUP');
     expect((await e.post(`${P}/tables/${srcId}/clone`, { tableNm: '1BAD' })).status).toBe(422);
@@ -187,7 +187,7 @@ describe('다른 프로젝트 복제(C7)', () => {
     const r = await e.post(`${P}/tables/${srcId}/clone`, { targetProjectKey: 'DEMO' });
     expect(r.status, JSON.stringify(r.body)).toBe(201);
     const c = r.body as TableCloneResponse;
-    expect(c).toMatchObject({ projectKey: 'DEMO', tableNm: 'RP_RSCH_PRJ_MST', remapWarnings: [] });
+    expect(c).toMatchObject({ projectKey: 'DEMO', tableNm: 'RP_RSCH_PRJ_MAST', remapWarnings: [] });
     const d = (await e.get(`/api/v1/projects/DEMO/tables/${c.tableId}`)).body as TableDetail;
     expect(d.table.bizCd).toBe('RP');
     const want = refs(src);
@@ -224,7 +224,7 @@ describe('다른 프로젝트 복제(C7)', () => {
     expect(snap.table.projectKey).toBe('DEMO');
     // 두 번째 복제는 이름이 겹치므로 _COPY
     const again = await e.post(`${P}/tables/${srcId}/clone`, { targetProjectKey: 'DEMO' });
-    expect((again.body as TableCloneResponse).tableNm).toBe('RP_RSCH_PRJ_MST_COPY');
+    expect((again.body as TableCloneResponse).tableNm).toBe('RP_RSCH_PRJ_MAST_COPY');
   });
 
   it('RMS → DEMO2(표준 없음): 참조 전부 NULL + remapWarnings(행·필드·자연키)', async () => {
@@ -248,7 +248,7 @@ describe('다른 프로젝트 복제(C7)', () => {
     const h = (await e.get(`/api/v1/projects/DEMO2/tables/${c.tableId}/history`))
       .body as TableHistoryItem[];
     expect(h[0]!.changeSummary).toBe(
-      `복제: RMS/RP_RSCH_PRJ_MST v1 · 재매핑 실패 ${c.remapWarnings.length}`,
+      `복제: RMS/RP_RSCH_PRJ_MAST v1 · 재매핑 실패 ${c.remapWarnings.length}`,
     );
   });
 

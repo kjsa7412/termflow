@@ -563,7 +563,7 @@ describe('ApprovalsPage(11)', () => {
       ? [{ termId: 50, termKor: '응답', termPhysical: 'RESP', status: 'APPROVED' as const }]
       : [],
     columnCnt: 1,
-    columnSamples: [{ tableNm: 'RP_RSCH_PRJ_MST', logicalNm: '연구책임자구분' }],
+    columnSamples: [{ tableNm: 'RP_RSCH_PRJ_MAST', logicalNm: '연구책임자구분' }],
   });
   const q = (): ApprovalPage => ({
     items: [item(1, '책임자', true), item(2, '연관위')],
@@ -589,7 +589,7 @@ describe('ApprovalsPage(11)', () => {
     await flushPromises();
     expect(w.text()).toContain('물리약어 충돌');
     expect(w.text()).toContain("'응답'(RESP)와 공유");
-    expect(w.text()).toContain('RP_RSCH_PRJ_MST');
+    expect(w.text()).toContain('RP_RSCH_PRJ_MAST');
     await w.get('input[aria-label="책임자 물리약어 정정"]').setValue('rspns');
     expect(button(w, '정정 후 승인').exists()).toBe(true);
     await button(w, '정정 후 승인').trigger('click');
@@ -674,7 +674,7 @@ describe('CodesPage(07)·DefaultColumnsPage', () => {
               updatedAt: '2026-03-26T00:00:00',
             },
           ],
-          columnSamples: ['RP_RSCH_PRJ_MST.RSCH_CLS_CD'],
+          columnSamples: ['RP_RSCH_PRJ_MAST.RSCH_CLS_CD'],
         }),
       [`POST ${S}/code-classes/5/codes`]: () =>
         json(201, {

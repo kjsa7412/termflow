@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { findProjectId, RMS, STDV1, type Tx } from './context.js';
 import { NEW_SUFFIXES } from './rules/new-suffixes.js';
+import { R19_COLUMN_RENAMES } from './rules/r19-term-unify.js';
 
 /**
  * 대사(설계서 §11.4, G7: 원본 = 적재 + 제외). 1차 범위(단계 3)는 legacy ↔ STDV1.
@@ -217,9 +218,15 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       q,
       sql`select count(*)::int n from std_default_col where project_id = ${pid}`,
     );
+    // 원본 이름은 R19(CR-09) 정정을 적용해 비교한다(REG_USER_ID → RGSRT_ID)
+    const renamed = sql.join(
+      [...R19_COLUMN_RENAMES].map(([from, to]) => sql`when ${from} then ${to}`),
+      sql` `,
+    );
     const d = await setDiff(
       q,
-      sql`select upper(trim(physical_col_nm)) k from legacy.tb_default_col`,
+      sql`select case upper(trim(physical_col_nm)) ${renamed} else upper(trim(physical_col_nm)) end k
+            from legacy.tb_default_col`,
       sql`select physical_nm k from std_default_col where project_id = ${pid}`,
     );
     push({

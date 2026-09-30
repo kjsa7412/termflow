@@ -16,7 +16,7 @@ import { FIXTURE_PASSWORD, useTestDb } from './setup/databases.js';
 /**
  * 단계 8 테이블 API(T8.1~T8.4·T8.15): 생성·조회·저장 diff·검증 422·IDOR·상태 전이·삭제·템플릿·보관,
  * G5(2인 동시 저장: 409 → 덮어쓰기 → 이력 2건·손실 0), CR-01-2(두 프로젝트 같은 RP·같은 테이블명 독립).
- * 데이터: std_small(PRJA·PRJB: 같은 업무구분 RP·같은 테이블 RP_RSCH_PRJ_MST, 서로 다른 표준) + 편집자 2(editor·editor1).
+ * 데이터: std_small(PRJA·PRJB: 같은 업무구분 RP·같은 테이블 RP_RSCH_PRJ_MAST, 서로 다른 표준) + 편집자 2(editor·editor1).
  * `pnpm test:db -- table`
  */
 const t = useTestDb('t_table_api', { fixture: 'std_small' });
@@ -244,7 +244,7 @@ describe('저장 전 검증(T8.3): 코드표 E 전 항목 422', () => {
       () => body('RP_E10', [col('A', { dataType: 'NUMERIC', dataLength: 4, dataScale: 6 })]),
       'E_TYPE_LEN_RANGE',
     ],
-    ['E_TABLE_NM_DUP', () => body('RP_RSCH_PRJ_MST', [col('A')]), 'E_TABLE_NM_DUP'],
+    ['E_TABLE_NM_DUP', () => body('RP_RSCH_PRJ_MAST', [col('A')]), 'E_TABLE_NM_DUP'],
     [
       'E_BIZ_AREA_REQUIRED',
       () => body('RP_E12', [col('A')], { bizAreaId: null }),
@@ -552,7 +552,7 @@ describe('상태 전이·삭제(T8.4)', () => {
 });
 
 describe('CR-01-2: 두 프로젝트(같은 RP·같은 테이블명) 독립', () => {
-  it('PRJA의 RP_RSCH_PRJ_MST 저장이 PRJB에 영향 없음, 같은 새 이름은 양쪽 모두 생성 가능, DDL도 각자', async () => {
+  it('PRJA의 RP_RSCH_PRJ_MAST 저장이 PRJB에 영향 없음, 같은 새 이름은 양쪽 모두 생성 가능, DDL도 각자', async () => {
     const p = await as('pa');
     const before = (await p.get(`${PB}/tables/${ids.bTable}`)).body as TableDetail;
     const a = (await p.get(`${PA}/tables/${ids.aTable}`)).body as TableDetail;

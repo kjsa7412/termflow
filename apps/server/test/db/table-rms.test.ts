@@ -28,7 +28,7 @@ beforeAll(async () => {
     );
   }
   mstId = (
-    await t.pool.query("select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MST'")
+    await t.pool.query("select table_id id from prj_table where table_nm = 'RP_RSCH_PRJ_MAST'")
   ).rows[0].id as number;
   setTestEnv(t.url);
   app = await createTestApp();
@@ -54,7 +54,7 @@ const toBody = (d: TableDetail) => ({
 });
 
 describe('RMS 실데이터 편집기(T8.15)', () => {
-  it('편집기 로드(GET P/tables/{id}) RP_RSCH_PRJ_MST 36컬럼 p95 500ms 이내', async () => {
+  it('편집기 로드(GET P/tables/{id}) RP_RSCH_PRJ_MAST 36컬럼 p95 500ms 이내', async () => {
     const e = await as('editor');
     const times: number[] = [];
     let d: TableDetail | null = null;

@@ -143,6 +143,11 @@ async function compareTable(
   const fold = (s: string) => (opts.quoteIdentifiers ? s : s.toLowerCase());
   const cased = (s: string) => (opts.identifierCase === 'LOWER' ? s.toLowerCase() : s);
   const rel = fold(cased(t.tableNm));
+  const { rows: found } = await client.query<{ r: string | null }>(
+    "select to_regclass(format('%I.%I', $1::text, $2::text))::text r",
+    [schema, rel],
+  );
+  if (!found[0]?.r) return [`테이블 없음: ${rel}`];
   const { rows } = await client.query<InfoCol>(
     `select c.column_name, c.data_type, c.character_maximum_length, c.numeric_precision, c.numeric_scale,
             c.datetime_precision, c.is_nullable, c.column_default,
@@ -239,6 +244,63 @@ export async function runDdlRegression(
         results.push({ ...base, ok: false, error: e instanceof Error ? e.message : String(e), mismatches: [] });
       }
       // 옵션 세트마다 같은 테이블명을 다시 만들 수 있게 되돌린다(대조는 끝났다)
+      await client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+    }
+    await client.query('ROLLBACK');
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw e;
+  }
+  return results;
+}
+
+/**
+ * 전환 스크립트 회귀(CR-09): 옵션 세트마다 한 SAVEPOINT 안에서 **이전 이름 DDL 전부 실행 → 스크립트 본문 실행 → 새 모델과 카탈로그 대조**.
+ * 전부 ROLLBACK(아무것도 남지 않음). 결과는 세트 × 새 모델마다 1행(스크립트 오류면 그 세트의 모든 행이 실패).
+ */
+export async function runRenameRegression(
+  client: pg.ClientBase,
+  pairs: readonly { oldModel: TableModel; newModel: TableModel }[],
+  scriptBody: string,
+  opts: { schema?: string; sets?: Record<string, Partial<DdlOptions>> } = {},
+): Promise<RegressionResult[]> {
+  const schema = opts.schema ?? `tf_rename_regress_${process.pid}_${Date.now()}`;
+  if (!/^[a-z][a-z0-9_]*$/.test(schema)) throw new Error(`잘못된 스키마 이름: ${schema}`);
+  const pgDialect = dialectFor('POSTGRESQL');
+  const results: RegressionResult[] = [];
+  await client.query('BEGIN');
+  try {
+    await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+    await client.query(`SET LOCAL search_path TO ${schema}`);
+    for (const [set, partial] of Object.entries(opts.sets ?? REGRESSION_OPTION_SETS)) {
+      const options = ddlOptionsSchema.parse(partial);
+      const sp = `sp_rename_${set.replace(/[^a-z0-9]/g, '_')}`;
+      await client.query(`SAVEPOINT ${sp}`);
+      let error: string | null = null;
+      try {
+        for (const p of pairs) {
+          const v = validateTable(p.oldModel, { dialect: 'POSTGRESQL' });
+          await client.query(generateTable(pgDialect, { model: p.oldModel, warnings: v.warnings }, options, META).sql);
+        }
+        await client.query(scriptBody);
+        // 이전 이름 테이블이 남지 않았는지(새 이름 = 테이블 수)
+        const { rows } = await client.query<{ n: number }>(
+          'select count(*)::int n from information_schema.tables where table_schema = $1',
+          [schema],
+        );
+        if (rows[0]!.n !== pairs.length) error = `스키마 테이블 수 ${rows[0]!.n} ≠ ${pairs.length}`;
+      } catch (e) {
+        error = e instanceof Error ? e.message : String(e);
+      }
+      for (const p of pairs) {
+        const base = { tableNm: p.newModel.tableNm, set, columns: p.newModel.columns.length };
+        if (error) {
+          results.push({ ...base, ok: false, error, mismatches: [] });
+          continue;
+        }
+        const mismatches = await compareTable(client, schema, p.newModel, options);
+        results.push({ ...base, ok: mismatches.length === 0, error: null, mismatches });
+      }
       await client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
     }
     await client.query('ROLLBACK');

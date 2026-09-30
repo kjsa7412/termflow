@@ -254,7 +254,7 @@ async function remove(): Promise<void> {
       <div class="alert-body">
         프로젝트 키 <span class="mono">{{ key }}</span
         >는 URL·식별용이고, 테이블 접두어는 업무구분이 정합니다(A4). 예: 업무구분 RP의 새 테이블
-        '연구과제마스터' → <span class="mono">RP_RSCH_PRJ_MST</span>. 공통 테이블은
+        '연구과제마스터' → <span class="mono">RP_RSCH_PRJ_MAST</span>. 공통 테이블은
         <span class="mono">CM 공통</span> 업무구분을 만들어 쓰세요.
       </div>
     </div>

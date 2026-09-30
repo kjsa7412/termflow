@@ -2,14 +2,14 @@ import type { StdType, TermStatus } from '@termflow/shared';
 import { buildSnapshot, type TermSnapshot } from '../../src/autocomplete/term-snapshot.js';
 
 /**
- * 자동완성 단위 테스트용 합성 스냅샷(설계서 §5.3~§5.6 예시 그대로: 연구=RSCH, 과제=PRJ, 번호=NO, 마스터=MST, 구분=TP …).
+ * 자동완성 단위 테스트용 합성 스냅샷(설계서 §5.3~§5.6 예시 그대로: 연구=RSCH, 과제=PRJ, 번호=NO, 마스터=MAST(CR-09 용어사전 기준), 구분=TP …).
  * 실데이터(승계 649 논리명)는 `test/db/autocomplete-rms.test.ts`·벤치가 쓴다.
  */
 export const TERMS: [string, string | null, TermStatus?][] = [
   ['연구', 'RSCH'],
   ['과제', 'PRJ'],
   ['번호', 'NO'],
-  ['마스터', 'MST'],
+  ['마스터', 'MAST'],
   ['구분', 'TP'],
   ['코드', 'CD'],
   ['상태', 'STAT'],
@@ -62,7 +62,7 @@ export const CLS: [string, StdType, number | null, number | null][] = [
   ['DT', 'VARCHAR', 8, null],
   ['DTS', 'TIMESTAMP', 0, null],
   ['AMT', 'BIGINT', null, null],
-  ['MST', 'VARCHAR', 20, null],
+  ['MAST', 'VARCHAR', 20, null],
 ];
 
 /** 업무구분: RP(1, 접두어 RP_) · PS(2, PS_) · CM(3, 접두어 없음). */

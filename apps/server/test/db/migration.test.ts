@@ -167,7 +167,7 @@ describe('러너 골격(T3.2)', () => {
         log: () => {},
       }),
     ).rejects.toThrow(/구현되지 않았습니다/);
-    expect(SEED_STEPS.size).toBe(12);
+    expect(SEED_STEPS.size).toBe(13); // §11.1 12 + CR-09 TERM_UNIFY
     await expect(
       runSeed(options('', 'run-e', ['TEMPLATE'], { reset: true, nodeEnv: 'production' }), {
         pool,

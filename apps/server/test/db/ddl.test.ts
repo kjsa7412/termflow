@@ -72,7 +72,7 @@ beforeAll(async () => {
   );
   const ot = await t.pool.query<{ table_id: number }>(
     `insert into prj_table (project_id, biz_area_id, table_nm, table_logical_nm, created_by, updated_by)
-     values ($1, $2, 'RP_RSCH_PRJ_MST', '다른 프로젝트 테이블', 'SYSTEM', 'SYSTEM') returning table_id`,
+     values ($1, $2, 'RP_RSCH_PRJ_MAST', '다른 프로젝트 테이블', 'SYSTEM', 'SYSTEM') returning table_id`,
     [opid, ob.rows[0]!.biz_area_id],
   );
   other = { projectId: opid, bizAreaId: ob.rows[0]!.biz_area_id, tableId: ot.rows[0]!.table_id };
@@ -113,7 +113,7 @@ describe('테이블 목록 GET P/tables(T7.9)', () => {
     const noPk = page.items.filter((x) => x.issues.some((i) => i.code === 'W_PK_NONE'));
     expect(noPk).toHaveLength(3);
     expect(page.items.every((x) => x.errorCnt === 0)).toBe(true);
-    const mst = page.items.find((x) => x.tableNm === 'RP_RSCH_PRJ_MST')!;
+    const mst = page.items.find((x) => x.tableNm === 'RP_RSCH_PRJ_MAST')!;
     expect(mst).toMatchObject({ bizCd: 'RP', status: 'FINAL', version: 1, updatedBy: 'MIGRATION' });
     expect(mst.colCnt).toBeGreaterThan(0);
 
@@ -122,7 +122,7 @@ describe('테이블 목록 GET P/tables(T7.9)', () => {
     expect(
       q.items.every((x) => x.logicalNm.includes('연구과제') || x.tableNm.includes('연구과제')),
     ).toBe(true);
-    expect(((await v.get(`${P}/tables?q=rsch_prj_mst`)).body as TablePage).total).toBe(1);
+    expect(((await v.get(`${P}/tables?q=rsch_prj_mast`)).body as TablePage).total).toBe(1);
     const ac = (await v.get(`${P}/tables?bizAreaId=${acBizId}`)).body as TablePage;
     expect(ac.total).toBe(0);
     expect(ac.statusCounts).toEqual({ DRAFT: 0, FINAL: 0 });
@@ -165,10 +165,10 @@ describe('테이블 목록 GET P/tables(T7.9)', () => {
 
   it('전역 검색에 테이블(물리명·논리명, 현재 프로젝트만)', async () => {
     const v = await as('viewer');
-    const r = (await v.get(`${P}/search?q=RP_RSCH_PRJ_MST`)).body as SearchResponse;
+    const r = (await v.get(`${P}/search?q=RP_RSCH_PRJ_MAST`)).body as SearchResponse;
     expect(r.tables[0]).toEqual({
-      tableId: tableId['RP_RSCH_PRJ_MST'],
-      tableNm: 'RP_RSCH_PRJ_MST',
+      tableId: tableId['RP_RSCH_PRJ_MAST'],
+      tableNm: 'RP_RSCH_PRJ_MAST',
       logicalNm: expect.any(String),
       bizCd: 'RP',
     });
@@ -182,23 +182,27 @@ describe('테이블 목록 GET P/tables(T7.9)', () => {
 describe('단일 DDL GET P/tables/{id}/ddl', () => {
   it('text/plain = 골든 파일(헤더 첫 줄 제외), 옵션 쿼리, format=json', async () => {
     const v = await as('viewer');
-    const id = tableId['RP_RSCH_PRJ_MST']!;
+    const id = tableId['RP_RSCH_PRJ_MAST']!;
     const r = await v.get(`${P}/tables/${id}/ddl`);
     expect(r.status).toBe(200);
     expect(r.headers['content-type']).toMatch(/^text\/plain; charset=utf-8/);
     expect(r.text.split('\n')[0]).toMatch(
       /^-- TermFlow DDL \| 프로젝트 RMS 연구관리시스템\(이관\) · 업무구분 RP \| 방언 POSTGRESQL \| \d{4}-\d{2}-\d{2} \d{2}:\d{2} \| viewer$/,
     );
-    expect(body(r.text)).toBe(body(golden('default', 'RP_RSCH_PRJ_MST')));
+    expect(body(r.text)).toBe(body(golden('default', 'RP_RSCH_PRJ_MAST')));
     const dc = await v.get(`${P}/tables/${id}/ddl?dropIfExists=true&codeColumnStyle=CHECK`);
-    expect(body(dc.text)).toBe(body(golden('drop-check', 'RP_RSCH_PRJ_MST')));
+    expect(body(dc.text)).toBe(body(golden('drop-check', 'RP_RSCH_PRJ_MAST')));
     const low = await v.get(
       `${P}/tables/${id}/ddl?identifierCase=LOWER&includeHeader=false&schemaName=rp`,
     );
-    expect(low.text.startsWith('CREATE TABLE rp.rp_rsch_prj_mst (')).toBe(true);
+    expect(low.text.startsWith('CREATE TABLE rp.rp_rsch_prj_mast (')).toBe(true);
     const j = (await v.get(`${P}/tables/${id}/ddl?format=json`)).body as DdlResponse;
     expect(j).toMatchObject({ dialect: 'POSTGRESQL', tableCnt: 1 });
-    expect(j.tables[0]).toMatchObject({ tableId: id, tableNm: 'RP_RSCH_PRJ_MST', status: 'FINAL' });
+    expect(j.tables[0]).toMatchObject({
+      tableId: id,
+      tableNm: 'RP_RSCH_PRJ_MAST',
+      status: 'FINAL',
+    });
     expect((await v.get(`${P}/tables/${id}/ddl?dialect=ORACLE`)).status).toBe(422);
     expect((await v.get(`${P}/tables/${id}/ddl?schemaName=1x`)).status).toBe(400);
     expect((await v.get(`${P}/tables/${other.tableId}/ddl`)).status).toBe(404);
@@ -221,35 +225,35 @@ describe('다중 DDL POST P/ddl(T7.8)', () => {
     expect(d.warnings.filter((w) => w.code === 'W_PK_NONE')).toHaveLength(3);
     expect(d.warnings.every((w) => w.tableNm)).toBe(true);
     // 테이블별 결과 = 단일 DDL(골든)
-    const one = d.tables.find((x) => x.tableNm === 'RP_ELC_APV_MST')!;
-    expect(body(one.sql)).toBe(body(golden('default', 'RP_ELC_APV_MST')));
+    const one = d.tables.find((x) => x.tableNm === 'RP_ELC_APV_MAST')!;
+    expect(body(one.sql)).toBe(body(golden('default', 'RP_ELC_APV_MAST')));
     const per = (
       await v.post(`${P}/ddl`, { bizAreaIds: [rpBizId], options: { fileSplit: 'PER_TABLE' } })
     ).body as DdlResponse;
     expect(per.files).toHaveLength(34);
-    expect(per.files[0]!.name).toBe('RP/01_RP_ELC_APV_MST.sql');
+    expect(per.files[0]!.name).toBe('RP/01_RP_ELC_APV_MAST.sql');
     expect(await logs()).toEqual([]);
   });
 
   it('tableIds는 사용자 순서 유지, bizAreaIds와 합치면 중복 없이 뒤에 붙는다', async () => {
     const v = await as('viewer');
-    const ids = [tableId['RP_WRK_HST_DTL']!, tableId['RP_ELC_APV_MST']!];
+    const ids = [tableId['RP_WRK_HST_DTL']!, tableId['RP_ELC_APV_MAST']!];
     const d = (await v.post(`${P}/ddl`, { tableIds: ids })).body as DdlResponse;
-    expect(d.tables.map((x) => x.tableNm)).toEqual(['RP_WRK_HST_DTL', 'RP_ELC_APV_MST']);
+    expect(d.tables.map((x) => x.tableNm)).toEqual(['RP_WRK_HST_DTL', 'RP_ELC_APV_MAST']);
     expect(d.sql).toContain('-- 1/2 RP_WRK_HST_DTL');
     const both = (await v.post(`${P}/ddl`, { tableIds: ids, bizAreaIds: [rpBizId] }))
       .body as DdlResponse;
     expect(both.tableCnt).toBe(33);
     expect(both.tables.slice(0, 2).map((x) => x.tableNm)).toEqual([
       'RP_WRK_HST_DTL',
-      'RP_ELC_APV_MST',
+      'RP_ELC_APV_MAST',
     ]);
   });
 
   it('SQL 다운로드: text/plain 첨부 + DOWNLOAD 기록', async () => {
     const v = await as('viewer');
     const r = await v.post(`${P}/ddl`, {
-      tableIds: [tableId['RP_RSCH_PRJ_MST']!],
+      tableIds: [tableId['RP_RSCH_PRJ_MAST']!],
       output: 'SQL',
     });
     expect(r.status).toBe(200);
@@ -257,7 +261,7 @@ describe('다중 DDL POST P/ddl(T7.8)', () => {
     expect(r.headers['content-disposition']).toMatch(
       /^attachment; filename="RMS_POSTGRESQL_\d{8}_\d{4}\.sql"/,
     );
-    expect(body(r.text)).toBe(body(golden('default', 'RP_RSCH_PRJ_MST')));
+    expect(body(r.text)).toBe(body(golden('default', 'RP_RSCH_PRJ_MAST')));
     expect((await logs()).at(-1)).toEqual({
       output_kind: 'DOWNLOAD',
       table_cnt: 1,
@@ -280,7 +284,7 @@ describe('다중 DDL POST P/ddl(T7.8)', () => {
     const files = await unzipText(r.body as Buffer);
     const names = Object.keys(files).sort();
     expect(names).toHaveLength(34);
-    expect(names[0]).toBe('RP/01_RP_ELC_APV_MST.sql');
+    expect(names[0]).toBe('RP/01_RP_ELC_APV_MAST.sql');
     expect(names.at(-1)).toBe('_warnings.txt');
     expect(names.filter((n) => /^RP\/\d{2}_RP_[A-Z0-9_]+\.sql$/.test(n))).toHaveLength(33);
     for (const [name, content] of Object.entries(files)) {
@@ -338,7 +342,7 @@ describe('다중 DDL POST P/ddl(T7.8)', () => {
     );
     try {
       const v = await as('viewer');
-      const bad = await v.post(`${P}/ddl`, { tableIds: [tableId['RP_RSCH_PRJ_MST']!, zid] });
+      const bad = await v.post(`${P}/ddl`, { tableIds: [tableId['RP_RSCH_PRJ_MAST']!, zid] });
       expect(bad.status).toBe(422);
       const pd = bad.body as ProblemDetail;
       expect(pd.errors?.map((e) => [e.code, e.tableNm, e.columnNm])).toEqual([
@@ -418,7 +422,7 @@ describe('정보 추출 POST P/ddl/extract(§6.11)', () => {
     expect(lines.filter((l) => l === '')).toHaveLength(32);
     expect(lines.filter((l) => l !== '').every((l) => l.split('\t').length === 13)).toBe(true);
     const code = lines
-      .find((l) => l.startsWith('RP\tRP_RSCH_PRJ_MST\t') && l.includes('\tPRGRS_STAT_CD\t'))!
+      .find((l) => l.startsWith('RP\tRP_RSCH_PRJ_MAST\t') && l.includes('\tPRGRS_STAT_CD\t'))!
       .split('\t');
     expect(code[11]).toMatch(/^RP\/040 /);
     expect(x.fileName).toMatch(/^RMS_tables_\d{8}_\d{4}\.tsv$/);
@@ -428,7 +432,7 @@ describe('정보 추출 POST P/ddl/extract(§6.11)', () => {
   it('TSV 다운로드: BOM + 첨부 + EXTRACT 기록', async () => {
     const v = await as('viewer');
     const r = await v.post(`${P}/ddl/extract`, {
-      tableIds: [tableId['RP_RSCH_PRJ_MST']!],
+      tableIds: [tableId['RP_RSCH_PRJ_MAST']!],
       output: 'TSV',
     });
     expect(r.status).toBe(200);
@@ -446,7 +450,7 @@ describe('정보 추출 POST P/ddl/extract(§6.11)', () => {
 describe('내보내기 기록 P/export-logs(§3.5.15)', () => {
   it('POST COPY 201 → GET 최근순(첫 테이블명·사용자명), 다운로드 종류는 거부', async () => {
     const v = await as('viewer');
-    const ids = [tableId['RP_PLND_MST']!, tableId['RP_RDC_MST']!];
+    const ids = [tableId['RP_PLND_MAST']!, tableId['RP_RDC_MAST']!];
     const r = await v.post(`${P}/export-logs`, { kind: 'COPY', tableIds: ids, warningCnt: 2 });
     expect(r.status).toBe(201);
     expect((await v.post(`${P}/export-logs`, { kind: 'ZIP', tableIds: ids })).status).toBe(400);
@@ -459,7 +463,7 @@ describe('내보내기 기록 P/export-logs(§3.5.15)', () => {
       tableIds: ids,
       tableCnt: 2,
       warningCnt: 2,
-      firstTableNm: 'RP_PLND_MST',
+      firstTableNm: 'RP_PLND_MAST',
       exportedBy: 'viewer',
       exportedByNm: '조회자',
       dialect: 'POSTGRESQL',
@@ -475,7 +479,7 @@ describe('내보내기 기록 P/export-logs(§3.5.15)', () => {
       expect((await v.post(`${P}/ddl`, { bizAreaIds: [rpBizId] })).status).toBe(200);
       expect((await v.post(`${P}/ddl/extract`, { bizAreaIds: [rpBizId] })).status).toBe(200);
       expect(
-        (await v.post(`${P}/export-logs`, { kind: 'COPY', tableIds: [tableId['RP_RDC_MST']!] }))
+        (await v.post(`${P}/export-logs`, { kind: 'COPY', tableIds: [tableId['RP_RDC_MAST']!] }))
           .status,
       ).toBe(201);
       const pa = await as('pa');

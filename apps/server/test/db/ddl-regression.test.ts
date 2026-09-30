@@ -22,7 +22,7 @@ import { insertUsers, runSteps, tempReportRoot } from './setup/stdv1.js';
 
 /**
  * T7.11 DDL 실행 회귀(설계서 §11.1 step 12, §6.12, G3). `pnpm test:db -- ddl-regression`
- *  1) 승계 러너 1~12 전체(새 DB) → DDL_REGRESSION 33/33(기본 + dropIfExists·CHECK) + 합성, 대조 불일치 0, 종료 코드 0 상당
+ *  1) 승계 러너 1~12 전체(+ CR-09 TERM_UNIFY, 새 DB) → DDL_REGRESSION 33/33(기본 + dropIfExists·CHECK) + 합성, 대조 불일치 0, 종료 코드 0 상당
  *  2) 러너 결과로 만든 DDL = 골든 파일 66(스냅샷 rp33.sql이 러너 결과와 같다는 증명)
  *  3) TermFlow 스키마가 없는 **빈 DB**에서 33 테이블 실행 → information_schema 대조
  *  4) 예약어: 비인용 ORDER는 E_RESERVED로 생성 거부, quoteIdentifiers=true면 실행 성공 · 파일 = 컨테이너 pg_get_keywords
@@ -70,7 +70,7 @@ describe('DDL 실행 회귀(G3)', () => {
     for (const s of run.steps)
       console.log(`[test:db ddl-regression] ${s.step} ${s.status} ${s.seconds}s — ${s.message}`);
     expect(run.ok).toBe(true);
-    expect(run.steps.map((s) => s.step)).toHaveLength(12);
+    expect(run.steps.map((s) => s.step)).toHaveLength(13);
     expect(run.steps.every((s) => s.status === 'SUCCESS')).toBe(true);
     const step = run.steps.find((s) => s.step === 'DDL_REGRESSION')!;
     expect(step.result).toMatchObject({ source: 33, loaded: 33, flagged: 0 });

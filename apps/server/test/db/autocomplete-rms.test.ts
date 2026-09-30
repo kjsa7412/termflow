@@ -87,7 +87,7 @@ const ac = async (c: Client, logicalNm: string) => {
 };
 
 describe('T9.2·T9.3 승계 649 논리명(실데이터)', () => {
-  it('자동완성 분포: exact 271 · composed 378 · similar 0 · unregistered 0, exact 물리명 = 승계값 271/271, composed 303/378', async () => {
+  it('자동완성 분포: exact 271 · composed 378 · similar 0 · unregistered 0, exact 물리명 = 승계값 271/271, composed 369/378', async () => {
     const { rows } = await pool.query<{
       logical_nm: string;
       physical_nm: string;
@@ -111,8 +111,8 @@ describe('T9.2·T9.3 승계 649 논리명(실데이터)', () => {
     );
     expect(dist).toEqual({ exact: 271, similar: 0, composed: 378, unregistered: 0 });
     expect(exactSame).toBe(271);
-    // 불일치 75 = 최초/최종등록자ID(RGSRT ↔ 기본컬럼 REG_USER, 66) + 비고N내용(숫자 붙임 L1 규칙 RMK1 ↔ RMK_1, 9)
-    expect(composedSame).toBe(303);
+    // 불일치 9 = 비고N내용(숫자 붙임 L1 규칙 RMK1 ↔ 승계 RMK_1, 의도된 규칙 차이). 최초/최종등록자ID 66은 CR-09 R19로 해소(RGSRT)
+    expect(composedSame).toBe(369);
   });
 
   it('EXACT가 아닌 행(승계 match_type ≠ EXACT)의 분절 결과 스냅샷(고유 논리명)', async () => {
@@ -366,7 +366,7 @@ describe('S6 — 연구과제상태코드 → 코드구분 후보 선택 → cod
 });
 
 describe('T9.5 테이블 물리명 제안(실데이터)', () => {
-  it('RP + 연구과제마스터 → RP_RSCH_PRJ_MAST(실데이터 마스터 = MAST, 승계 33 테이블은 MST — 정정 후보 T6.14), PS → PS_…', async () => {
+  it('RP + 연구과제마스터 → RP_RSCH_PRJ_MAST(마스터 = MAST, CR-09로 승계 33 테이블도 MAST), PS → PS_…', async () => {
     const e = await as('editor');
     const ps = (
       await pool.query(
@@ -382,7 +382,7 @@ describe('T9.5 테이블 물리명 제안(실데이터)', () => {
       await e.post(`${P}/tables/suggest-name`, { logicalNm: '연구과제마스터', bizAreaId: ps })
     ).body as TableNameSuggestion;
     expect(psName.tableNm).toBe('PS_RSCH_PRJ_MAST');
-    // 승계 33 테이블 논리명 → 제안 물리명 재현(마스터 MAST ↔ MST 차이를 뺀 나머지)
+    // 승계 33 테이블 논리명 → 제안 물리명 재현(CR-09 R19 이후 보정 없이 그대로)
     const { rows } = await pool.query<{ table_nm: string; table_logical_nm: string }>(
       'select table_nm, table_logical_nm from prj_table where project_id = $1 order by table_nm',
       [rmsId],
@@ -396,11 +396,9 @@ describe('T9.5 테이블 물리명 제안(실데이터)', () => {
           tableId: 1,
         })
       ).body as TableNameSuggestion;
-      if (s.tableNm.replace(/_MAST(?=_|$)/, '_MST') === t.table_nm) same++;
+      if (s.tableNm === t.table_nm) same++;
     }
-    process.stderr.write(
-      `[autocomplete-rms] 33 테이블 물리명 제안 재현(MAST→MST 보정) ${same}/33\n`,
-    );
+    process.stderr.write(`[autocomplete-rms] 33 테이블 물리명 제안 재현 ${same}/33\n`);
     expect(same).toBe(33);
   });
 

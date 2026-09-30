@@ -11,8 +11,9 @@ import { reconcileStep } from './reconcile.js';
 import { tableStep } from './table.js';
 import { templateStep } from './template.js';
 import { termStep } from './term.js';
+import { termUnifyStep } from './term-unify.js';
 
-/** 구현된 step(§11.1 1~12). 12 DDL_REGRESSION은 단계 7(DDL 엔진, G3). */
+/** 구현된 step(§11.1 1~12 + CR-09 TERM_UNIFY). 12 DDL_REGRESSION은 단계 7(DDL 엔진, G3). */
 export const SEED_STEPS: ReadonlyMap<StepName, StepDef> = new Map(
   [
     loadLegacyStep,
@@ -25,6 +26,7 @@ export const SEED_STEPS: ReadonlyMap<StepName, StepDef> = new Map(
     defaultColStep,
     copyToRmsStep,
     tableStep,
+    termUnifyStep,
     reconcileStep,
     ddlRegressionStep,
   ].map((s) => [s.name, s]),
