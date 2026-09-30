@@ -19,7 +19,9 @@ const draft = (savedAt: string, extra = ''): EditorDraft => ({
   cacheVersion: null,
 });
 beforeEach(() => localStorage.clear());
-afterEach(() => vi.restoreAllMocks());
+/** 저장소 오류 흉내(spy)를 테스트마다 되돌린다. */
+const spies: { mockRestore(): void }[] = [];
+afterEach(() => spies.splice(0).forEach((s) => s.mockRestore()));
 
 describe('임시저장(§8.7)', () => {
   it('키 형식: tf.draft.{projectKey}.{tableId | new-<uuid>}', () => {
@@ -72,12 +74,14 @@ describe('임시저장(§8.7)', () => {
   });
 
   it('저장소 오류(용량 초과·차단)는 삼킨다 — 편집기는 계속 동작', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new DOMException('quota', 'QuotaExceededError');
-    });
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
+    spies.push(
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      }),
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('blocked');
+      }),
+    );
     expect(saveDraft(draftKey('RMS', 4), draft(new Date().toISOString()))).toBe(false);
     expect(loadDraft(draftKey('RMS', 4))).toBeNull();
     expect(() => removeDraft(draftKey('RMS', 4))).not.toThrow();
