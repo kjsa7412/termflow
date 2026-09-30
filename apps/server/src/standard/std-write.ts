@@ -15,7 +15,7 @@ export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
  * 표준 사전 쓰기 공통 경로(T6.1, `standard/README.md`). 모든 표준 쓰기 서비스는 이 클래스로만 쓴다.
  *  1. 쓰기 가능 검사: 보관 프로젝트 409, 템플릿은 시스템 관리자만(§4.1·§4.6) — 가드와 이중 검사(서비스 재확인, §12.2)
  *  2. `db.transaction` 안에서 행 쓰기 + `writeStdAudit`(같은 트랜잭션)
- *  3. 커밋 후 `TermCacheRegistry.invalidate(projectId)`(§5.1, 단계 9 전까지 no-op). 롤백이면 호출하지 않는다.
+ *  3. 커밋 후 `TermCacheRegistry.invalidate(projectId)`(§5.1, T9.1 — 다음 자동완성·검증이 새 스냅샷을 적재). 롤백이면 호출하지 않는다.
  */
 @Injectable()
 export class StdWriter {

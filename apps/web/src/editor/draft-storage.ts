@@ -25,7 +25,7 @@ export interface EditorDraft {
   };
   /** 저장 본문과 같은 순서(일반 행 → 포함된 기본컬럼). */
   columns: ColumnInput[];
-  /** 자동완성 캐시 버전(T9.x) — 단계 8은 null. */
+  /** 마지막 자동완성 응답의 캐시 버전(T9.7) — 자동완성을 쓰지 않았으면 null. */
   cacheVersion: number | null;
 }
 

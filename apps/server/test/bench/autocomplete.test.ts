@@ -152,7 +152,7 @@ describe('자동완성 성능(G6)', () => {
     }
     log('sequential649Service', {
       totalMs: Math.round(totalMs),
-      callMs: stat(each),
+      serviceMs: stat(each),
       serverElapsedMs: stat(server),
       engineDirectMs: stat(direct),
       types,

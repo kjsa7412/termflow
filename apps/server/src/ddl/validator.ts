@@ -37,7 +37,7 @@ export interface ValidateContext {
   suffixes?: ReadonlySet<string>;
   /** 같은 프로젝트의 다른 테이블 물리명(E_TABLE_NM_DUP). */
   otherTableNames?: ReadonlySet<string>;
-  /** 용어 상태·재분절(W_TERM_PENDING·REJECTED·CHANGED) — 자동완성 엔진(T9.x)이 채운다. */
+  /** 용어 상태·재분절(W_TERM_PENDING·REJECTED·CHANGED) — 자동완성 엔진(`columnTermHint`, T9.9)이 채운다. */
   termHints?: (col: ColumnModel, index: number) => TermHint | undefined;
 }
 
