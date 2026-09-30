@@ -53,10 +53,8 @@ test('S3 다중 — 전체 선택 → 내보내기 → .sql·.zip 다운로드·
   await page.getByRole('button', { name: '복사', exact: true }).first().click();
   const clip = await page.evaluate(() => navigator.clipboard.readText());
   expect(clip.match(/^CREATE TABLE /gm)?.length).toBe(count);
-  test
-    .info()
-    .annotations.push({
-      type: 'S3 다중',
-      description: `클릭 ${clicks} · 이동 1 · 테이블 ${count}`,
-    });
+  test.info().annotations.push({
+    type: 'S3 다중',
+    description: `클릭 ${clicks} · 이동 1 · 테이블 ${count}`,
+  });
 });

@@ -62,6 +62,12 @@ pnpm check:no-ai   # AI 관련 문자열 0건 확인(설계서 §1.2)
 ```bash
 pnpm test:db       # Testcontainers(postgres:17, Docker 필요): 스키마 제약·마이그레이션·헬스·감사 통합 테스트
 pnpm test:db -- schema   # 파일 이름 필터(pnpm 10의 `--` 전달은 scripts/run-vitest.mjs가 처리)
+# 테스트 컨테이너(termflow-test-db)는 기본 재사용 — 두 test:db를 동시에 돌릴 때는 TF_TEST_DB_REUSE=0 (CR-10 C2)
+```
+
+```bash
+pnpm e2e           # Playwright(Chrome·Edge 설치본): dev 서버 재사용/기동 + dev DB RMS, S1~S6 흐름 + axe 접근성(CR-10 C4)
+pnpm -C e2e exec playwright test s2-s4 --project=chrome   # 파일·브라우저 필터
 ```
 
 ### DB 명령
