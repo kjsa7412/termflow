@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import type { BizAreaItem, TableListItem, TablePage } from '@termflow/shared';
+import {
+  MEMBER_ROLE_RANK,
+  type BizAreaItem,
+  type TableListItem,
+  type TablePage,
+} from '@termflow/shared';
+import ConfirmDeleteModal from '../components/ui/ConfirmDeleteModal.vue';
 import { projectsApi } from '../api/projects.js';
 import { tablesApi } from '../api/tables.js';
 import FilterSeg from '../components/std/FilterSeg.vue';
@@ -20,10 +26,11 @@ import { useToastStore } from '../stores/toast.js';
 /**
  * 테이블 목록(`/projects/{key}/tables`, 목업 09, §10.1, T7.12): 좌측 업무구분 목록(건수·'전체') + 우측 표(검색·상태·정렬·페이지).
  * 체크 선택 → [DDL 내보내기](선택 순서 = 목록 순서)로 이동(S3 다중: 전체 선택 → 내보내기 → 다운로드 = 클릭 3 / 이동 1).
- * 행 물리명은 DDL 미리보기로 연결한다. 편집기 열기·복제·삭제·새 테이블은 단계 8(편집기)에서 활성화.
+ * 행 물리명 → 편집기(단계 8, 목업 09). 행 메뉴: DDL 미리보기 · 편집/열기 · 복제(같은 프로젝트 `_COPY`) · 삭제(확인 모달,
+ * DRAFT 편집자·FINAL 프로젝트 관리자). [새 테이블]은 선택된 업무구분으로 시작(§10.1).
  * 검증 열은 서버 재검증(§5.7, DDL 생성과 같은 규칙) 결과다.
  */
-const { key, project } = useProject();
+const { key, project, session } = useProject();
 const router = useRouter();
 const tapi = tablesApi();
 const papi = projectsApi();
@@ -134,6 +141,53 @@ const previewLink = (t: TableListItem) => ({
   path: `/projects/${key.value}/export`,
   query: { tableIds: String(t.tableId) },
 });
+// ── 편집·복제·삭제(단계 8, T8.14) ───────────────────────────────────
+const role = computed(() => (session.isSysAdmin ? 'ADMIN' : (project.value?.role ?? 'VIEWER')));
+const canEdit = computed(
+  () =>
+    MEMBER_ROLE_RANK[role.value] >= MEMBER_ROLE_RANK.EDITOR &&
+    project.value?.status !== 'ARCHIVED' &&
+    project.value?.kind !== 'TEMPLATE',
+);
+/** 삭제: DRAFT 편집자 · FINAL 프로젝트 관리자(§8.4). */
+const canDelete = (t: TableListItem) => canEdit.value && (t.status === 'DRAFT' || role.value === 'ADMIN');
+const editorLink = (t: TableListItem) => `/projects/${key.value}/tables/${t.tableId}`;
+const newTableLink = computed(() => ({
+  path: `/projects/${key.value}/tables/new`,
+  query: currentBiz.value ? { bizAreaId: String(currentBiz.value.bizAreaId) } : {},
+}));
+const cloning = ref<number | null>(null);
+async function cloneTable(t: TableListItem): Promise<void> {
+  cloning.value = t.tableId;
+  try {
+    const r = await tapi.clone(key.value, t.tableId);
+    toast.success(`${r.tableNm}(으)로 복제했습니다`);
+    await router.push(`/projects/${key.value}/tables/${r.tableId}`);
+  } catch (e) {
+    toast.error(errMsg(e, '복제하지 못했습니다'));
+  } finally {
+    cloning.value = null;
+  }
+}
+const deleting = ref<TableListItem | null>(null);
+const deleteBusy = ref(false);
+async function confirmDelete(): Promise<void> {
+  const t = deleting.value;
+  if (!t) return;
+  deleteBusy.value = true;
+  try {
+    await tapi.remove(key.value, t.tableId);
+    toast.success(`${t.tableNm}을(를) 삭제했습니다`);
+    selected.value = selected.value.filter((id) => id !== t.tableId);
+    deleting.value = null;
+    void list.reload();
+  } catch (e) {
+    toast.error(errMsg(e, '삭제하지 못했습니다'));
+  } finally {
+    deleteBusy.value = false;
+  }
+}
+
 const issueTitle = (t: TableListItem) =>
   [
     ...t.issues.map((i) => `${i.code}: ${i.message}`),
@@ -169,9 +223,13 @@ const COLS = 9;
         <RouterLink class="btn btn-secondary" :to="exportAllLink"
           ><TfIcon name="export" />DDL 내보내기</RouterLink
         >
-        <button class="btn btn-primary" type="button" disabled title="테이블 편집기(단계 8)">
-          <TfIcon name="plus" />새 테이블{{ currentBiz ? ` · ${currentBiz.bizCd}` : '' }}
-        </button>
+        <RouterLink
+          v-if="canEdit"
+          class="btn btn-primary"
+          :to="newTableLink"
+          data-testid="new-table"
+          ><TfIcon name="plus" />새 테이블{{ currentBiz ? ` · ${currentBiz.bizCd}` : '' }}</RouterLink
+        >
       </div>
     </div>
 
@@ -319,8 +377,8 @@ const COLS = 9;
                 <td class="mono cell-clip" :title="t.tableNm">
                   <RouterLink
                     class="cell-link"
-                    :to="previewLink(t)"
-                    :title="`${t.tableNm} DDL 미리보기`"
+                    :to="editorLink(t)"
+                    :title="`${t.tableNm} 편집기 열기`"
                     >{{ t.tableNm }}</RouterLink
                   >
                 </td>
@@ -378,34 +436,34 @@ const COLS = 9;
                         @click="close()"
                         ><TfIcon name="export" />DDL 미리보기</RouterLink
                       >
+                      <RouterLink
+                        class="dropdown-item"
+                        role="menuitem"
+                        :to="editorLink(t)"
+                        @click="close()"
+                        ><TfIcon name="edit" />{{ canEdit && t.status === 'DRAFT' ? '편집' : '열기' }}</RouterLink
+                      >
                       <button
-                        class="dropdown-item is-disabled"
+                        v-if="canEdit"
+                        class="dropdown-item"
                         type="button"
                         role="menuitem"
-                        disabled
-                        title="단계 8"
+                        :disabled="cloning === t.tableId"
+                        @click="(close(), cloneTable(t))"
                       >
-                        <TfIcon name="edit" />열기(편집기 준비 중)
+                        <TfIcon name="duplicate" />복제({{ t.tableNm }}_COPY)
                       </button>
-                      <button
-                        class="dropdown-item is-disabled"
-                        type="button"
-                        role="menuitem"
-                        disabled
-                        title="단계 8"
-                      >
-                        <TfIcon name="duplicate" />복제(준비 중)
-                      </button>
-                      <div class="dropdown-sep" />
-                      <button
-                        class="dropdown-item is-disabled"
-                        type="button"
-                        role="menuitem"
-                        disabled
-                        title="단계 8"
-                      >
-                        <TfIcon name="trash" />삭제(준비 중)
-                      </button>
+                      <template v-if="canDelete(t)">
+                        <div class="dropdown-sep" />
+                        <button
+                          class="dropdown-item is-danger"
+                          type="button"
+                          role="menuitem"
+                          @click="(close(), (deleting = t))"
+                        >
+                          <TfIcon name="trash" />삭제
+                        </button>
+                      </template>
                     </template>
                   </TfPopover>
                 </td>
@@ -436,8 +494,12 @@ const COLS = 9;
                         ? `업무구분 ${currentBiz.bizCd} ${currentBiz.bizNm}에는 아직 테이블이 없습니다`
                         : '아직 테이블이 없습니다'
                     "
-                    desc="테이블 편집기(새 테이블)는 다음 단계에서 제공됩니다."
-                  />
+                    desc="[새 테이블]로 첫 테이블을 설계하세요. 업무구분 접두어가 물리명 앞에 붙습니다."
+                  >
+                    <RouterLink v-if="canEdit" class="btn btn-primary btn-sm" :to="newTableLink"
+                      ><TfIcon name="plus" />새 테이블</RouterLink
+                    >
+                  </EmptyState>
                 </td>
               </tr>
             </tbody>
@@ -450,5 +512,17 @@ const COLS = 9;
         />
       </div>
     </div>
+    <ConfirmDeleteModal
+      :open="deleting !== null"
+      :title="`테이블 ${deleting?.tableNm ?? ''} 삭제`"
+      :busy="deleteBusy"
+      @confirm="confirmDelete"
+      @cancel="deleting = null"
+    >
+      <p>
+        <strong>{{ deleting?.logicalNm }}</strong>({{ deleting?.status }}, 컬럼 {{ deleting?.colCnt }})과 컬럼·변경이력이
+        모두 삭제됩니다. 되돌릴 수 없습니다.
+      </p>
+    </ConfirmDeleteModal>
   </template>
 </template>

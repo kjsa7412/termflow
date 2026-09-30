@@ -481,6 +481,50 @@ describe('역할·상태별 화면(T8.9)', () => {
   });
 });
 
+describe('테이블 목록 행 메뉴·새 테이블(T8.14)', () => {
+  it('편집자: [새 테이블](업무구분 유지)·행 물리명 → 편집기, 복제 → POST clone → 새 편집기, 삭제 = 확인 모달 → DELETE, FINAL 행 삭제 숨김', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const item = (id: number, nm: string, status: 'DRAFT' | 'FINAL') => ({
+      tableId: id, bizAreaId: 6, bizCd: 'RP', tableNm: nm, logicalNm: nm, status, version: 1, colCnt: 3,
+      updatedBy: 'editor', updatedAt: '2026-09-29T10:00:00', errorCnt: 0, warningCnt: 0, issues: [], reviewYn: false, reviewNote: null,
+    });
+    const items = [item(1, 'RP_DRAFT_MST', 'DRAFT'), item(2, 'RP_FINAL_MST', 'FINAL')];
+    const f = fakeFetch({
+      'GET /api/v1/auth/csrf': () => json(200, { token: 'T' }),
+      'GET /api/v1/me': () =>
+        json(200, { user: { id: 3, loginId: 'u', userNm: '사용자', isSysAdmin: false }, mustChangePassword: false, projects: [{ key: 'RMS', nm: 'R', role: 'EDITOR', kind: 'PROJECT', status: 'ACTIVE' }] }),
+      [`GET ${P}/biz-areas`]: () => json(200, BIZ),
+      [`GET ${P}/tables`]: () =>
+        json(200, { items, page: 1, size: 50, total: items.length, bizAreaCounts: [{ bizAreaId: 6, cnt: 2 }], allCnt: 2, statusCounts: { DRAFT: 1, FINAL: 1 } }),
+      [`POST ${P}/tables/1/clone`]: () => json(201, { tableId: 33, projectKey: 'RMS', bizAreaId: 6, tableNm: 'RP_DRAFT_MST_COPY', version: 1, remapWarnings: [] }),
+      [`DELETE ${P}/tables/1`]: () => new Response(null, { status: 204 }),
+    });
+    vi.stubGlobal('fetch', f.fetch);
+    api.setCsrfToken(null);
+    const router = createAppRouter(createMemoryHistory());
+    await useSessionStore().refresh();
+    await router.push('/projects/RMS/tables?bizAreaId=6');
+    const TablesPage = (await import('./TablesPage.vue')).default;
+    const w = mount(TablesPage, { global: { plugins: [pinia, router] }, attachTo: document.body });
+    mounted.push(w);
+    await until(() => w.findAll('tbody tr').length >= 2);
+    expect(w.get('[data-testid="new-table"]').attributes('href')).toBe('/projects/RMS/tables/new?bizAreaId=6');
+    expect(w.find('a[href="/projects/RMS/tables/1"]').exists()).toBe(true);
+    const rowOf = (nm: string) => w.findAll('tbody tr').find((r) => r.text().includes(nm))!;
+    expect(rowOf('RP_FINAL_MST').text()).not.toContain('삭제');
+    // 삭제(DRAFT): 확인 모달 → DELETE
+    await rowOf('RP_DRAFT_MST').findAll('button').find((b) => b.text() === '삭제')!.trigger('click');
+    await until(() => w.find('[aria-modal="true"]').exists());
+    expect(w.get('[aria-modal="true"]').text()).toContain('RP_DRAFT_MST');
+    await w.get('[aria-modal="true"]').findAll('button').find((b) => b.text() === '삭제')!.trigger('click');
+    await until(() => f.calls.some((c) => c.method === 'DELETE' && c.path === `${P}/tables/1`));
+    // 복제 → 새 테이블 편집기로
+    await rowOf('RP_DRAFT_MST').findAll('button').find((b) => b.text().startsWith('복제'))!.trigger('click');
+    await until(() => router.currentRoute.value.path === '/projects/RMS/tables/33');
+  });
+});
+
 describe('이력 패널(T8.14)', () => {
   it('[이력] → 목록 → 비교(과거 ↔ 현재 나란히) → 복원 확인(인라인) → POST restore(현재 version)', async () => {
     const hist: TableHistoryItem[] = [3, 2, 1].map((v) => ({
