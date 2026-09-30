@@ -1,10 +1,18 @@
 # TermFlow (텀플로)
 
-표준 용어를 관리하고, 용어로 컬럼을 자동완성해 테이블을 설계하고, DDL까지 한 흐름으로 생성하는 다중 사용자·프로젝트 기반 데이터 표준 설계 서비스.
+표준 용어를 관리하고, 용어로 컬럼을 자동완성해 테이블을 설계하고, DDL까지 한 흐름으로 생성하는 다중 사용자·프로젝트 기반 데이터 표준 설계 서비스. 현재 릴리스 **v1.0.0**(`docs/릴리스_노트_v1.0.0.md`).
 
-- 전신: gen-table v1.0.0 (`C:\project\gen_table_promotion`, 읽기 전용 참조)
-- 문서: `docs/00_네이밍.md`, `docs/01_검토안.md`, `docs/02_설계서.md`, `docs/03_TODO.md`, `docs/mockups/`
-- 시드 데이터: `seed/original/` (원본 SQL 복사본, 수정 금지) → 정제본은 `seed/`에 생성 예정
+| 구분      | 내용                                                                                                                                                                                                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 기능      | 프로젝트·업무구분·표준 템플릿, 표준 사전 7종(용어·도메인분류·도메인·코드구분·코드·기본컬럼·승인 큐) + 엑셀 일괄 등록, 테이블 편집기(자동완성·인라인 용어 등록·이력·복제·충돌 병합), PostgreSQL DDL(단건·다중·ZIP·정보 추출), 사용자·역할(시스템 관리자·프로젝트 관리자·편집자·조회자) |
+| 기술      | NestJS 12(Node 22) + Vue 3/Vite SPA + PostgreSQL 17, 단일 이미지 `termflow-app:1.0.0` + compose                                                                                                                                                                                       |
+| 운영 설치 | **`docs/설치_운영_가이드.md`**(Docker Desktop + `start.bat`, 승계·백업·복구·업그레이드)                                                                                                                                                                                               |
+| 사용법    | **`docs/사용자_가이드.md`**(역할별)                                                                                                                                                                                                                                                   |
+| 설계·기록 | `docs/00_네이밍.md`, `docs/01_검토안.md`, `docs/02_설계서.md`, `docs/03_TODO.md`, `docs/CR-*.md`(설계 변경), `docs/수용_테스트_결과.md`·`docs/측정_결과.md`, `docs/mockups/`                                                                                                          |
+| 전신      | gen-table v1.0.0 (`C:\project\gen_table_promotion`, 읽기 전용 참조)                                                                                                                                                                                                                   |
+| 승계 원본 | `seed/original/` (원본 SQL 복사본, 수정 금지) → 승계 러너가 DB `legacy` 스키마로 적재 후 정제                                                                                                                                                                                         |
+
+이 README는 **개발 환경**(소스 빌드·테스트)을 다룬다.
 
 ## 개발 환경 실행
 
@@ -68,7 +76,13 @@ pnpm test:db -- schema   # 파일 이름 필터(pnpm 10의 `--` 전달은 script
 ```bash
 pnpm e2e           # Playwright(Chrome·Edge 설치본): dev 서버 재사용/기동 + dev DB RMS, S1~S6 흐름 + axe 접근성(CR-10 C4)
 pnpm -C e2e exec playwright test s2-s4 --project=chrome   # 파일·브라우저 필터
+E2E_SHOTS=1 pnpm -C e2e exec playwright test mockup-shots --project=chrome   # 목업 대비 화면 캡처 → e2e/shots/(gitignore)
 ```
+
+- 계정: 루트 `.env`의 `TERMFLOW_ADMIN_LOGIN` + `TERMFLOW_ADMIN_DEV_CURRENT_PASSWORD`(dev에서 바꾼 현재 비밀번호). 다른 서버를 대상으로 하려면 `E2E_BASE_URL`(예 `http://localhost:8091`)·`E2E_LOGIN`·`E2E_PASSWORD` 환경 변수 — 서버 `/health`가 응답하면 dev 서버를 띄우지 않고 재사용한다.
+- 테스트가 만든 용어·테이블은 테스트 끝에 API로 지운다(RMS 33 테이블 유지). 실패 시 trace·영상은 `e2e/test-results/`.
+
+권장 게이트 순서(단계 10 기준 소요): `pnpm lint` → `pnpm typecheck` → `pnpm test`(약 1~2분) → `pnpm test:db`(약 5분, 오래 걸리면 파일 필터로 나눈다) → `pnpm e2e`(약 8분).
 
 ### DB 명령
 
@@ -97,12 +111,26 @@ pnpm --filter @termflow/server cr09:sql       # 운영 DB 전환 스크립트 do
 - 이미 적재된 step은 SKIPPED, 실패·대사 불일치면 종료 코드 1. 실행 기록은 `migration_log`
 - 규칙·기대 건수와 설계 대비 차이는 `docs/CR-03_단계3_4_구현반영.md`
 
+### 컨테이너 이미지·운영 실행(요약)
+
+```bash
+docker build -t termflow-app:1.0.0 .          # 멀티스테이지(node:22-alpine), 약 3~10분, 약 410MB
+start.bat                                      # Windows 원클릭: Docker·.env 확인 → db → 승계 질문 → app → 브라우저
+docker compose run --rm app node apps/server/dist/migration/seed.js --steps=LOAD_LEGACY..DDL_REGRESSION   # 승계 러너(컨테이너)
+```
+
+전체 절차·`.env` 항목·백업·복구는 `docs/설치_운영_가이드.md`. 개발 DB(`termflow-db`, 5434)와 같은 PC에 운영·검증 인스턴스를 둘 때는 **다른 폴더에 소스를 두고** 그 폴더 `.env`에 `COMPOSE_PROJECT_NAME`·컨테이너 이름·포트를 따로 지정한다(가이드 §11).
+
 ### 저장소 구조
 
 ```text
-apps/server/       NestJS 서버(Express 어댑터, ESM)
+apps/server/       NestJS 서버(Express 어댑터, ESM) — src/migration: 승계 러너
 apps/web/          Vue 3 + Vite SPA
-packages/shared/   서버·웹 공용 상수·타입(@termflow/shared)
-scripts/           저장소 점검 스크립트(check-no-ai.mjs)
-docker-compose.yml db 서비스(app 서비스는 배포 단계에서 추가)
+packages/shared/   서버·웹 공용 상수·타입·zod 스키마(@termflow/shared)
+e2e/               Playwright 브라우저 E2E·접근성(@termflow/e2e)
+scripts/           check-no-ai.mjs · run-vitest.mjs · load-concurrency.mjs(부하) · backup.ps1 · restore.ps1
+migration/corrections/  승계 정정 초안 xlsx(용어·도메인분류·도메인)
+docker-compose.yml db + app 서비스(설계서 부록 B)
+Dockerfile         운영 이미지(CR-11a)
+start.ps1 / start.bat   운영 원클릭 실행
 ```

@@ -9,6 +9,10 @@
 
 .PARAMETER Migrate
   ask(기본) = 승계가 아직이면 묻는다 · yes = 묻지 않고 실행 · no = 건너뛴다.
+.PARAMETER MigrateAll
+  승계를 1~12 한 번에 실행한다(설계서 §11.5 대안, CR-11: 정정은 실행 후 STDV1·RMS 두 곳에서).
+  기본(생략)은 2단계 실행: 1차(1~8) → 정정 → 다시 실행하면 2차(9~12).
+  RMS 생성에는 초기 관리자가 필요하므로, 아직 없으면 app을 먼저 기동해 만든 뒤 승계를 실행한다.
 .PARAMETER Build
   app 이미지를 다시 빌드한다(업그레이드 시).
 .PARAMETER NoBrowser
@@ -19,11 +23,14 @@
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
   powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1 -Build -Migrate no
+.EXAMPLE
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1 -Migrate yes -MigrateAll
 #>
 [CmdletBinding()]
 param(
   [ValidateSet('ask', 'yes', 'no')]
   [string]$Migrate = 'ask',
+  [switch]$MigrateAll,
   [switch]$Build,
   [switch]$NoBrowser,
   [ValidateRange(10, 1800)]
@@ -100,6 +107,33 @@ function Wait-Healthy([string]$Service) {
   }
   Write-Info "$Service 대기 시간 초과(${TimeoutSec}초)"
   return $false
+}
+
+# app 기동·healthy 대기(⑤). 승계 전에 초기 관리자를 만들어야 할 때(-MigrateAll·2차) ④에서 먼저 부를 수 있다.
+$script:AppStarted = $false
+function Start-AppService {
+  if ($script:AppStarted) { return }
+  $upArgs = @('up', '-d')
+  if ($Build) { $upArgs += '--build' }
+  $upArgs += 'app'
+  Write-Info '이미지가 없으면 처음 한 번 빌드합니다(수 분 걸릴 수 있습니다).'
+  if ((Invoke-Compose $upArgs) -ne 0) {
+    Stop-WithError @('app 서비스를 시작하지 못했습니다. 위 docker 메시지를 확인하세요(포트 충돌이면 .env의 TERMFLOW_APP_PORT).')
+  }
+  if (-not (Wait-Healthy 'app')) {
+    $null = Invoke-Compose @('logs', '--tail', '60', 'app')
+    Stop-WithError @('app이 healthy 상태가 되지 않았습니다. 위 로그(환경 변수 검증·마이그레이션 오류)를 확인하세요.')
+  }
+  $script:AppStarted = $true
+  Write-Ok "app healthy ($appUrl/health)"
+}
+
+# 초기 관리자(TERMFLOW_ADMIN_LOGIN) 활성 사용자 존재 여부. 스키마가 아직 없으면 false.
+function Test-AdminUser([string]$Login) {
+  if ($Login -notmatch '^[A-Za-z0-9._-]+$') { return $true } # 판정 불가 — 러너가 직접 검사한다
+  $q = "select count(*) from tf_user where login_id = '$Login' and is_active"
+  $n = & docker @ComposeArgs exec -T db psql -U termflow -d termflow -tAc $q 2>$null
+  return ($LASTEXITCODE -eq 0 -and $n -and ((($n | Out-String).Trim()) -ne '0'))
 }
 
 # ---------- ① Docker 확인 ----------
@@ -185,15 +219,23 @@ $sql = "select coalesce(string_agg(project_key, ',' order by project_key), '') f
 $found = & docker @ComposeArgs exec -T db psql -U termflow -d termflow -tAc $sql 2>$null
 $keys = if ($LASTEXITCODE -eq 0 -and $found) { (($found | Out-String).Trim() -split ',') } else { @() }
 $plan = $null
-if ($keys -notcontains 'STDV1') {
+if ($keys -notcontains 'STDV1' -and $MigrateAll) {
   $plan = @{
-    Label = '1차 승계(LOAD_LEGACY..DEFAULT_COL + 대사) — 원본 dump → STDV1 표준 사전'
-    Args  = @()
+    Label     = '승계 한 번에 실행(LOAD_LEGACY..DDL_REGRESSION, §11.5 대안) — STDV1·RMS·33 테이블·대사·DDL 회귀. 정정은 실행 후 두 곳에서'
+    Args      = @('--steps=LOAD_LEGACY..DDL_REGRESSION')
+    NeedAdmin = $true
+  }
+} elseif ($keys -notcontains 'STDV1') {
+  $plan = @{
+    Label     = '1차 승계(LOAD_LEGACY..DEFAULT_COL + 대사) — 원본 dump → STDV1 표준 사전'
+    Args      = @()
+    NeedAdmin = $false
   }
 } elseif ($keys -notcontains 'RMS') {
   $plan = @{
-    Label = '2차 승계(COPY_TO_RMS..DDL_REGRESSION) — STDV1 정정 반영 후 RMS 생성·33 테이블·DDL 회귀'
-    Args  = @('--steps=COPY_TO_RMS..DDL_REGRESSION')
+    Label     = '2차 승계(COPY_TO_RMS..DDL_REGRESSION) — STDV1 정정 반영 후 RMS 생성·33 테이블·DDL 회귀'
+    Args      = @('--steps=COPY_TO_RMS..DDL_REGRESSION')
+    NeedAdmin = $true
   }
 }
 if (-not $plan) {
@@ -216,8 +258,13 @@ if (-not $plan) {
     if (-not (Test-Path -LiteralPath $LegacyDump -PathType Leaf)) {
       Stop-WithError @("승계 원본이 없습니다: $LegacyDump")
     }
+    $adminLogin = if ($dotenv.ContainsKey('TERMFLOW_ADMIN_LOGIN') -and $dotenv['TERMFLOW_ADMIN_LOGIN']) { $dotenv['TERMFLOW_ADMIN_LOGIN'] } else { 'admin' }
+    if ($plan.NeedAdmin -and -not (Test-AdminUser $adminLogin)) {
+      Write-Info "RMS 프로젝트 관리자로 쓸 초기 관리자($adminLogin)가 아직 없어 app을 먼저 기동합니다(§7.5 부트스트랩)."
+      Start-AppService
+    }
     $runArgs = @('run', '--rm')
-    if ($Build) { $runArgs += '--build' }
+    if ($Build -and -not $script:AppStarted) { $runArgs += '--build' }
     $runArgs += @('app', 'node', 'apps/server/dist/migration/seed.js') + $plan.Args
     Write-Info '승계 러너 실행(이미지가 없으면 먼저 빌드합니다. 수 분 걸릴 수 있습니다)'
     if ((Invoke-Compose $runArgs) -ne 0) {
@@ -229,18 +276,7 @@ if (-not $plan) {
 
 # ---------- ⑤ app ----------
 Write-Step '⑤ 앱 기동(app)'
-$upArgs = @('up', '-d')
-if ($Build) { $upArgs += '--build' }
-$upArgs += 'app'
-Write-Info '이미지가 없으면 처음 한 번 빌드합니다(수 분 걸릴 수 있습니다).'
-if ((Invoke-Compose $upArgs) -ne 0) {
-  Stop-WithError @('app 서비스를 시작하지 못했습니다. 위 docker 메시지를 확인하세요(포트 충돌이면 .env의 TERMFLOW_APP_PORT).')
-}
-if (-not (Wait-Healthy 'app')) {
-  $null = Invoke-Compose @('logs', '--tail', '60', 'app')
-  Stop-WithError @('app이 healthy 상태가 되지 않았습니다. 위 로그(환경 변수 검증·마이그레이션 오류)를 확인하세요.')
-}
-Write-Ok "app healthy ($appUrl/health)"
+if ($script:AppStarted) { Write-Ok "app healthy ($appUrl/health) — ④에서 기동함" } else { Start-AppService }
 
 # ---------- ⑥ 브라우저 ----------
 Write-Step "⑥ 접속: $appUrl"
