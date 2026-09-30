@@ -1,8 +1,15 @@
 import { defineStore } from 'pinia';
 import { computed, reactive, ref } from 'vue';
 import {
+  normalizeLogical,
   splitStdType,
   typeText,
+  type AutocompleteApplied,
+  type AutocompleteCandidate,
+  type AutocompleteCodeCandidate,
+  type AutocompleteResponse,
+  type AutocompleteSegment,
+  type AutocompleteType,
   type ColumnInput,
   type DefaultColItem,
   type MatchType,
@@ -17,18 +24,23 @@ import {
 import type { EditorDraft } from '../editor/draft-storage.js';
 
 /**
- * 테이블 편집기 스토어(설계서 §10.4, T8.7). 행 상태 머신 + dirty 추적 + 서버 응답 병합.
+ * 테이블 편집기 스토어(설계서 §10.4, T8.7·T9.7). 행 상태 머신 + dirty 추적 + 서버 응답 병합 + 자동완성 전이.
  *
- * 행 상태(§10.4 표) — 단계 8은 idle·manual·invalid·default, 로드된 컬럼은 match_type으로 표시 상태를 정한다.
- * 자동완성 상태(loading·exact·similar·composed·unregistered·code)의 **전이**는 T9.7에서 `onLogicalEnter` 훅에 붙는다.
+ * | 상태 | 진입 | 표시 | 다음 |
+ * |---|---|---|---|
+ * | idle | 새 행 | 빈 논리명 | 논리명 Enter → loading |
+ * | loading | 논리명 Enter(자동완성 필요 시) | 행 우측 스피너 | 응답 → 아래 상태 / 실패 → 이전 상태 + 안내 |
+ * | exact | type=exact 또는 유사 후보에서 도메인 선택(SIMILAR) | 채움, 초록 '표준' | 다음 행 |
+ * | similar | type=similar | 인라인 listbox(도메인 ≤5 + 조합) | ↑↓ Enter 선택 → exact/composed · Esc 닫고 유지 |
+ * | composed | type=composed 또는 조합 선택 | 채움 + 조각 배지, 노란 '표준 도메인 아님' | 다음 행 |
+ * | unregistered | type=unregistered | 부분 물리명(`?`) + 미매칭 빨간 조각 + 인라인 등록 카드 | 등록 → 자동 재시도 · Esc 카드 닫고 수동 입력(경고 유지) |
+ * | code | 코드성 후보 선택 또는 행 '코드' 팝오버 | 파랑 배지 | 다음 행 |
+ * | manual | 물리명·타입 직접 수정(기본컬럼·미등록 제외) | 회색 '수동' | — |
+ * | default | 기본컬럼 영역 행 | 포함/제외만 | — |
+ * | invalid | (파생) 행에 E가 있음 | 빨간 테두리 | E 해소 → 원래 상태 |
  *
- * | 상태 | 진입 | 다음 |
- * |---|---|---|
- * | idle | 새 행 | 물리명·타입 입력 → manual (논리명만 입력하면 idle 유지 — T9: Enter → loading) |
- * | manual | 물리명·타입 직접 수정(어느 상태에서든, 기본컬럼 제외) | — |
- * | default | 기본컬럼 영역 행(defaultColId) | 포함/제외만(편집 불가) |
- * | invalid | (파생) 행에 E가 있음 | E 해소 → 원래 상태 |
- *
+ * 자동완성 호출은 화면이 `autocomplete`(행 1개)·`batchAutocomplete`(붙여넣기)·`registerTerm`(인라인 등록) 훅으로 연결한다.
+ * 같은 논리명(정규화 기준 `acFor`)으로 이미 처리한 행은 Enter로 다시 호출하지 않는다(수동 수정 보호).
  * 저장 본문 순서 = 일반 행(표시 순서) → 포함된 기본컬럼(세트 순서)(§8.2 "기본컬럼 영역은 뒤").
  */
 export type RowState =
@@ -71,6 +83,54 @@ export interface EditorRow {
   domainNm: string | null;
   /** 기본컬럼 영역 행만 의미: 제외(false)면 저장 본문에서 빠진다(= 행 삭제, §8.2). */
   included: boolean;
+  /** 마지막으로 자동완성(또는 로드)한 논리명(정규화). 같으면 Enter로 다시 부르지 않는다. */
+  acFor: string | null;
+  /** 코멘트를 자동완성이 채웠는지(사용자가 고치면 false — 이후 자동완성이 덮어쓰지 않는다). */
+  commentAuto: boolean;
+  /** 자동완성 결과·열린 보조 UI(listbox·등록 카드). 저장 본문에는 들어가지 않는다. */
+  ac: RowAc | null;
+  /** 자동완성 호출 실패 안내(네트워크 등). */
+  acError: string | null;
+  /** loading 진입 전 상태(실패 시 복귀). */
+  prevState: RowState | null;
+}
+
+/** 인라인 등록 카드 입력(§10.4 unregistered, §5.9). */
+export interface RegisterDraft {
+  kor: string;
+  physical: string;
+  description: string;
+  busy: boolean;
+  error: string | null;
+}
+
+export interface RowAc {
+  type: AutocompleteType;
+  segments: AutocompleteSegment[];
+  candidates: AutocompleteCandidate[];
+  codeCandidates: AutocompleteCodeCandidate[];
+  alternatives: { physicalNm: string; segments: AutocompleteSegment[] }[];
+  registerCandidates: string[];
+  warnings: ValidationIssue[];
+  /** list = 유사·코드 후보 listbox, register = 인라인 등록 카드. */
+  open: 'list' | 'register' | null;
+  focus: number;
+  /** Esc로 닫았으면 같은 논리명 Enter에 다시 열지 않는다(다음 행으로 이동). */
+  dismissed: boolean;
+  reg: RegisterDraft;
+}
+
+/** listbox 항목(코드성 후보가 먼저, 이어서 유사 도메인·조합 — 목업 08 코드 후보 순서). */
+export type AcItem =
+  | { kind: 'code'; code: AutocompleteCodeCandidate }
+  | { kind: 'domain' | 'composed'; cand: AutocompleteCandidate };
+
+export function acItems(ac: RowAc | null): AcItem[] {
+  if (!ac) return [];
+  return [
+    ...ac.codeCandidates.map((code) => ({ kind: 'code' as const, code })),
+    ...ac.candidates.map((cand) => ({ kind: cand.kind, cand })),
+  ];
 }
 
 export interface EditorHeader {
@@ -132,7 +192,19 @@ function blankRow(): EditorRow {
     codeCls: null,
     domainNm: null,
     included: true,
+    acFor: null,
+    commentAuto: false,
+    ac: null,
+    acError: null,
+    prevState: null,
   };
+}
+
+/** 자동완성을 불러야 하는 행: 일반 행 · 논리명 있음 · 수동 수정 아님 · 마지막 처리한 논리명과 다름. */
+export function needsAutocomplete(r: EditorRow): boolean {
+  if (r.defaultColId !== null || r.state === 'manual' || r.state === 'loading') return false;
+  const s = normalizeLogical(r.logicalNm);
+  return s !== '' && s !== r.acFor;
 }
 
 type ColumnLike = Omit<ColumnInput, 'columnId'> & {
@@ -162,6 +234,8 @@ export function rowFrom(c: ColumnLike): EditorRow {
     state: stateOf(c.matchType, c.defaultColId),
     codeCls: c.codeCls ?? null,
     domainNm: c.domainNm ?? null,
+    // 로드한 행은 이미 처리된 것으로 본다(Enter로 이동할 때 저장값을 덮어쓰지 않게)
+    acFor: normalizeLogical(c.logicalNm),
   };
 }
 
@@ -442,13 +516,228 @@ export function createEditorCore() {
       default:
         r[field] = String(value);
     }
+    if (field === 'colComment') r.commentAuto = false;
     // 물리명·타입을 직접 고치면 manual(배지 제거, 회색 '수동', §10.4). 논리명·코멘트·기본값은 상태를 바꾸지 않는다.
+    // 미등록 행은 수동 입력을 허용하되 미등록 상태(W_TERM_UNREGISTERED)를 유지한다(§10.4 "Esc → 수동 입력 허용").
     if (field === 'physicalNm' || field === 'typeText') {
-      if (r.defaultColId === null) {
+      if (r.defaultColId === null && r.state !== 'unregistered') {
         r.state = 'manual';
         r.matchType = 'MANUAL';
+        if (r.ac) r.ac.open = null;
       }
     }
+  }
+
+  // ── 자동완성 전이(T9.7) ─────────────────────────────────────────
+  type Fillable = Pick<
+    AutocompleteApplied,
+    'physicalNm' | 'dataType' | 'dataLength' | 'dataScale' | 'typeText' | 'colComment'
+  > & { domainId?: number | null };
+  function fill(r: EditorRow, a: Fillable, matchType: MatchType) {
+    r.physicalNm = a.physicalNm;
+    r.dataType = a.dataType;
+    r.dataLength = a.dataLength;
+    r.dataScale = a.dataScale;
+    r.typeText = a.typeText ?? typeText(a.dataType, a.dataLength, a.dataScale) ?? '';
+    r.typeError = null;
+    r.domainId = a.domainId ?? null;
+    r.codeClsId = null;
+    r.codeCls = null;
+    r.matchType = matchType;
+    r.domainNm = matchType === 'EXACT' || matchType === 'SIMILAR' ? a.colComment : null;
+    if (r.colComment.trim() === '' || r.commentAuto) {
+      r.colComment = a.colComment;
+      r.commentAuto = true;
+    }
+  }
+
+  function beginLoading(uid: string): void {
+    const r = find(uid);
+    if (!r || r.state === 'loading') return;
+    r.prevState = r.state;
+    r.state = 'loading';
+    r.acError = null;
+  }
+  /** 호출 실패·취소: 이전 상태로(편집 내용 유지). */
+  function endLoading(uid: string, error: string | null = null): void {
+    const r = find(uid);
+    if (!r) return;
+    if (r.state === 'loading') r.state = r.prevState ?? 'idle';
+    r.prevState = null;
+    r.acError = error;
+  }
+
+  /**
+   * 응답 적용(§10.4 표). `batch`(붙여넣기 일괄)면 listbox·카드를 열지 않는다 — 그 행에서 Enter하면 연다.
+   * 반환: 보조 UI가 열렸으면 'stay'(포커스를 행에 둔다), 아니면 'next'.
+   */
+  function applyAutocomplete(
+    uid: string,
+    res: AutocompleteResponse,
+    opts: { batch?: boolean } = {},
+  ): 'stay' | 'next' {
+    const r = find(uid);
+    if (!r) return 'next';
+    r.prevState = null;
+    r.acError = null;
+    r.acFor = res.normalized;
+    const firstMiss = res.segments?.find((x) => !x.matched)?.kor ?? '';
+    const ac: RowAc = {
+      type: res.type,
+      segments: res.segments ?? [],
+      candidates: res.candidates ?? [],
+      codeCandidates: res.codeCandidates ?? [],
+      alternatives: res.alternatives ?? [],
+      registerCandidates: res.registerCandidates ?? [],
+      warnings: res.warnings,
+      open: null,
+      focus: 0,
+      dismissed: false,
+      reg: {
+        kor: res.registerCandidates?.[0] ?? firstMiss,
+        physical: '',
+        description: '',
+        busy: false,
+        error: null,
+      },
+    };
+    switch (res.type) {
+      case 'exact':
+        fill(r, res.applied!, 'EXACT');
+        r.state = 'exact';
+        break;
+      case 'composed':
+        fill(r, res.applied!, 'COMPOSED');
+        r.state = 'composed';
+        break;
+      case 'similar':
+        r.state = 'similar';
+        ac.open = 'list';
+        break;
+      case 'unregistered':
+        fill(r, res.applied!, 'UNREGISTERED');
+        r.domainNm = null;
+        r.state = 'unregistered';
+        ac.open = 'register';
+        break;
+    }
+    if (ac.codeCandidates.length > 0 && ac.open === null) ac.open = 'list';
+    if (opts.batch) ac.open = null;
+    r.ac = ac;
+    return ac.open ? 'stay' : 'next';
+  }
+
+  function acMove(uid: string, delta: number): void {
+    const r = find(uid);
+    const n = acItems(r?.ac ?? null).length;
+    if (!r?.ac || n === 0) return;
+    r.ac.focus = (r.ac.focus + delta + n) % n;
+  }
+
+  function acSetFocus(uid: string, index: number): void {
+    const r = find(uid);
+    if (r?.ac && index >= 0 && index < acItems(r.ac).length) r.ac.focus = index;
+  }
+
+  /** listbox 항목 선택(Enter·클릭). 코드 → code, 도메인 → exact(SIMILAR 기록), 조합 → composed. */
+  function acChoose(uid: string, index?: number): boolean {
+    const r = find(uid);
+    const ac = r?.ac;
+    const item = acItems(ac ?? null)[index ?? ac?.focus ?? 0];
+    if (!r || !ac || !item) return false;
+    if (item.kind === 'code') {
+      const c = item.code;
+      r.logicalNm = c.logicalNm;
+      fill(r, c, 'CODE');
+      r.domainNm = null;
+      r.codeClsId = c.codeClsId;
+      r.codeCls = {
+        codeClsId: c.codeClsId,
+        bizCd: c.bizCd,
+        codeCls: c.codeCls,
+        codeClsNm: c.codeClsNm,
+      };
+      r.state = 'code';
+    } else if (item.kind === 'domain') {
+      r.logicalNm = item.cand.logicalNm;
+      fill(r, item.cand, 'SIMILAR');
+      r.state = 'exact';
+    } else {
+      fill(r, item.cand, 'COMPOSED');
+      r.state = 'composed';
+      ac.segments = item.cand.segments ?? ac.segments;
+    }
+    r.acFor = normalizeLogical(r.logicalNm);
+    ac.open = null;
+    return true;
+  }
+
+  /** Esc: listbox·카드 닫기(행 상태 유지, 같은 논리명 Enter에 다시 열지 않음). */
+  function acClose(uid: string): void {
+    const r = find(uid);
+    if (!r?.ac) return;
+    r.ac.open = null;
+    r.ac.dismissed = true;
+  }
+  /** 이미 받은 결과의 보조 UI를 다시 연다(붙여넣기 일괄 결과·닫지 않은 행). 열었으면 true. */
+  function acReopen(uid: string): boolean {
+    const r = find(uid);
+    const ac = r?.ac;
+    if (!r || !ac || ac.dismissed || ac.open) return false;
+    if (r.state === 'unregistered') ac.open = 'register';
+    else if (acItems(ac).length > 0 && (r.state === 'similar' || ac.codeCandidates.length > 0))
+      ac.open = 'list';
+    return ac.open !== null;
+  }
+  function setReg(uid: string, field: 'kor' | 'physical' | 'description', value: string): void {
+    const r = find(uid);
+    if (r?.ac) r.ac.reg[field] = value;
+  }
+
+  /** 행 '코드' 팝오버(§5.6): 코드구분 연결/해제. 연결하면 code 상태·match_type CODE, 코멘트가 비었으면 채운다. */
+  function setCodeCls(uid: string, c: NonNullable<TableColumnItem['codeCls']> | null): void {
+    const r = find(uid);
+    if (!r || r.defaultColId !== null) return;
+    if (c === null) {
+      r.codeClsId = null;
+      r.codeCls = null;
+      if (r.matchType === 'CODE') {
+        r.matchType = 'MANUAL';
+        r.state = 'manual';
+      }
+      return;
+    }
+    r.codeClsId = c.codeClsId;
+    r.codeCls = { ...c };
+    r.matchType = 'CODE';
+    r.state = 'code';
+    if (r.colComment.trim() === '' || r.commentAuto) {
+      r.colComment = `${r.logicalNm.trim()}(${c.bizCd}/${c.codeCls} ${c.codeClsNm})`;
+      r.commentAuto = true;
+    }
+  }
+
+  /**
+   * Ctrl+V 여러 줄(T9.8): 첫 줄은 이 행 논리명, 나머지는 뒤의 빈 행을 채우고 모자라면 새 행을 끼운다.
+   * 반환 = 채운 행(순서대로) — 화면이 한 번의 batch 요청으로 자동완성한다.
+   */
+  function pasteLogical(uid: string, lines: readonly string[]): EditorRow[] {
+    const list = lines.map((l) => l.trim()).filter((l) => l !== '');
+    const start = rows.value.findIndex((r) => r.uid === uid);
+    if (start < 0 || list.length === 0) return [];
+    const out: EditorRow[] = [];
+    let i = start;
+    for (const nm of list) {
+      let r = rows.value[i];
+      if (!r || (out.length > 0 && !isBlankRow(r))) {
+        r = blankRow();
+        rows.value.splice(i, 0, r);
+      }
+      r.logicalNm = nm;
+      out.push(r);
+      i++;
+    }
+    return out;
   }
 
   function addRow(afterUid?: string): EditorRow {
@@ -475,6 +764,9 @@ export function createEditorCore() {
       physicalNm: `${src.physicalNm}`,
       state: 'manual',
       matchType: 'MANUAL',
+      ac: null,
+      acError: null,
+      prevState: null,
     };
     rows.value.splice(i + 1, 0, row);
     return row;
@@ -523,16 +815,45 @@ export function createEditorCore() {
   }
 
   /**
-   * 논리명 셀 Enter(§10.4 표 "Enter(논리명) → 자동완성 → 다음 행/새 행"). 단계 8은 자동완성 없이 다음 행으로만 이동한다.
-   * T9.7: 여기서 `autocomplete`(설정 시)를 호출해 loading → exact/similar/composed/unregistered/code로 전이한다.
+   * 화면이 연결하는 자동완성 훅(API 호출 → beginLoading/applyAutocomplete/endLoading). `force` = 같은 논리명이어도 다시
+   * (인라인 등록 직후 재시도·[재적용]).
    */
-  const autocomplete = ref<((row: EditorRow) => Promise<void>) | null>(null);
-  async function onLogicalEnter(uid: string): Promise<EditorRow> {
-    const r = find(uid);
-    if (r && autocomplete.value && r.logicalNm.trim() !== '') await autocomplete.value(r);
+  const autocomplete = ref<((row: EditorRow, opts?: { force?: boolean }) => Promise<void>) | null>(
+    null,
+  );
+  /** Ctrl+V 여러 줄 → 한 번의 batch 요청(T9.8). */
+  const batchAutocomplete = ref<((rows: EditorRow[]) => Promise<void>) | null>(null);
+  /** 인라인 등록 카드 [등록 후 적용](§5.9): 등록 → 같은 논리명 자동 재시도. 성공(카드 닫힘)이면 true. */
+  const registerTerm = ref<((row: EditorRow) => Promise<boolean>) | null>(null);
+
+  function nextRow(uid: string): EditorRow {
     const i = rows.value.findIndex((x) => x.uid === uid);
     if (i >= 0 && i === rows.value.length - 1) return addRow(uid);
     return rows.value[i + 1] ?? addRow();
+  }
+
+  /**
+   * 논리명 셀 Enter(§10.4 표 "Enter(논리명) → 자동완성 → 결과 처리 → 다음 행/새 행").
+   *  - listbox가 열려 있으면 포커스 항목 선택 후 다음 행
+   *  - 자동완성이 필요하면(`needsAutocomplete`) 호출 → similar·unregistered·코드 후보면 행에 머문다(null)
+   *  - 이미 받은 결과의 보조 UI가 닫혀 있으면(붙여넣기 일괄) 연다(null)
+   * 반환: 다음 포커스 행, 머물면 null.
+   */
+  async function onLogicalEnter(uid: string): Promise<EditorRow | null> {
+    const r = find(uid);
+    if (r?.ac?.open === 'list') {
+      acChoose(uid);
+      return nextRow(uid);
+    }
+    if (r && autocomplete.value) {
+      if (needsAutocomplete(r)) await autocomplete.value(r);
+      else if (r.state === 'unregistered' && !r.ac && r.defaultColId === null)
+        await autocomplete.value(r, { force: true }); // 저장된 미등록 행 → 카드 다시 열기
+      else if (acReopen(uid)) return null;
+    }
+    const after = find(uid);
+    if (after?.ac?.open) return null;
+    return nextRow(uid);
   }
 
   // ── 저장 응답 병합 ──────────────────────────────────────────────
@@ -606,7 +927,21 @@ export function createEditorCore() {
     toggleDefault,
     changeBizArea,
     autocomplete,
+    batchAutocomplete,
+    registerTerm,
     onLogicalEnter,
+    nextRow,
+    beginLoading,
+    endLoading,
+    applyAutocomplete,
+    acMove,
+    acSetFocus,
+    acChoose,
+    acClose,
+    acReopen,
+    setReg,
+    setCodeCls,
+    pasteLogical,
     applySaved,
     markStatus,
     find,

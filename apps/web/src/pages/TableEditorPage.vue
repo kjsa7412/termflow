@@ -2,7 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import {
+  AUTOCOMPLETE_BATCH_MAX,
   MEMBER_ROLE_RANK,
+  normalizeLogical,
+  type AutocompleteSegment,
   type BizAreaItem,
   type DefaultColItem,
   type DefaultColSetItem,
@@ -12,6 +15,7 @@ import {
   type TableConflict,
   type ValidationIssue,
 } from '@termflow/shared';
+import { autocompleteApi } from '../api/autocomplete.js';
 import { ApiError } from '../api/client.js';
 import { projectsApi } from '../api/projects.js';
 import { standardsApi } from '../api/standards.js';
@@ -39,8 +43,9 @@ import {
   saveDraft,
   type EditorDraft,
 } from '../editor/draft-storage.js';
-import { useEditorStore } from '../stores/editor.js';
+import { needsAutocomplete, useEditorStore, type EditorRow } from '../stores/editor.js';
 import { useToastStore } from '../stores/toast.js';
+import SegmentPieces from '../components/editor/SegmentPieces.vue';
 
 /**
  * 테이블 설계 편집기(`/projects/{key}/tables/new`, `/{id}`, 목업 08·14, 설계서 §10.4·§8, T8.8~T8.14).
@@ -56,6 +61,7 @@ const ed = useEditorStore();
 const tapi = tablesApi();
 const papi = projectsApi();
 const sapi = standardsApi();
+const acapi = autocompleteApi();
 const toast = useToastStore();
 
 const loading = ref(true);
@@ -70,6 +76,11 @@ const saving = ref(false);
 const statusBusy = ref(false);
 const unfinalizeNote = ref('');
 const draftSavedAt = ref<string | null>(null);
+/** 물리 테이블명 자동 제안 상태(§5.5 `nmAuto`): 새 테이블 true, 사용자가 물리명을 직접 고치면 false. */
+const nmAuto = ref(false);
+const nameSegs = ref<AutocompleteSegment[]>([]);
+/** 마지막 자동완성 응답의 캐시 버전(임시저장 `cacheVersion`, CR-07 §4). */
+const lastCacheVersion = ref<number | null>(null);
 
 const isNew = computed(() => route.name === 'table-new');
 const routeId = computed(() => (isNew.value ? null : Number(route.params['tableId'])));
@@ -171,9 +182,12 @@ async function init(): Promise<void> {
         prefix: b?.tablePrefix ?? null,
         defaultSet: setCols.value,
       });
+      nmAuto.value = true;
     } else {
       await reloadDetail();
+      nmAuto.value = false;
     }
+    nameSegs.value = [];
     checkDraft();
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound.value = true;
@@ -197,7 +211,7 @@ function persistDraft(): void {
     baseVersion: ed.version,
     table: ed.payload.table,
     columns: ed.payload.columns,
-    cacheVersion: null,
+    cacheVersion: lastCacheVersion.value,
   });
   if (ok) draftSavedAt.value = now.toTimeString().slice(0, 5);
 }
@@ -206,8 +220,19 @@ let validateTimer: ReturnType<typeof setTimeout> | undefined;
 let validateCtrl: AbortController | null = null;
 
 // ── 서버 검증(500ms 디바운스, §10.4) ────────────────────────────────
+/**
+ * 요청할 만한 편집본인지(빈 새 테이블 결함 수정, CR-08 C9): 논리 테이블명이 비었거나 일반 컬럼이 없으면 검증·DDL 미리보기를
+ * 부르지 않는다 — 논리 테이블명은 요청 형식상 필수라 빈 본문은 400이 되고, 패널에 "요청 형식 오류"가 떴다.
+ */
+const draftReady = computed(
+  () =>
+    ed.header.tableLogicalNm.trim() !== '' &&
+    (ed.tableId !== null || ed.payload.columns.some((c) => c.defaultColId === null)),
+);
+
 async function validateNow(): Promise<void> {
   if (readOnly.value || loading.value) return;
+  if (ed.header.tableLogicalNm.trim() === '') return;
   validateCtrl?.abort();
   const c = new AbortController();
   validateCtrl = c;
@@ -233,6 +258,174 @@ watch(
     validateTimer = setTimeout(() => void validateNow(), 500);
   },
 );
+
+// ── 자동완성(§5.3·§5.9·§10.4, T9.7·T9.8) ───────────────────────────
+const AC_FAIL = '자동완성을 불러오지 못했습니다 — 물리명·타입을 직접 입력할 수 있습니다';
+async function runAc(row: EditorRow, opts: { force?: boolean } = {}): Promise<void> {
+  if (readOnly.value) return;
+  const r0 = ed.find(row.uid);
+  if (!r0 || r0.defaultColId !== null) return;
+  if (!opts.force && !needsAutocomplete(r0)) return;
+  const logical = r0.logicalNm;
+  if (normalizeLogical(logical) === '') return;
+  ed.beginLoading(row.uid);
+  try {
+    const res = await acapi.column(key.value, {
+      logicalNm: logical,
+      bizAreaId: ed.header.bizAreaId,
+      excludeColumnId: r0.columnId,
+    });
+    const cur = ed.find(row.uid);
+    // 응답을 기다리는 사이 논리명을 고쳤으면 적용하지 않는다(다음 Enter에 새로 부른다)
+    if (!cur || cur.logicalNm !== logical) return ed.endLoading(row.uid);
+    lastCacheVersion.value = res.cacheVersion;
+    ed.applyAutocomplete(row.uid, res);
+  } catch (e) {
+    ed.endLoading(row.uid, errMsg(e, AC_FAIL));
+  }
+}
+
+async function batchAc(rows: EditorRow[]): Promise<void> {
+  const list = rows.filter((r) => normalizeLogical(r.logicalNm) !== '' && r.defaultColId === null);
+  for (let i = 0; i < list.length; i += AUTOCOMPLETE_BATCH_MAX) {
+    const chunk = list.slice(i, i + AUTOCOMPLETE_BATCH_MAX);
+    const names = chunk.map((r) => r.logicalNm);
+    chunk.forEach((r) => ed.beginLoading(r.uid));
+    try {
+      const res = await acapi.batch(key.value, {
+        logicalNms: names,
+        bizAreaId: ed.header.bizAreaId,
+      });
+      lastCacheVersion.value = res.cacheVersion;
+      res.items.forEach((it, j) => {
+        const r = ed.find(chunk[j]!.uid);
+        if (r && r.logicalNm === names[j]) ed.applyAutocomplete(r.uid, it, { batch: true });
+        else if (r) ed.endLoading(r.uid);
+      });
+    } catch (e) {
+      chunk.forEach((r) => ed.endLoading(r.uid, errMsg(e, AC_FAIL)));
+    }
+  }
+}
+
+/** 인라인 등록(§5.9): PENDING 등록 → 같은 논리명 자동 재시도(G2: 입력 1~2 · 클릭 ≤1 · 이동 0). */
+async function registerTerm(row: EditorRow): Promise<boolean> {
+  const r = ed.find(row.uid);
+  const reg = r?.ac?.reg;
+  if (!r || !reg || reg.busy) return false;
+  const physical = reg.physical.trim().toUpperCase();
+  if (physical === '') {
+    reg.error = '물리약어를 입력하세요';
+    return false;
+  }
+  reg.busy = true;
+  reg.error = null;
+  try {
+    const res = await acapi.inlineTerm(key.value, {
+      termKor: reg.kor,
+      termPhysical: physical,
+      description: reg.description.trim() || null,
+    });
+    toast.success(
+      res.outcome === 'EXISTING'
+        ? `'${res.termKor}'은(는) 이미 있는 용어입니다(${res.termPhysical ?? '물리약어 없음'})`
+        : `'${res.termKor}' ${res.termPhysical}을(를) 검토대기로 등록했습니다`,
+    );
+    if (res.conflicts.length > 0) {
+      toast.info(
+        `${res.termPhysical}은(는) ${res.conflicts.map((c) => `'${c.termKor}'`).join(', ')}와(과) 같은 물리약어입니다 — 동의어 후보로 표시됩니다`,
+      );
+    }
+    await runAc(r, { force: true });
+    return ed.find(row.uid)?.ac?.open == null;
+  } catch (e) {
+    reg.error = errMsg(e, '등록하지 못했습니다');
+    return false;
+  } finally {
+    reg.busy = false;
+  }
+}
+
+/** [재적용](§4.8): 같은 논리명으로 다시 자동완성해 바뀐 표준(물리명·도메인 타입)을 채운다. */
+async function reapply(uid: string): Promise<void> {
+  const r = ed.find(uid);
+  if (r) await runAc(r, { force: true });
+}
+
+/** '도메인으로 등록'(§10.4 composed, 프로젝트 관리자): 조각(≤7)을 명칭 1~7로 도메인 등록(L1) → 재자동완성 → exact. */
+async function registerDomain(uid: string): Promise<void> {
+  let r = ed.find(uid);
+  if (!r) return;
+  if (!r.ac || r.ac.segments.length === 0) {
+    await runAc(r, { force: true });
+    r = ed.find(uid);
+  }
+  const segs = r?.ac?.segments ?? [];
+  if (!r || segs.length === 0 || segs.length > 7 || segs.some((s) => !s.matched)) {
+    toast.error('조각이 7개 이하이고 모두 등록된 용어일 때만 도메인으로 등록할 수 있습니다');
+    return;
+  }
+  const nm = (i: number) => segs[i]?.kor ?? null;
+  try {
+    await sapi.createDomain(key.value, {
+      nm1: nm(0),
+      nm2: nm(1),
+      nm3: nm(2),
+      nm4: nm(3),
+      nm5: nm(4),
+      nm6: nm(5),
+      nm7: nm(6),
+      typeSource: 'AUTO',
+      colType: null,
+      colLength: null,
+      colScale: null,
+    });
+    toast.success(`'${r.logicalNm}'을(를) 표준 도메인으로 등록했습니다`);
+    await runAc(r, { force: true });
+  } catch (e) {
+    toast.error(errMsg(e, '도메인으로 등록하지 못했습니다'));
+  }
+}
+
+ed.autocomplete = runAc;
+ed.batchAutocomplete = batchAc;
+ed.registerTerm = registerTerm;
+onBeforeUnmount(() => {
+  ed.autocomplete = null;
+  ed.batchAutocomplete = null;
+  ed.registerTerm = null;
+});
+
+// ── 물리 테이블명 자동 제안(§5.5, T9.5) ────────────────────────────
+let suggestCtrl: AbortController | null = null;
+async function suggestName(): Promise<void> {
+  if (readOnly.value || !nmAuto.value) return;
+  const logical = ed.header.tableLogicalNm.trim();
+  if (logical === '') return;
+  suggestCtrl?.abort();
+  const c = new AbortController();
+  suggestCtrl = c;
+  try {
+    const r = await acapi.suggestName(
+      key.value,
+      {
+        logicalNm: logical,
+        bizAreaId: ed.header.bizAreaId,
+        ...(ed.tableId !== null ? { tableId: ed.tableId } : {}),
+      },
+      c.signal,
+    );
+    if (c.signal.aborted || !nmAuto.value) return;
+    ed.header.tableNm = r.tableNm;
+    nameSegs.value = r.segments;
+  } catch {
+    /* 제안 실패는 수동 입력으로 이어간다 */
+  }
+}
+function onPhysInput(): void {
+  nmAuto.value = false;
+  nameSegs.value = [];
+}
 
 // ── 저장·충돌(§8.1) ─────────────────────────────────────────────────
 const conflictDiff = computed(() =>
@@ -380,6 +573,8 @@ function onBizChange(e: Event): void {
     biz.value?.tablePrefix ?? null,
     next?.tablePrefix ?? null,
   );
+  // 물리명 자동 상태면 새 업무구분 접두어로 다시 제안(§5.5 "업무구분을 바꾸면 접두어만 교체")
+  if (nmAuto.value) void suggestName();
 }
 function onCloned(r: TableCloneResponse): void {
   void router.push(`/projects/${r.projectKey}/tables/${r.tableId}`);
@@ -667,13 +862,17 @@ const statusLine = computed(() => {
               maxlength="200"
               :readonly="readOnly"
               placeholder="예: 연구과제마스터"
+              @change="suggestName"
+              @keydown.enter.prevent="suggestName"
             />
           </div>
           <div class="field">
             <label class="field-label" for="ed-phys"
-              >물리 테이블명 <span class="req">*</span></label
+              >물리 테이블명 <span class="req">*</span
+              ><span v-if="nmAuto && !readOnly" class="field-help">
+                · 업무구분 접두어 + 용어 분절 자동 제안 · 수정 가능</span
+              ></label
             >
-            <!-- T9.5: 논리명 blur/Enter → suggest-name(업무구분 접두어 + 용어 분절, nmAuto)이 붙는 자리 -->
             <input
               id="ed-phys"
               v-model="ed.header.tableNm"
@@ -682,7 +881,13 @@ const statusLine = computed(() => {
               :readonly="readOnly"
               :title="tableErr('tableNm')?.message"
               spellcheck="false"
+              @input="onPhysInput"
               @change="ed.header.tableNm = ed.header.tableNm.trim().toUpperCase()"
+            />
+            <SegmentPieces
+              v-if="nmAuto && nameSegs.length > 0"
+              class="ed-phys-pieces"
+              :segments="nameSegs"
             />
           </div>
           <div class="field">
@@ -780,7 +985,13 @@ const statusLine = computed(() => {
             >
           </div>
 
-          <ColumnGrid ref="grid" :read-only="readOnly" />
+          <ColumnGrid
+            ref="grid"
+            :read-only="readOnly"
+            :can-register-domain="isAdmin"
+            @reapply="reapply"
+            @register-domain="registerDomain"
+          />
           <DefaultColsArea
             :read-only="readOnly"
             :set-nm="defaultSet?.setNm ?? null"
@@ -791,7 +1002,10 @@ const statusLine = computed(() => {
 
       <div class="editor-foot">
         <div class="kbd-bar">
-          <span><span class="kbd">Enter</span> 다음 행(마지막이면 새 행)</span>
+          <span
+            ><span class="kbd">Enter</span> 자동완성 → 다음 행(후보·등록 카드는 Enter
+            선택·등록)</span
+          >
           <span><span class="kbd">Tab</span> 다음 셀</span>
           <span><span class="kbd">↑</span><span class="kbd">↓</span> 행 이동</span>
           <span
@@ -800,8 +1014,10 @@ const statusLine = computed(() => {
           >
           <span><span class="kbd">Ctrl</span>+<span class="kbd">S</span> 저장</span>
           <span><span class="kbd">Ctrl</span>+<span class="kbd">D</span> DDL 패널</span>
-          <span class="spacer" />
-          <span>자동완성(논리명 Enter → 물리명·타입)은 다음 단계에서 제공됩니다</span>
+          <span><span class="kbd">Esc</span> 후보·카드 닫기</span>
+          <span
+            ><span class="kbd">Ctrl</span>+<span class="kbd">V</span> 여러 줄 → 일괄 자동완성</span
+          >
         </div>
       </div>
     </div>
@@ -812,6 +1028,7 @@ const statusLine = computed(() => {
       :body="ed.payload"
       :table-id="ed.tableId"
       :saved="!ed.dirty"
+      :ready="draftReady"
       :default-dialect="dialect"
       @close="setPanel(null)"
       @focus-row="focusRowIndex"

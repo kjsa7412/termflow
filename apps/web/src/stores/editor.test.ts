@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { DefaultColItem, TableDetail } from '@termflow/shared';
+import type {
+  AutocompleteApplied,
+  AutocompleteResponse,
+  DefaultColItem,
+  TableDetail,
+} from '@termflow/shared';
 import { alignColumns, diffCount } from '../editor/compare.js';
 import { createEditorCore, parseTypeCell, stateOf } from './editor.js';
 
@@ -208,20 +213,308 @@ describe('행 상태 머신(§10.4)', () => {
     expect(s.rows.value).toHaveLength(2);
   });
 
-  it('논리명 Enter(단계 8): 마지막 행이면 새 행, 아니면 다음 행 — 자동완성 훅(T9.7)이 있으면 먼저 호출', async () => {
+  it('논리명 Enter: 마지막 행이면 새 행, 아니면 다음 행 — 로드한 행(같은 논리명)은 자동완성을 다시 부르지 않는다', async () => {
     const s = createEditorCore();
     s.load(detail(), DEF);
     const [a, b] = s.rows.value;
-    expect((await s.onLogicalEnter(a!.uid)).uid).toBe(b!.uid);
-    const created = await s.onLogicalEnter(b!.uid);
-    expect(s.rows.value).toHaveLength(3);
-    expect(created.state).toBe('idle');
     const seen: string[] = [];
     s.autocomplete.value = async (row) => {
       seen.push(row.logicalNm);
     };
+    expect((await s.onLogicalEnter(a!.uid))!.uid).toBe(b!.uid);
+    const created = await s.onLogicalEnter(b!.uid);
+    expect(s.rows.value).toHaveLength(3);
+    expect(created!.state).toBe('idle');
+    expect(seen).toEqual([]);
+    // 논리명을 바꾸면(정규화 기준) 다시 부른다. 수동(manual) 행은 부르지 않는다(수동 수정 보호)
+    s.setCell(a!.uid, 'logicalNm', '아이디 번호');
     await s.onLogicalEnter(a!.uid);
-    expect(seen).toEqual(['아이디']);
+    expect(seen).toEqual(['아이디 번호']);
+    s.setCell(b!.uid, 'physicalNm', 'X_CD');
+    s.setCell(b!.uid, 'logicalNm', '다른이름');
+    await s.onLogicalEnter(b!.uid);
+    expect(seen).toEqual(['아이디 번호']);
+  });
+});
+
+// T9.7 자동완성 상태 전이(§10.4 표 전 행) — 화면(API) 없이 응답을 직접 적용
+const res = (over: Partial<AutocompleteResponse>): AutocompleteResponse => ({
+  type: 'exact',
+  input: '',
+  normalized: '',
+  applied: null,
+  warnings: [],
+  cacheVersion: 1,
+  elapsedMs: 1,
+  ...over,
+});
+const applied = (physicalNm: string, over: Partial<AutocompleteApplied> = {}) => ({
+  physicalNm,
+  dataType: 'VARCHAR' as const,
+  dataLength: 20,
+  dataScale: null,
+  typeText: 'VARCHAR(20)',
+  colComment: '',
+  domainId: null,
+  matchType: 'EXACT' as const,
+  ...over,
+});
+function withHook(responses: Record<string, AutocompleteResponse>) {
+  const s = createEditorCore();
+  s.initNew('RMS', { bizAreaId: 6, prefix: 'RP_', defaultSet: [] });
+  const calls: string[] = [];
+  s.autocomplete.value = async (row, opts) => {
+    calls.push(`${row.logicalNm}${opts?.force ? '!' : ''}`);
+    s.beginLoading(row.uid);
+    expect(s.find(row.uid)!.state).toBe('loading');
+    const r = responses[row.logicalNm];
+    if (!r) s.endLoading(row.uid, '실패');
+    else s.applyAutocomplete(row.uid, { ...r, normalized: row.logicalNm, input: row.logicalNm });
+  };
+  const first = s.rows.value[0]!;
+  const type = async (uid: string, nm: string) => {
+    s.setCell(uid, 'logicalNm', nm);
+    return s.onLogicalEnter(uid);
+  };
+  return { s, calls, first, type };
+}
+
+describe('자동완성 상태 전이(§10.4, T9.7)', () => {
+  it('idle → loading → exact: 물리명·타입·코멘트·도메인 채움, 초록 표준, 다음 행', async () => {
+    const { s, first, type } = withHook({
+      연구과제ID: res({
+        type: 'exact',
+        applied: applied('RSCH_PRJ_ID', { colComment: '연구과제ID', domainId: 5 }),
+      }),
+    });
+    const next = await type(first.uid, '연구과제ID');
+    expect(next).not.toBeNull();
+    expect(s.find(first.uid)).toMatchObject({
+      state: 'exact',
+      physicalNm: 'RSCH_PRJ_ID',
+      typeText: 'VARCHAR(20)',
+      colComment: '연구과제ID',
+      domainId: 5,
+      matchType: 'EXACT',
+      domainNm: '연구과제ID',
+      acFor: '연구과제ID',
+    });
+    expect(s.payload.value.columns[0]).toMatchObject({ matchType: 'EXACT', domainId: 5 });
+  });
+
+  it('similar: listbox 열고 머묾(null) → ↑↓ → Enter 선택 → 도메인이면 exact(SIMILAR 기록·논리명 교체) → 다음 행', async () => {
+    const cand = (kind: 'domain' | 'composed', logicalNm: string, physicalNm: string) => ({
+      kind,
+      logicalNm,
+      physicalNm,
+      dataType: 'VARCHAR' as const,
+      dataLength: 8,
+      dataScale: null,
+      typeText: 'VARCHAR(8)',
+      colComment: logicalNm,
+      score: 1,
+      ...(kind === 'domain' ? { domainId: 77 } : { segments: [] }),
+    });
+    const { s, first, type } = withHook({
+      접수일: res({
+        type: 'similar',
+        candidates: [
+          cand('domain', '접수일시', 'RCPT_DTS'),
+          cand('domain', '접수일자', 'RCPT_DT'),
+          cand('composed', '접수일', 'RCPT_DD'),
+        ],
+      }),
+    });
+    expect(await type(first.uid, '접수일')).toBeNull();
+    const r = s.find(first.uid)!;
+    expect(r).toMatchObject({ state: 'similar', physicalNm: '' });
+    expect(r.ac).toMatchObject({ open: 'list', focus: 0 });
+    s.acMove(first.uid, 1);
+    s.acMove(first.uid, 1);
+    s.acMove(first.uid, 1); // 순환 → 0
+    s.acMove(first.uid, 1);
+    const next = await s.onLogicalEnter(first.uid); // Enter = 포커스 항목 선택
+    expect(next!.uid).not.toBe(first.uid);
+    expect(s.find(first.uid)).toMatchObject({
+      state: 'exact',
+      logicalNm: '접수일자',
+      physicalNm: 'RCPT_DT',
+      matchType: 'SIMILAR',
+      domainId: 77,
+    });
+    expect(s.find(first.uid)!.ac!.open).toBeNull();
+  });
+
+  it('similar → 조합 선택 = composed / Esc = 닫고 유지(같은 논리명 Enter는 다음 행)', async () => {
+    const { s, first, type } = withHook({
+      접수일: res({
+        type: 'similar',
+        candidates: [
+          {
+            kind: 'composed',
+            logicalNm: '접수일',
+            physicalNm: 'RCPT_DD',
+            dataType: 'VARCHAR',
+            dataLength: 2,
+            dataScale: null,
+            typeText: 'VARCHAR(2)',
+            colComment: '접수일',
+            score: 0,
+            segments: [{ kor: '접수', physical: 'RCPT', matched: true }],
+          },
+        ],
+      }),
+    });
+    await type(first.uid, '접수일');
+    s.acClose(first.uid);
+    expect(s.find(first.uid)!.ac).toMatchObject({ open: null, dismissed: true });
+    expect(s.find(first.uid)!.state).toBe('similar');
+    expect(await s.onLogicalEnter(first.uid)).not.toBeNull();
+    // 다시 열어 조합 선택
+    s.find(first.uid)!.ac!.dismissed = false;
+    expect(s.acReopen(first.uid)).toBe(true);
+    expect(s.acChoose(first.uid, 0)).toBe(true);
+    expect(s.find(first.uid)).toMatchObject({
+      state: 'composed',
+      physicalNm: 'RCPT_DD',
+      matchType: 'COMPOSED',
+    });
+  });
+
+  it('composed: 채움 + 조각(노란 표준 도메인 아님), 도메인 없음, 다음 행', async () => {
+    const segs = [
+      { kor: '연구', physical: 'RSCH', matched: true },
+      { kor: '과제', physical: 'PRJ', matched: true },
+      { kor: '번호', physical: 'NO', matched: true },
+    ];
+    const { s, first, type } = withHook({
+      연구과제번호: res({
+        type: 'composed',
+        applied: applied('RSCH_PRJ_NO', { matchType: 'COMPOSED', colComment: '연구과제번호' }),
+        segments: segs,
+      }),
+    });
+    expect(await type(first.uid, '연구과제번호')).not.toBeNull();
+    expect(s.find(first.uid)).toMatchObject({
+      state: 'composed',
+      matchType: 'COMPOSED',
+      domainId: null,
+    });
+    expect(s.find(first.uid)!.ac!.segments).toEqual(segs);
+  });
+
+  it('unregistered: 부분 물리명(?) + 등록 카드(한글 용어 = 등록 후보 첫 항목), 머묾 → 물리명 직접 입력해도 미등록 유지', async () => {
+    const { s, first, type } = withHook({
+      연구책임자구분: res({
+        type: 'unregistered',
+        applied: applied('RSCH_?_TP', { matchType: 'UNREGISTERED', typeText: 'VARCHAR(10)' }),
+        segments: [
+          { kor: '연구', physical: 'RSCH', matched: true },
+          { kor: '책임자', physical: null, matched: false },
+          { kor: '구분', physical: 'TP', matched: true },
+        ],
+        registerCandidates: ['책임자'],
+        warnings: [{ code: 'W_TERM_UNREGISTERED', target: 'column', message: '미등록' }],
+      }),
+    });
+    expect(await type(first.uid, '연구책임자구분')).toBeNull();
+    const r = s.find(first.uid)!;
+    expect(r).toMatchObject({
+      state: 'unregistered',
+      physicalNm: 'RSCH_?_TP',
+      matchType: 'UNREGISTERED',
+    });
+    expect(r.ac).toMatchObject({ open: 'register', reg: { kor: '책임자', physical: '' } });
+    s.setReg(first.uid, 'physical', 'RESP');
+    expect(s.find(first.uid)!.ac!.reg.physical).toBe('RESP');
+    s.acClose(first.uid);
+    s.setCell(first.uid, 'physicalNm', 'RSCH_RSP_TP');
+    expect(s.find(first.uid)).toMatchObject({ state: 'unregistered', matchType: 'UNREGISTERED' });
+  });
+
+  it('code: 코드성 후보가 있으면 listbox(코드 먼저) → 선택 = 논리명·물리명·코멘트·code_cls_id, 파랑 코드', async () => {
+    const { s, first, type } = withHook({
+      연구과제상태코드: res({
+        type: 'composed',
+        applied: applied('RSCH_PRJ_STAT_CD', { matchType: 'COMPOSED', typeText: 'VARCHAR(10)' }),
+        codeCandidates: [
+          {
+            codeClsId: 41,
+            bizCd: 'RP',
+            bizNm: '연구과제',
+            codeCls: '041',
+            codeClsNm: '연구과제상태',
+            logicalNm: '연구과제상태코드',
+            physicalNm: 'RSCH_PRJ_STAT_CD',
+            dataType: 'VARCHAR',
+            dataLength: 10,
+            dataScale: null,
+            typeText: 'VARCHAR(10)',
+            colComment: '연구과제상태코드(RP/041)',
+            domainId: null,
+            codeCnt: 4,
+            codes: [],
+            score: 110,
+          },
+        ],
+      }),
+    });
+    expect(await type(first.uid, '연구과제상태코드')).toBeNull();
+    expect(s.find(first.uid)!.ac!.open).toBe('list');
+    expect(await s.onLogicalEnter(first.uid)).not.toBeNull();
+    expect(s.find(first.uid)).toMatchObject({
+      state: 'code',
+      matchType: 'CODE',
+      codeClsId: 41,
+      codeCls: { bizCd: 'RP', codeCls: '041', codeClsNm: '연구과제상태' },
+      colComment: '연구과제상태코드(RP/041)',
+    });
+    expect(s.payload.value.columns[0]).toMatchObject({ codeClsId: 41, matchType: 'CODE' });
+  });
+
+  it('행 코드 팝오버: 코드구분 연결 → code, 해제 → manual', () => {
+    const s = createEditorCore();
+    s.initNew('RMS', { bizAreaId: 6, prefix: 'RP_', defaultSet: [] });
+    const r = s.rows.value[0]!;
+    s.setCell(r.uid, 'logicalNm', '결재상태');
+    s.setCodeCls(r.uid, { codeClsId: 9, bizCd: 'PS', codeCls: '039', codeClsNm: '결재상태' });
+    expect(s.find(r.uid)).toMatchObject({
+      state: 'code',
+      codeClsId: 9,
+      colComment: '결재상태(PS/039 결재상태)',
+    });
+    s.setCodeCls(r.uid, null);
+    expect(s.find(r.uid)).toMatchObject({ state: 'manual', codeClsId: null, matchType: 'MANUAL' });
+  });
+
+  it('loading 실패 → 이전 상태 + 안내(편집 유지), 사용자가 고친 코멘트는 자동완성이 덮어쓰지 않는다', async () => {
+    const { s, first, type } = withHook({
+      가나: res({ type: 'exact', applied: applied('GA_NA', { colComment: '가나' }) }),
+    });
+    await type(first.uid, '실패어');
+    expect(s.find(first.uid)).toMatchObject({ state: 'idle', acError: '실패' });
+    s.setCell(first.uid, 'colComment', '내 코멘트');
+    await type(first.uid, '가나');
+    expect(s.find(first.uid)).toMatchObject({
+      state: 'exact',
+      colComment: '내 코멘트',
+      acError: null,
+    });
+  });
+
+  it('Ctrl+V 여러 줄(T9.8): 첫 줄은 이 행, 나머지는 새 행 → batch 적용은 listbox·카드를 열지 않음 → Enter로 연다', () => {
+    const s = createEditorCore();
+    s.initNew('RMS', { bizAreaId: 6, prefix: 'RP_', defaultSet: [] });
+    const r = s.rows.value[0]!;
+    const filled = s.pasteLogical(r.uid, ['가', ' ', '나', '다']);
+    expect(filled.map((x) => x.logicalNm)).toEqual(['가', '나', '다']);
+    expect(s.rows.value).toHaveLength(3);
+    s.applyAutocomplete(
+      filled[1]!.uid,
+      res({ type: 'similar', normalized: '나', candidates: [] }),
+      { batch: true },
+    );
+    expect(s.find(filled[1]!.uid)!.ac!.open).toBeNull();
   });
 });
 
