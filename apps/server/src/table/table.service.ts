@@ -218,11 +218,18 @@ export class TableService {
     q: ExecQ,
     projectId: number,
     raw: TableCreateInput,
-    opts: { selfId?: number | undefined; currentBizAreaId?: number | null } = {},
+    opts: {
+      selfId?: number | undefined;
+      currentBizAreaId?: number | null;
+      /** DB에서 읽은 컬럼(참조는 복합 FK로 이미 같은 프로젝트) — 소속 검사 생략(편집기 로드 성능, §12.1). */
+      trustedRefs?: boolean;
+    } = {},
   ): Promise<Checked> {
     const input = normalizeInput(raw);
-    const refErrors = await this.checkRefs(q, projectId, input, opts.currentBizAreaId ?? null);
-    const [bizAreas, suffixes, names, dialect] = await Promise.all([
+    const [refErrors, bizAreas, suffixes, names, dialect] = await Promise.all([
+      opts.trustedRefs
+        ? Promise.resolve([] as ValidationIssue[])
+        : this.checkRefs(q, projectId, input, opts.currentBizAreaId ?? null),
       loadBizAreas(q, projectId),
       loadSuffixes(q, projectId),
       rowsOf<{ table_nm: string }>(
@@ -343,13 +350,15 @@ export class TableService {
   // ── 조회 ──────────────────────────────────────────────────────────
   /** GET P/tables/{id} — 테이블 + 컬럼 + 재검증(E·W, DDL과 같은 규칙). */
   async detail(ctx: ProjectCtx, id: number): Promise<TableDetail> {
-    const table = await this.header(this.db, ctx, id);
-    const columns = await loadColumns(this.db, ctx.projectId, id);
+    const [table, columns] = await Promise.all([
+      this.header(this.db, ctx, id),
+      loadColumns(this.db, ctx.projectId, id),
+    ]);
     const c = await this.check(
       this.db,
       ctx.projectId,
       { table: table, columns },
-      { selfId: id, currentBizAreaId: table.bizAreaId },
+      { selfId: id, currentBizAreaId: table.bizAreaId, trustedRefs: true },
     );
     return { table, columns, errors: c.errors, warnings: c.warnings };
   }
