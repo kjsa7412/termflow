@@ -170,7 +170,9 @@ describe('권한 매트릭스 완전성(T10.1)', () => {
         return `${r.method} ${norm(p)}`;
       }),
     );
-    const exempt = new Set(Object.keys(EXEMPT).map((k) => k.replace(/ (.*)$/, (_m, p) => ` ${norm(p)}`)));
+    const exempt = new Set(
+      Object.keys(EXEMPT).map((k) => k.replace(/ (.*)$/, (_m, p) => ` ${norm(p)}`)),
+    );
     const missing = [...routes].filter((r) => !rows.has(r) && !exempt.has(r)).sort();
     const stale = [...rows].filter((r) => !routes.has(r)).sort();
     process.stderr.write(

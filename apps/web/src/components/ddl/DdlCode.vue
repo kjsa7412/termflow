@@ -24,7 +24,7 @@ const firstId = (tokens: { k: string; v: string }[]) =>
 </script>
 
 <template>
-  <pre class="code" :aria-label="label" tabindex="0" data-testid="ddl-code"><template
+  <pre class="code" role="region" :aria-label="label" tabindex="0" data-testid="ddl-code"><template
       v-for="(tokens, i) in lines"
       :key="i"
     ><span :class="['l', { warn: isWarn(firstId(tokens)) }]"><template

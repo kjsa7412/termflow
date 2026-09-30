@@ -153,9 +153,10 @@ const canEdit = computed(
 const canDelete = (t: TableListItem) =>
   canEdit.value && (t.status === 'DRAFT' || role.value === 'ADMIN');
 const editorLink = (t: TableListItem) => `/projects/${key.value}/tables/${t.tableId}`;
+// 업무구분 목록이 오기 전에 눌러도 URL의 필터(bizAreaId)를 넘긴다 — 편집기가 사용 중 여부를 다시 확인한다(CR-10 §3 D2)
 const newTableLink = computed(() => ({
   path: `/projects/${key.value}/tables/new`,
-  query: currentBiz.value ? { bizAreaId: String(currentBiz.value.bizAreaId) } : {},
+  query: bizFilter.value !== '' ? { bizAreaId: bizFilter.value } : {},
 }));
 const cloning = ref<number | null>(null);
 async function cloneTable(t: TableListItem): Promise<void> {

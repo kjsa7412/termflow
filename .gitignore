@@ -14,5 +14,10 @@ migration/work/
 Thumbs.db
 *.tsbuildinfo
 
+# Playwright E2E(T10.4) 산출물·로그인 세션
+e2e/.auth/
+e2e/test-results/
+e2e/playwright-report/
+
 # drizzle-kit pull 임시 출력(T1.4 PoC, db:pull)
 apps/server/.drizzle-pull/

@@ -27,6 +27,9 @@ export default tseslint.config(
       'migration/**',
       'logs/**',
       'apps/server/.drizzle-pull/**',
+      'e2e/test-results/**',
+      'e2e/playwright-report/**',
+      'e2e/.auth/**',
       // db:pull 생성물(BIGINT IDENTITY maxValue 리터럴 정밀도 등 생성 코드 특성, 직접 수정 금지)
       'apps/server/src/db/schema.ts',
     ],
@@ -71,6 +74,7 @@ export default tseslint.config(
       'apps/server/**/*.{ts,mjs}',
       'packages/shared/**/*.ts',
       'scripts/**/*.{js,mjs}',
+      'e2e/**/*.ts',
       '*.{js,mjs,ts}',
     ],
     languageOptions: { globals: { ...globals.node } },

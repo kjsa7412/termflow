@@ -15,6 +15,8 @@ body {
 h1, h2, h3, h4, p { margin: 0; }
 a { color: var(--accent-tx); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* 문장 속 링크는 색만으로 구분하지 않는다(WCAG 1.4.1, axe link-in-text-block — CR-10 C5) */
+:where(p, .field-help, .text-sm, .alert-body) a:not(.btn) { text-decoration: underline; text-underline-offset: 2px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 code, kbd, pre, .mono { font-family: var(--mono); }
