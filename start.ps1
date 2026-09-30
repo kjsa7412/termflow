@@ -151,8 +151,8 @@ if ($secret -ne '' -and [System.Text.Encoding]::UTF8.GetByteCount($secret) -lt $
 }
 if ($problems.Count -gt 0) {
   Stop-WithError (@(".env 필수 값을 확인하세요: $envFile") + $problems + @(
-      '  세션 키 만들기(암호학적 난수 48바이트):',
-      '    powershell -c "$b=New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)"'
+      '  세션 키 만들기(64자, cmd·PowerShell 어디서나):',
+      '    powershell -NoProfile -c "[guid]::NewGuid().ToString(''N'') + [guid]::NewGuid().ToString(''N'')"'
     ))
 }
 Write-Ok ".env 필수 변수 $($RequiredVars.Count)개 확인"
