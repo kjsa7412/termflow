@@ -73,6 +73,12 @@ export const tableCloneSchema = z.object({
   tableNm: text(100).optional(),
 });
 
-export const suggestNameSchema = z.object({ logicalNm: text(200, 1), bizAreaId: idSchema });
+/** POST P/tables/suggest-name(§5.5). `tableId` = 편집 중 테이블(E_TABLE_NM_DUP 판정에서 제외). */
+export const suggestNameSchema = z.object({
+  logicalNm: text(200, 1),
+  bizAreaId: idSchema.nullable().default(null),
+  tableId: idSchema.optional(),
+});
+export type SuggestNameInput = z.infer<typeof suggestNameSchema>;
 
 export const historyRestoreSchema = z.object({ version: z.int().positive() });

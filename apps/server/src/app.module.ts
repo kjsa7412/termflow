@@ -12,6 +12,7 @@ import type { Env } from './config/env.schema.js';
 import { DbModule } from './db/db.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { AutocompleteModule } from './autocomplete/autocomplete.module.js';
 import { UserModule } from './user/user.module.js';
 import { ProjectModule } from './project/project.module.js';
 import { StandardModule } from './standard/standard.module.js';
@@ -35,6 +36,7 @@ import { webStaticModules } from './web-static.js';
     HealthModule,
     AuthModule,
     UserModule,
+    AutocompleteModule,
     ProjectModule,
     StandardModule,
     TableModule,

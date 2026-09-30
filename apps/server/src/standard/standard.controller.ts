@@ -34,6 +34,7 @@ import {
   termApproveBatchSchema,
   termApproveSchema,
   termCheckQuerySchema,
+  termInlineSchema,
   termInputSchema,
   termListQuerySchema,
   termRejectSchema,
@@ -58,6 +59,7 @@ import {
   type SearchResponse,
   type TermCheckResponse,
   type TermDetail,
+  type TermInlineResponse,
   type TermPage,
   type TermSaveResponse,
 } from '@termflow/shared';
@@ -127,6 +129,23 @@ export class TermsController {
     const r = await this.terms.create(ctxOf(req), body, this.auditCtx.current());
     created(res, req, `terms/${r.term.termId}`);
     return r;
+  }
+
+  /**
+   * 인라인 등록(§7.3: 편집자 이상, T9.6) — PENDING. 새로 쓰면 201(신규·반려 재등록), 이미 있는 용어를 쓰면 200.
+   * 편집기는 응답을 받으면 같은 논리명으로 자동완성을 다시 호출한다(§5.9, G2).
+   */
+  @Post('inline')
+  @ProjectRole('EDITOR')
+  async inline(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body(new ZodValidationPipe(termInlineSchema)) body: z.output<typeof termInlineSchema>,
+  ): Promise<TermInlineResponse> {
+    const r = await this.terms.inline(ctxOf(req), body, this.auditCtx.current());
+    if (r.written) created(res, req, `terms/${r.res.termId}`);
+    else res.status(200);
+    return r.res;
   }
 
   @Put(':id')

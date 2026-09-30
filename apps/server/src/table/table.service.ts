@@ -19,6 +19,8 @@ import {
   type TableValidateResponse,
   type ValidationIssue,
 } from '@termflow/shared';
+import { columnTermHint } from '../autocomplete/engine.js';
+import { TermCacheRegistry } from '../autocomplete/term-cache-registry.js';
 import type { Audit } from '../common/audit/audit.js';
 import {
   ConflictProblem,
@@ -139,7 +141,10 @@ export function normalizeInput(input: TableCreateInput): TableCreateInput {
 export class TableService {
   private readonly logger = new Logger('Tables');
 
-  constructor(@Inject(DRIZZLE) private readonly db: Db) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Db,
+    private readonly cache: TermCacheRegistry,
+  ) {}
 
   // ── 공통 ──────────────────────────────────────────────────────────
   assertNotTemplate(ctx: Pick<ProjectCtx, 'kind'>): void {
@@ -226,7 +231,7 @@ export class TableService {
     } = {},
   ): Promise<Checked> {
     const input = normalizeInput(raw);
-    const [refErrors, bizAreas, suffixes, names, dialect] = await Promise.all([
+    const [refErrors, bizAreas, suffixes, names, dialect, cached] = await Promise.all([
       opts.trustedRefs
         ? Promise.resolve([] as ValidationIssue[])
         : this.checkRefs(q, projectId, input, opts.currentBizAreaId ?? null),
@@ -239,12 +244,15 @@ export class TableService {
           : sql`select table_nm from prj_table where project_id = ${projectId}`,
       ),
       this.dialectOf(q, projectId),
+      this.cache.get(projectId),
     ]);
     const model = await draftModel(q, projectId, input, bizAreas);
     const v = validateTable(model, {
       dialect,
       suffixes,
       otherTableNames: new Set(names.map((n) => n.table_nm)),
+      // 재검증 힌트(§4.8, T9.9): 조각 중 검토대기·반려 용어, 재분절 물리명(W_TERM_CHANGED) — 캐시 스냅샷 기준
+      termHints: (c) => columnTermHint(cached.snapshot, c),
     });
     const bizBad = refErrors.some((e) => e.target === 'table');
     return {
