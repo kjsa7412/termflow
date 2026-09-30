@@ -13,7 +13,7 @@ import { sessionTimeoutMs, type Env } from '../config/env.schema.js';
 
 /**
  * 세션·CSRF·보안 헤더 본 구성(T4.1, 설계서 §7.1·§7.4·§12.2, PoC_결과 §6 확정 설정).
- *  - 쿠키 `tf.sid`: HttpOnly, SameSite=Lax, prod Secure, rolling, 만료 TERMFLOW_SESSION_TIMEOUT(기본 60분)
+ *  - 쿠키 `tf.sid`: HttpOnly, SameSite=Lax, prod Secure(TERMFLOW_SECURE_COOKIE, 기본 auto = HTTPS 요청일 때), rolling, 만료 TERMFLOW_SESSION_TIMEOUT(기본 60분)
  *  - 저장소 connect-pg-simple → `tf_session`(부록 A, 재기동에도 유지)
  *  - CSRF csrf-csrf double-submit: 쿠키 `XSRF-TOKEN`(HttpOnly=false) + 헤더 `X-XSRF-TOKEN`, 세션 ID 바인딩
  *  - helmet: CSP `script-src 'self'`, nosniff, X-Frame-Options DENY
@@ -23,17 +23,32 @@ export const SESSION_COOKIE = 'tf.sid';
 export const CSRF_COOKIE = 'XSRF-TOKEN';
 export const CSRF_HEADER = 'x-xsrf-token';
 
-type SecurityEnv = Pick<Env, 'NODE_ENV' | 'TERMFLOW_SESSION_SECRET' | 'TERMFLOW_SESSION_TIMEOUT'>;
+type SecurityEnv = Pick<Env, 'NODE_ENV' | 'TERMFLOW_SESSION_SECRET' | 'TERMFLOW_SESSION_TIMEOUT'> &
+  Partial<Pick<Env, 'TERMFLOW_SECURE_COOKIE'>>;
 
 export type CsrfUtils = DoubleCsrfUtilities;
 
+/**
+ * 쿠키 Secure 결정(CR-11a C5). dev·test는 false. production은 TERMFLOW_SECURE_COOKIE(기본 auto):
+ * `'auto'`는 express-session이 요청별로 판단(req.secure — trust proxy 1이라 X-Forwarded-Proto: https 포함).
+ * 고정 true였을 때 http://localhost:8080 직접 접속에서 세션 쿠키가 발급되지 않아 로그인이 CSRF 403으로 실패했다.
+ */
+export function secureCookieMode(
+  env: Pick<SecurityEnv, 'NODE_ENV' | 'TERMFLOW_SECURE_COOKIE'>,
+): boolean | 'auto' {
+  if (env.NODE_ENV !== 'production') return false;
+  const mode = env.TERMFLOW_SECURE_COOKIE ?? 'auto';
+  return mode === 'auto' ? 'auto' : mode === 'true';
+}
+
 export function createCsrf(env: SecurityEnv): CsrfUtils {
-  const isProd = env.NODE_ENV === 'production';
+  // CSRF 쿠키는 JS가 읽는 double-submit 값(세션 ID에 HMAC 바인딩)이라 auto에서는 Secure를 붙이지 않는다.
+  const secure = secureCookieMode(env) === true;
   return doubleCsrf({
     getSecret: () => env.TERMFLOW_SESSION_SECRET,
     getSessionIdentifier: (req) => req.sessionID,
     cookieName: CSRF_COOKIE,
-    cookieOptions: { httpOnly: false, sameSite: 'lax', secure: isProd, path: '/' },
+    cookieOptions: { httpOnly: false, sameSite: 'lax', secure, path: '/' },
     getCsrfTokenFromRequest: (req) => req.get(CSRF_HEADER),
   });
 }
@@ -57,8 +72,11 @@ export function csrfMiddleware(csrf: CsrfUtils): RequestHandler {
   };
 }
 
-export function helmetMiddleware(env: Pick<Env, 'NODE_ENV'>): RequestHandler {
+export function helmetMiddleware(
+  env: Pick<Env, 'NODE_ENV'> & Partial<Pick<Env, 'TERMFLOW_SECURE_COOKIE'>>,
+): RequestHandler {
   const isProd = env.NODE_ENV === 'production';
+  const mode = secureCookieMode(env);
   return helmet({
     contentSecurityPolicy: {
       useDefaults: false,
@@ -73,12 +91,13 @@ export function helmetMiddleware(env: Pick<Env, 'NODE_ENV'>): RequestHandler {
         baseUri: ["'self'"],
         formAction: ["'self'"],
         frameAncestors: ["'none'"],
-        ...(isProd ? { upgradeInsecureRequests: [] } : {}),
+        // TLS가 보장될 때(true)만. auto에서 켜면 http://PC이름:8080 접속 시 브라우저가 정적 파일을 https로 올려 받다 실패한다.
+        ...(mode === true ? { upgradeInsecureRequests: [] } : {}),
       },
     },
     frameguard: { action: 'deny' },
-    // 사내 HTTP(프록시 뒤) 운영이 기본이라 HSTS는 prod에서만(프록시가 TLS 종단)
-    strictTransportSecurity: isProd,
+    // 사내 HTTP(프록시 뒤) 운영이 기본이라 HSTS는 prod에서만(프록시가 TLS 종단, HTTP 응답의 HSTS는 브라우저가 무시)
+    strictTransportSecurity: isProd && mode !== false,
   });
 }
 
@@ -93,7 +112,7 @@ export function sessionMiddleware(env: SecurityEnv, store: session.Store): Reque
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
-      secure: env.NODE_ENV === 'production',
+      secure: secureCookieMode(env),
       maxAge: sessionTimeoutMs(env),
       path: '/',
     },
@@ -113,6 +132,7 @@ export function applyHttpSecurity(app: INestApplication): void {
     NODE_ENV: config.get('NODE_ENV', { infer: true }),
     TERMFLOW_SESSION_SECRET: config.get('TERMFLOW_SESSION_SECRET', { infer: true }),
     TERMFLOW_SESSION_TIMEOUT: config.get('TERMFLOW_SESSION_TIMEOUT', { infer: true }),
+    TERMFLOW_SECURE_COOKIE: config.get('TERMFLOW_SECURE_COOKIE', { infer: true }),
   };
   const express = app.getHttpAdapter().getInstance() as { set(k: string, v: unknown): void };
   express.set('trust proxy', 1);

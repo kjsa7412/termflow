@@ -29,10 +29,12 @@ COPY . .
 RUN pnpm install --offline --frozen-lockfile
 RUN pnpm -r build
 
-# 서버 프로덕션 의존성만 격리(K10: pnpm 10은 inject-workspace-packages 없이는 --legacy 필요)
-RUN pnpm --filter @termflow/server deploy --prod --legacy /out/server \
- && cd /out/server \
- && rm -rf test scripts src ./*.config.ts tsconfig*.json nest-cli.json
+# 서버 프로덕션 의존성만 격리(K10). pnpm 10 deploy는 inject-workspace-packages=true(잠금 파일 기준) 또는 --legacy(재해석)다.
+# --legacy는 잠금 파일 없이 범위를 다시 풀어 버전이 바뀔 수 있고 네트워크 메타데이터가 필요하므로(실측 150~290초),
+# 이 명령에서만 주입 모드를 켜 잠금 파일 버전 그대로·오프라인으로 만든다(CR-11a C2). 저장소 설정·잠금 파일은 그대로.
+RUN pnpm --config.inject-workspace-packages=true --offline --filter @termflow/server deploy --prod /out/server \
+ && rm -rf /out/server/test /out/server/scripts /out/server/src /out/server/*.config.ts \
+      /out/server/tsconfig*.json /out/server/nest-cli.json
 
 # ---------- 2단계: 실행 ----------
 FROM ${NODE_IMAGE} AS runtime

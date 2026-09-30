@@ -38,12 +38,26 @@ export const REDACT_PATHS = [
 ];
 export const REDACT_CENSOR = '[REDACTED]';
 
+/**
+ * prod 파일 로그(§12.3, T11.5): 작업 디렉터리 기준 `logs/termflow.YYYY-MM-DD.N.log`, 자정(TZ=Asia/Seoul)마다 새 파일.
+ * 보관 30개(현재 파일 포함). `removeOtherLogFiles`를 켜야 재기동 전 프로세스가 만든 파일도 정리 대상이 된다
+ * (끄면 pino-roll은 자기 프로세스가 만든 파일만 센다 — 컨테이너 재기동이 잦으면 30일을 넘겨 쌓인다).
+ * 컨테이너에서는 `/app/logs`(compose `./logs` 볼륨).
+ */
+export const LOG_FILE_ROLL = {
+  file: 'logs/termflow.log',
+  frequency: 'daily',
+  dateFormat: 'yyyy-MM-dd',
+  limit: { count: 30, removeOtherLogFiles: true },
+  mkdir: true,
+} as const;
+
 type LogEnv = Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
 type SessionReq = IncomingMessage & { session?: { user?: { loginId?: string } } };
 
 /**
  * nestjs-pino 설정(T2.7): JSON 라인, `reqId`(X-Request-Id 또는 UUID)·`user`(로그인 ID)·소요(responseTime).
- * dev는 pino-pretty 한 줄, prod는 stdout JSON + `logs/termflow.log` 일 단위 롤링 30개(pino-roll).
+ * dev는 pino-pretty 한 줄, prod는 stdout JSON + `logs/termflow.log` 일 단위 롤링 30개(pino-roll, LOG_FILE_ROLL).
  * `stream`을 주면 transport 대신 그 스트림에 쓴다(테스트용).
  */
 export function loggerParams(env: LogEnv, stream?: DestinationStream): Params {
@@ -54,17 +68,7 @@ export function loggerParams(env: LogEnv, stream?: DestinationStream): Params {
         ? {
             targets: [
               { target: 'pino/file', options: { destination: 1 }, level: env.LOG_LEVEL },
-              {
-                target: 'pino-roll',
-                level: env.LOG_LEVEL,
-                options: {
-                  file: 'logs/termflow.log',
-                  frequency: 'daily',
-                  dateFormat: 'yyyy-MM-dd',
-                  limit: { count: 30 },
-                  mkdir: true,
-                },
-              },
+              { target: 'pino-roll', level: env.LOG_LEVEL, options: LOG_FILE_ROLL },
             ],
           }
         : {
