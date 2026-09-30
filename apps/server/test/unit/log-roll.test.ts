@@ -3,7 +3,12 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LOG_FILE_ROLL, loggerParams } from '../../src/common/logging/logger.config.js';
+import {
+  LOG_FILE_ROLL,
+  LOG_RETENTION_DAYS,
+  loggerParams,
+  pruneOldLogFiles,
+} from '../../src/common/logging/logger.config.js';
 
 // T11.5 로그 운영(§12.3): prod 파일 로그가 자정에 새 파일로 넘어가고 30개만 남는지 — pino-roll을 실제 옵션으로 직접 구동한다.
 interface RollStream {
@@ -101,5 +106,34 @@ describe('pino-roll 일 단위 롤링(T11.5)', () => {
     expect(left).not.toContain(old[0]); // 가장 오래된 파일부터 삭제
     expect(left).toContain('termflow.2026-09-30.1.log');
     expect(left).toContain(old[34]);
+  });
+});
+
+describe('기동 시 30일 초과 정리(CR-11a C9)', () => {
+  it('파일 이름 날짜가 오늘 포함 30일보다 이르면 지우고, 다른 이름의 파일은 두며, 다시 호출하면 0건', () => {
+    const day = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const now = new Date(2026, 8, 30, 9, 0, 0);
+    // 오늘부터 39일 전까지 하루 1개(+ 같은 날 두 번째 파일 1개), 이름이 다른 파일 2개
+    for (let i = 0; i < 40; i++) {
+      writeFileSync(path.join(dir, `termflow.${day(new Date(2026, 8, 30 - i))}.1.log`), 'x\n');
+    }
+    writeFileSync(path.join(dir, `termflow.${day(new Date(2026, 8, 30 - 35))}.2.log`), 'x\n');
+    writeFileSync(path.join(dir, 'other.log'), 'x\n');
+    writeFileSync(path.join(dir, 'termflow.log'), 'x\n');
+
+    const removed = pruneOldLogFiles(dir, LOG_RETENTION_DAYS, now);
+    expect(removed).toHaveLength(11); // 30~39일 전 10개 + 35일 전 .2
+    expect(removed[0]).toBe('termflow.2026-08-22.1.log');
+    const left = readdirSync(dir).filter((f) => /^termflow\.\d{4}/.test(f));
+    expect(left).toHaveLength(30);
+    expect(left).toContain('termflow.2026-09-01.1.log'); // 29일 전(유지 경계)
+    expect(left).not.toContain('termflow.2026-08-31.1.log'); // 30일 전
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(['other.log', 'termflow.log']));
+    expect(pruneOldLogFiles(dir, LOG_RETENTION_DAYS, now)).toEqual([]);
+  });
+
+  it('폴더가 없으면 아무것도 하지 않는다', () => {
+    expect(pruneOldLogFiles(path.join(dir, 'none'))).toEqual([]);
   });
 });

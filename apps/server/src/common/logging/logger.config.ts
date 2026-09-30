@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import path from 'node:path';
 import type { Params } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import type { Env } from '../../config/env.schema.js';
@@ -40,7 +42,7 @@ export const REDACT_CENSOR = '[REDACTED]';
 
 /**
  * prod 파일 로그(§12.3, T11.5): 작업 디렉터리 기준 `logs/termflow.YYYY-MM-DD.N.log`, 자정(TZ=Asia/Seoul)마다 새 파일.
- * 보관 30개(현재 파일 포함). `removeOtherLogFiles`를 켜야 재기동 전 프로세스가 만든 파일도 정리 대상이 된다
+ * 보관 30개(현재 파일 포함, 롤 시 정리) + 기동 시 30일 초과 정리(pruneOldLogFiles). `removeOtherLogFiles`를 켜야 재기동 전 프로세스가 만든 파일도 정리 대상이 된다
  * (끄면 pino-roll은 자기 프로세스가 만든 파일만 센다 — 컨테이너 재기동이 잦으면 30일을 넘겨 쌓인다).
  * 컨테이너에서는 `/app/logs`(compose `./logs` 볼륨).
  */
@@ -51,6 +53,40 @@ export const LOG_FILE_ROLL = {
   limit: { count: 30, removeOtherLogFiles: true },
   mkdir: true,
 } as const;
+
+/** 파일 로그 보관 일수(§12.3 "일 단위 롤링 30일"). */
+export const LOG_RETENTION_DAYS = 30;
+const LOG_FILE_PATTERN = /^termflow\.(\d{4})-(\d{2})-(\d{2})\.\d+\.log$/;
+
+/**
+ * 기동 시 보관 기간을 넘긴 파일 로그를 지운다(CR-11a C9). pino-roll의 `limit`은 **자정 롤 시점에만** 정리하므로
+ * 밤에 PC를 끄는 운영(매일 새로 기동, 자정 롤 없음)에서는 파일이 끝없이 쌓인다. 파일 이름의 날짜가
+ * 오늘 기준 `keepDays`일 전보다 이르면 삭제(오늘 포함 `keepDays`일 유지). 다른 이름의 파일은 건드리지 않는다.
+ * @returns 삭제한 파일 이름
+ */
+export function pruneOldLogFiles(
+  dir: string = path.dirname(path.resolve(LOG_FILE_ROLL.file)),
+  keepDays: number = LOG_RETENTION_DAYS,
+  now: Date = new Date(),
+): string[] {
+  if (!existsSync(dir)) return [];
+  const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (keepDays - 1));
+  const removed: string[] = [];
+  for (const name of readdirSync(dir)) {
+    const m = LOG_FILE_PATTERN.exec(name);
+    if (!m) continue;
+    const fileDay = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (fileDay < cutoff) {
+      try {
+        rmSync(path.join(dir, name), { force: true });
+        removed.push(name);
+      } catch {
+        // 다른 프로세스가 잡고 있는 파일 등은 다음 기동·롤에서 다시 시도한다
+      }
+    }
+  }
+  return removed.sort();
+}
 
 type LogEnv = Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
 type SessionReq = IncomingMessage & { session?: { user?: { loginId?: string } } };
