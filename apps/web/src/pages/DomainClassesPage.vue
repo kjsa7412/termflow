@@ -436,7 +436,9 @@ const COLS = 10;
                   >{{ fmtNum(c.domainCnt) }}</RouterLink
                 ><span v-else class="text-muted">0</span>
               </td>
-              <td class="text-muted">{{ c.updatedBy }} · {{ fmtTs(c.updatedAt).slice(0, 10) }}</td>
+              <td class="text-muted nowrap">
+                {{ c.updatedBy }} · {{ fmtTs(c.updatedAt).slice(0, 10) }}
+              </td>
               <td class="col-menu">
                 <TfPopover v-if="canWrite" align="right">
                   <template #trigger="{ toggle, open, menuId }">

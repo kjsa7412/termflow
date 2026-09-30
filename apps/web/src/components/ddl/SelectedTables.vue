@@ -87,7 +87,7 @@ function addBiz(close: () => void): void {
 <template>
   <div class="card card-flush" data-testid="selected-tables">
     <div class="card-header">
-      <div class="card-title">
+      <div class="card-title nowrap">
         선택 테이블 <span class="count-pill">{{ items.length }}</span>
       </div>
       <div class="row">
