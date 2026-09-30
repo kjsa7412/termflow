@@ -105,7 +105,9 @@ const lit = (s: string) => `'${s.toLowerCase()}'`;
 /** 테이블 1개의 문장들(트랜잭션 제어 없음). */
 function tableStatements(pair: RenamePair): string[] {
   const { plan, model } = pair;
-  const lines: string[] = [`-- ${plan.oldNm} → ${plan.newNm} (${model.logicalNm})`];
+  const lines: string[] = [
+    `-- ${plan.oldNm}${plan.oldNm !== plan.newNm ? ` → ${plan.newNm}` : ''} (${model.logicalNm})`,
+  ];
   if (plan.oldNm !== plan.newNm) lines.push(`ALTER TABLE ${plan.oldNm} RENAME TO ${plan.newNm};`);
   for (const c of plan.columns)
     lines.push(`ALTER TABLE ${plan.newNm} RENAME COLUMN ${c.oldNm} TO ${c.newNm};`);

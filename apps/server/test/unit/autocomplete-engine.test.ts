@@ -267,25 +267,25 @@ describe('응답 크기(§5.8 ≤ 5KB)', () => {
 });
 
 describe('테이블 물리명 제안(§5.5, T9.5)', () => {
-  it('RP + 연구과제마스터 → RP_RSCH_PRJ_MST, PS → PS_RSCH_PRJ_MST, 접두어 없는 업무구분 → RSCH_PRJ_MST', () => {
+  it('RP + 연구과제마스터 → RP_RSCH_PRJ_MAST, PS → PS_RSCH_PRJ_MAST, 접두어 없는 업무구분 → RSCH_PRJ_MAST', () => {
     expect(suggestTableName(snap, '연구과제마스터', 1)).toMatchObject({
-      tableNm: 'RP_RSCH_PRJ_MST',
+      tableNm: 'RP_RSCH_PRJ_MAST',
       prefix: 'RP_',
       complete: true,
       warnings: [],
     });
-    expect(suggestTableName(snap, '연구과제마스터', 2).tableNm).toBe('PS_RSCH_PRJ_MST');
-    expect(suggestTableName(snap, '연구과제마스터', 3).tableNm).toBe('RSCH_PRJ_MST');
+    expect(suggestTableName(snap, '연구과제마스터', 2).tableNm).toBe('PS_RSCH_PRJ_MAST');
+    expect(suggestTableName(snap, '연구과제마스터', 3).tableNm).toBe('RSCH_PRJ_MAST');
   });
 
   it('이미 접두어로 시작하면 중복 부여하지 않는다', () => {
     const s = makeSnapshot({ terms: [['연구과제', 'RP']] });
-    expect(suggestTableName(s, '연구과제마스터', 1).tableNm).toBe('RP_MST');
+    expect(suggestTableName(s, '연구과제마스터', 1).tableNm).toBe('RP_MAST');
   });
 
   it('미등록 조각 → ? + W_TERM_UNREGISTERED, complete false', () => {
     const r = suggestTableName(snap, '연구책임자마스터', 1);
-    expect(r).toMatchObject({ tableNm: 'RP_RSCH_?_MST', complete: false });
+    expect(r).toMatchObject({ tableNm: 'RP_RSCH_?_MAST', complete: false });
     expect(r.warnings.map((w) => w.code)).toEqual(['W_TERM_UNREGISTERED']);
   });
 });

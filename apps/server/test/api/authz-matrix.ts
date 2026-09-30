@@ -42,7 +42,7 @@ export interface MatrixCtx {
   /** PRJA 프로젝트 관리자(유일한 ADMIN) user_id — 제거 시도는 409 E_LAST_PROJECT_ADMIN. */
   paUserId: number;
   /** PRJA 표준 사전 ID(단계 6 행): 승인 용어·검토대기 2건·도메인·도메인분류·코드구분·기본컬럼 세트. */
-  /** PRJA 테이블(RP_RSCH_PRJ_MST, DRAFT, 이력 v1) — 단계 7 DDL 행·단계 8 테이블 행. */
+  /** PRJA 테이블(RP_RSCH_PRJ_MAST, DRAFT, 이력 v1) — 단계 7 DDL 행·단계 8 테이블 행. */
   tableId: number;
   /** PRJA FINAL 테이블(단계 8: 확정 해제·FINAL 삭제 = 프로젝트 관리자). */
   finalTableId: number;
@@ -608,7 +608,7 @@ const TABLE_ROWS: readonly MatrixRow[] = [
     run: (c, x) =>
       c.put(`${P}/tables/${x.tableId}`, {
         version: 1,
-        ...tableBody('RP_RSCH_PRJ_MST', x.bizRpId),
+        ...tableBody('RP_RSCH_PRJ_MAST', x.bizRpId),
       }),
   },
   {

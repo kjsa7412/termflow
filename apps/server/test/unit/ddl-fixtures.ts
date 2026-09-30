@@ -52,9 +52,9 @@ export const META_68: DdlMeta = {
   generatedBy: 'hong',
 };
 
-/** §6.8 `RP_RSCH_PRJ_MST`(8컬럼 축약, 코드값은 예시). */
-export const RP_RSCH_PRJ_MST_68: TableModel = table({
-  tableNm: 'RP_RSCH_PRJ_MST',
+/** §6.8 `RP_RSCH_PRJ_MAST`(8컬럼 축약, 코드값은 예시). */
+export const RP_RSCH_PRJ_MAST_68: TableModel = table({
+  tableNm: 'RP_RSCH_PRJ_MAST',
   logicalNm: '연구과제마스터',
   columns: [
     col({ physicalNm: 'WRK_MAST_ID', logicalNm: '업무마스터ID', isPk: true, isNullable: false }),
@@ -99,7 +99,7 @@ export const RP_RSCH_PRJ_MST_68: TableModel = table({
       dataLength: 0,
       defaultVal: 'CURRENT_TIMESTAMP',
     }),
-    col({ physicalNm: 'FINA_REG_USER_ID', logicalNm: '최종등록자ID' }),
+    col({ physicalNm: 'FINA_RGSRT_ID', logicalNm: '최종등록자ID' }),
   ],
 });
 

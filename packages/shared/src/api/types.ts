@@ -724,7 +724,7 @@ export interface ExportLogItem {
   tableIds: number[];
   tableCnt: number;
   warningCnt: number;
-  /** 첫 테이블 물리명(“3개 (RP_PLND_MST 외)” 표시용). 삭제된 테이블이면 null. */
+  /** 첫 테이블 물리명(“3개 (RP_PLND_MAST 외)” 표시용). 삭제된 테이블이면 null. */
   firstTableNm: string | null;
   exportedBy: string;
   exportedByNm: string | null;

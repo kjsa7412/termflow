@@ -55,7 +55,7 @@ beforeAll(async () => {
         table: {
           tableId,
           bizAreaId: bizId('RP'),
-          tableNm: 'RP_RSCH_PRJ_MST',
+          tableNm: 'RP_RSCH_PRJ_MAST',
           tableLogicalNm: '연구과제마스터',
         },
         columns: [],

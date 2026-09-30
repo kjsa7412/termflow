@@ -13,6 +13,11 @@ import { normalizePhysicalName } from '../../src/migration/rules/r09-physical-na
 import { R12_EXCLUDED } from '../../src/migration/rules/r12-unused.js';
 import { migratedTimes } from '../../src/migration/rules/r13-audit.js';
 import { NEW_SUFFIXES } from '../../src/migration/rules/new-suffixes.js';
+import {
+  planRenames,
+  r19ColumnName,
+  r19TableName,
+} from '../../src/migration/rules/r19-term-unify.js';
 
 // T3.14 규칙별 단위 테스트. 입력은 dump(`seed/original/dump-gen_table-new.sql`)에서 발췌한 실제 행.
 
@@ -416,5 +421,42 @@ describe('R15 물리명 재생성 + R1 명칭 조각', () => {
       colLength: 200,
       reviewYn: true,
     });
+  });
+});
+
+describe('R19 용어 기준 물리명 정정(CR-09: 마스터 MAST · 등록자 RGSRT)', () => {
+  it('테이블명은 끝 조각 MST만 MAST로, 컬럼명은 등록자 기본컬럼 2개만', () => {
+    expect(r19TableName('RP_RSCH_PRJ_MST')).toBe('RP_RSCH_PRJ_MAST');
+    expect(r19TableName('RP_MST_HIST')).toBe('RP_MST_HIST');
+    expect(r19TableName('RP_RSCH_PRJ_MAST')).toBe('RP_RSCH_PRJ_MAST');
+    expect(r19TableName('RP_AMST')).toBe('RP_AMST');
+    expect(r19ColumnName('FIRS_REG_USER_ID')).toBe('FIRS_RGSRT_ID');
+    expect(r19ColumnName('FINA_REG_USER_ID')).toBe('FINA_RGSRT_ID');
+    expect(r19ColumnName('REG_USER_ID')).toBe('REG_USER_ID');
+    expect(r19ColumnName('RSCH_BUDG_MST_ID')).toBe('RSCH_BUDG_MST_ID');
+  });
+  it('계획: 바뀌는 테이블만, 정정 결과가 기존 이름과 겹치면 실패(멱등: 이미 새 이름이면 빈 계획)', () => {
+    expect(
+      planRenames([
+        { tableNm: 'RP_A_MST', columns: ['A_ID', 'FIRS_REG_USER_ID'] },
+        { tableNm: 'RP_B_LIST', columns: ['B_ID'] },
+      ]),
+    ).toEqual([
+      {
+        oldNm: 'RP_A_MST',
+        newNm: 'RP_A_MAST',
+        columns: [{ oldNm: 'FIRS_REG_USER_ID', newNm: 'FIRS_RGSRT_ID' }],
+      },
+    ]);
+    expect(planRenames([{ tableNm: 'RP_A_MAST', columns: ['FIRS_RGSRT_ID'] }])).toEqual([]);
+    expect(() =>
+      planRenames([
+        { tableNm: 'RP_A_MST', columns: [] },
+        { tableNm: 'RP_A_MAST', columns: [] },
+      ]),
+    ).toThrow(/R19 테이블명 충돌/);
+    expect(() =>
+      planRenames([{ tableNm: 'RP_A', columns: ['FIRS_REG_USER_ID', 'FIRS_RGSRT_ID'] }]),
+    ).toThrow(/R19 컬럼명 충돌/);
   });
 });

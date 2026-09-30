@@ -64,7 +64,7 @@ describe('fixture std_small (T2.12)', () => {
       { project_key: 'PRJB', phys: 'PB_T1', origin: null },
     ]);
     const tables = await t.pool.query<{ n: string }>(
-      "select count(distinct project_id) n from prj_table where table_nm = 'RP_RSCH_PRJ_MST'",
+      "select count(distinct project_id) n from prj_table where table_nm = 'RP_RSCH_PRJ_MAST'",
     );
     expect(tables.rows[0]?.n).toBe('2');
   });

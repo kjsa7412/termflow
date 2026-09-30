@@ -7,12 +7,12 @@ import {
   generateTable,
   warningSummary,
 } from '../../src/ddl/generator.js';
-import { col, designExample68, META_68, RP_RSCH_PRJ_MST_68, table } from './ddl-fixtures.js';
+import { col, designExample68, META_68, RP_RSCH_PRJ_MAST_68, table } from './ddl-fixtures.js';
 
 // T7.5 옵션 조합, T7.7 §6.8 예시 문자열 일치(생성기 + TableModel)
 const pg = dialectFor('POSTGRESQL');
 const opts = (o: Partial<DdlOptions> = {}): DdlOptions => ddlOptionsSchema.parse(o);
-const gen = (t = RP_RSCH_PRJ_MST_68, o: Partial<DdlOptions> = {}) =>
+const gen = (t = RP_RSCH_PRJ_MAST_68, o: Partial<DdlOptions> = {}) =>
   generateTable(pg, { model: t, warnings: [] }, opts(o), META_68).sql;
 
 describe('generator — §6.8 예시(T7.7)', () => {

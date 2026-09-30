@@ -109,11 +109,11 @@ DG여부	DG|여부	DG_YN	= DG_YN	composed	VARCHAR(1)	후보 1
 초안여부	초안|여부	DRFT_YN	= DRFT_YN	composed	VARCHAR(1)	후보 1
 최종등록IP	최종|등록|IP	FINA_REG_IP	= FINA_REG_IP	exact	VARCHAR(50)	후보 1
 최종등록일시	최종|등록|일시	FINA_REG_DTS	= FINA_REG_DTS	exact	TIMESTAMP(0)	후보 2
-최종등록자ID	최종|등록자|ID	FINA_RGSRT_ID	≠ FINA_REG_USER_ID	composed	VARCHAR(20)	후보 1
+최종등록자ID	최종|등록자|ID	FINA_RGSRT_ID	= FINA_RGSRT_ID	composed	VARCHAR(20)	후보 1
 최종등록프로그램ID	최종|등록|프로그램|ID	FINA_REG_PGM_ID	= FINA_REG_PGM_ID	exact	VARCHAR(20)	후보 1
 최초등록IP	최초|등록|IP	FIRS_REG_IP	= FIRS_REG_IP	exact	VARCHAR(50)	후보 1
 최초등록일시	최초|등록|일시	FIRS_REG_DTS	= FIRS_REG_DTS	exact	TIMESTAMP(0)	후보 2
-최초등록자ID	최초|등록자|ID	FIRS_RGSRT_ID	≠ FIRS_REG_USER_ID	composed	VARCHAR(20)	후보 1
+최초등록자ID	최초|등록자|ID	FIRS_RGSRT_ID	= FIRS_RGSRT_ID	composed	VARCHAR(20)	후보 1
 최초등록프로그램ID	최초|등록|프로그램|ID	FIRS_REG_PGM_ID	= FIRS_REG_PGM_ID	exact	VARCHAR(20)	후보 1
 평가비율	평가|비율	EVL_RTE	= EVL_RTE	composed	NUMERIC(7,4)	후보 2
 평가위원회가중치	평가|위원회|가중|치	EVL_CMTE_WGHTD_VAL	= EVL_CMTE_WGHTD_VAL	composed	NUMERIC(6,2)	후보 2
