@@ -45,7 +45,7 @@ function toggleRail(): void {
     <AppSidebar />
     <div class="app-body">
       <AppTopbar @toggle-rail="toggleRail" />
-      <main id="main" class="content" tabindex="-1">
+      <main id="main" :class="['content', { 'is-flush': route.meta['rail'] === true }]" tabindex="-1">
         <div v-if="editingTemplate" class="alert alert-warning mb-4" role="status">
           <TfIcon name="layers" />
           <div class="alert-body">

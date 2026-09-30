@@ -59,6 +59,18 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '테이블' },
   },
   {
+    path: '/projects/:projectKey/tables/new',
+    name: 'table-new',
+    component: () => import('./pages/TableEditorPage.vue'),
+    meta: { title: '새 테이블', rail: true },
+  },
+  {
+    path: '/projects/:projectKey/tables/:tableId(\\d+)',
+    name: 'table-edit',
+    component: () => import('./pages/TableEditorPage.vue'),
+    meta: { title: '테이블 편집기', rail: true },
+  },
+  {
     path: '/projects/:projectKey/export',
     name: 'project-export',
     component: () => import('./pages/DdlExportPage.vue'),
