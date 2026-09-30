@@ -61,6 +61,7 @@ describe('web 정적 서빙(ServeStaticModule)', () => {
     expect(webStaticModules(path.join(dist, 'none'))).toEqual([]);
     expect(WEB_EXCLUDE.test('/api/v1/x')).toBe(true);
     expect(WEB_EXCLUDE.test('/health')).toBe(true);
+    expect(WEB_EXCLUDE.test('/metrics')).toBe(true);
     expect(WEB_EXCLUDE.test('/apis')).toBe(false);
     expect(WEB_EXCLUDE.test('/admin/users')).toBe(false);
   });

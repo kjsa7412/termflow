@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TermCacheRegistry } from '../autocomplete/term-cache-registry.js';
 import { BizAreaService } from './biz-area.service.js';
 import { ProjectCopyService } from './copy/project-copy.service.js';
 import { MemberService } from './member.service.js';
@@ -25,14 +24,8 @@ import { TemplateService } from './template.service.js';
     AdminProjectsController,
     AdminTemplatesController,
   ],
-  providers: [
-    ProjectService,
-    ProjectCopyService,
-    MemberService,
-    BizAreaService,
-    TemplateService,
-    TermCacheRegistry,
-  ],
-  exports: [ProjectCopyService, TermCacheRegistry],
+  providers: [ProjectService, ProjectCopyService, MemberService, BizAreaService, TemplateService],
+  // TermCacheRegistry는 전역 AutocompleteModule이 제공한다(단계 9)
+  exports: [ProjectCopyService],
 })
 export class ProjectModule {}

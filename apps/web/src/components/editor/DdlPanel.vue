@@ -27,6 +27,11 @@ const props = defineProps<{
   tableId: number | null;
   /** 저장본과 같은지(복사 기록·다운로드를 저장본 기준으로). */
   saved: boolean;
+  /**
+   * 미리보기를 요청할 만한 본문인지(테이블 논리명·일반 컬럼 입력). false면 요청하지 않고 안내만 보인다 —
+   * 빈 새 테이블이 `POST P/ddl` 400("요청 형식 오류")을 받던 결함(CR-08 C9).
+   */
+  ready?: boolean;
   defaultDialect: Dialect;
 }>();
 const emit = defineEmits<{ close: []; focusRow: [rowIndex: number] }>();
@@ -52,8 +57,18 @@ const request = () => ({
   options: options.value,
 });
 
+const idle = computed(() => props.ready === false);
+
 async function refresh(): Promise<void> {
   ctrl?.abort();
+  if (idle.value) {
+    sql.value = '';
+    warnings.value = [];
+    errors.value = [];
+    failed.value = null;
+    loading.value = false;
+    return;
+  }
   const c = new AbortController();
   ctrl = c;
   loading.value = true;
@@ -89,9 +104,11 @@ function schedule(): void {
   clearTimeout(timer);
   timer = setTimeout(() => void refresh(), 500);
 }
-watch(() => [JSON.stringify(props.body), dialect.value, JSON.stringify(options.value)], schedule, {
-  immediate: true,
-});
+watch(
+  () => [JSON.stringify(props.body), dialect.value, JSON.stringify(options.value), idle.value],
+  schedule,
+  { immediate: true },
+);
 onBeforeUnmount(() => {
   clearTimeout(timer);
   ctrl?.abort();
@@ -230,7 +247,10 @@ defineExpose({ refresh });
         </div>
       </div>
 
-      <div v-if="failed" class="alert alert-danger" role="alert">
+      <div v-if="idle" class="empty-hint text-sm text-muted" data-testid="ddl-panel-idle">
+        <TfIcon name="info" />테이블명과 컬럼을 입력하면 미리보기가 나옵니다.
+      </div>
+      <div v-else-if="failed" class="alert alert-danger" role="alert">
         <TfIcon name="alert-circle" />
         <div class="alert-body">
           {{ failed }}
@@ -255,29 +275,35 @@ defineExpose({ refresh });
       </div>
       <DdlCode v-else :sql="sql" :warn-columns="warnColumns" label="편집 중 DDL 미리보기" />
 
-      <div class="section-title">
-        경고 <span class="count-pill warning">{{ warnings.length }}</span>
-      </div>
-      <ul v-if="warnings.length > 0" class="validation-list plain" data-testid="ddl-panel-warnings">
-        <li v-for="(w, i) in warnings" :key="`w${i}`">
-          <TfBadge kind="warning">경고</TfBadge>
-          <button
-            class="btn-link"
-            type="button"
-            :disabled="w.rowIndex === undefined"
-            @click="focus(w)"
-          >
-            {{ w.rowIndex !== undefined ? `${w.rowIndex + 1}행 ` : ''
-            }}{{ w.columnNm ? `${w.columnNm}: ` : '' }}{{ w.message }}
-          </button>
-        </li>
-      </ul>
-      <p v-else class="text-sm text-muted">경고가 없습니다.</p>
+      <template v-if="!idle">
+        <div class="section-title">
+          경고 <span class="count-pill warning">{{ warnings.length }}</span>
+        </div>
+        <ul
+          v-if="warnings.length > 0"
+          class="validation-list plain"
+          data-testid="ddl-panel-warnings"
+        >
+          <li v-for="(w, i) in warnings" :key="`w${i}`">
+            <TfBadge kind="warning">경고</TfBadge>
+            <button
+              class="btn-link"
+              type="button"
+              :disabled="w.rowIndex === undefined"
+              @click="focus(w)"
+            >
+              {{ w.rowIndex !== undefined ? `${w.rowIndex + 1}행 ` : ''
+              }}{{ w.columnNm ? `${w.columnNm}: ` : '' }}{{ w.message }}
+            </button>
+          </li>
+        </ul>
+        <p v-else class="text-sm text-muted">경고가 없습니다.</p>
+      </template>
     </div>
     <div class="panel-footer">
       <span
-        >{{ updatedAt ? `마지막 갱신 ${updatedAt}` : '갱신 대기' }} · 컬럼 {{ colCnt
-        }}{{ saved ? '' : ' · 저장 전 편집본' }}</span
+        >{{ idle ? '입력 대기' : updatedAt ? `마지막 갱신 ${updatedAt}` : '갱신 대기' }} · 컬럼
+        {{ colCnt }}{{ saved ? '' : ' · 저장 전 편집본' }}</span
       >
       <span class="spacer" />
       <TfButton variant="secondary" size="sm" icon="copy" :disabled="!canUse" @click="copy"

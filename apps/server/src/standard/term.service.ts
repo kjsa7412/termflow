@@ -8,6 +8,7 @@ import {
   validateTermFields,
   type TermCheckResponse,
   type TermDetail,
+  type TermInlineResponse,
   type TermInput,
   type TermItem,
   type TermListQuery,
@@ -309,6 +310,112 @@ export class TermService {
     });
     this.logger.log(`용어 등록: ${ctx.projectKey} ${v.termKor}=${v.termPhysical} by ${a.actor}`);
     return this.saved(ctx, id);
+  }
+
+  /**
+   * 인라인 등록(편집기 미등록 카드, §4.5·§5.4·§5.9, T9.6). 경로 프로젝트에 **PENDING**으로 등록한다(편집자 이상).
+   *  - 같은 한글 용어가 APPROVED·PENDING으로 이미 있으면 그 용어를 쓴다(쓰기 없음, outcome EXISTING).
+   *  - REJECTED면 그 행을 PENDING으로 갱신(물리약어·설명 교체, 검토 정보 초기화, 감사 UPDATE, outcome REOPENED).
+   *  - 같은 물리약어를 쓰는 다른 용어는 경고(`conflicts`)로만 알린다(R8). 쓰기는 StdWriter → 커밋 후 캐시 무효화.
+   */
+  async inline(
+    ctx: ProjectCtx,
+    input: { termKor: string; termPhysical: string; description: string | null },
+    a: Audit,
+  ): Promise<{ res: TermInlineResponse; written: boolean }> {
+    this.writer.assertWritable(ctx);
+    const v = this.normalize({ ...input, synonymRef: null });
+    const [cur] = await this.db
+      .select()
+      .from(stdTerm)
+      .where(and(eq(stdTerm.projectId, ctx.projectId), eq(stdTerm.termKor, v.termKor)));
+    const respond = async (
+      termId: number,
+      outcome: TermInlineResponse['outcome'],
+    ): Promise<TermInlineResponse> => {
+      const term = await this.item(this.db, ctx.projectId, termId);
+      const conflicts = await physicalUsers(this.db, ctx.projectId, term.termPhysical, termId);
+      return {
+        termId,
+        status: term.status,
+        outcome,
+        termKor: term.termKor,
+        termPhysical: term.termPhysical,
+        conflicts: conflicts.map((c) => ({ termKor: c.termKor, termPhysical: c.termPhysical! })),
+        warnings: sharedWarning(conflicts, term.termPhysical),
+      };
+    };
+    if (cur && cur.status !== 'REJECTED') {
+      return { res: await respond(cur.termId, 'EXISTING'), written: false };
+    }
+    if (cur) {
+      await this.writer.write(
+        ctx,
+        async (tx) => {
+          const [after] = await updateAudited(
+            tx,
+            stdTerm,
+            {
+              termPhysical: v.termPhysical,
+              description: v.description,
+              status: 'PENDING',
+              reviewNote: null,
+              reviewedBy: null,
+              reviewedAt: null,
+            },
+            a,
+          )
+            .where(eq(stdTerm.termId, cur.termId))
+            .returning();
+          await writeStdAudit(
+            tx,
+            {
+              projectId: ctx.projectId,
+              entityType: 'TERM',
+              entityId: cur.termId,
+              action: 'UPDATE',
+              before: auditJson(cur),
+              after: auditJson(after),
+            },
+            a,
+          );
+        },
+        { prefetch: true },
+      );
+      this.logger.log(`용어 재등록(반려 → 검토대기): ${ctx.projectKey} ${v.termKor} by ${a.actor}`);
+      return { res: await respond(cur.termId, 'REOPENED'), written: true };
+    }
+    const id = await this.writer.write(
+      ctx,
+      async (tx) => {
+        const [r] = await insertAudited(
+          tx,
+          stdTerm,
+          { projectId: ctx.projectId, ...v, status: 'PENDING' },
+          a,
+        )
+          .onConflictDoNothing()
+          .returning();
+        if (!r) throw this.dup(v.termKor);
+        await writeStdAudit(
+          tx,
+          {
+            projectId: ctx.projectId,
+            entityType: 'TERM',
+            entityId: r.termId,
+            action: 'INSERT',
+            after: auditJson(r),
+          },
+          a,
+        );
+        return r.termId;
+      },
+      { prefetch: true },
+    );
+    this.logger.log(
+      `용어 인라인 등록(검토대기): ${ctx.projectKey} ${v.termKor}=${v.termPhysical} by ${a.actor}`,
+    );
+    return { res: await respond(id, 'CREATED'), written: true };
   }
 
   /** 수정(PUT = 전체 교체). 상태는 바꾸지 않는다(승인·반려는 승인 큐). */

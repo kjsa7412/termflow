@@ -15,7 +15,7 @@ export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
  * 표준 사전 쓰기 공통 경로(T6.1, `standard/README.md`). 모든 표준 쓰기 서비스는 이 클래스로만 쓴다.
  *  1. 쓰기 가능 검사: 보관 프로젝트 409, 템플릿은 시스템 관리자만(§4.1·§4.6) — 가드와 이중 검사(서비스 재확인, §12.2)
  *  2. `db.transaction` 안에서 행 쓰기 + `writeStdAudit`(같은 트랜잭션)
- *  3. 커밋 후 `TermCacheRegistry.invalidate(projectId)`(§5.1, 단계 9 전까지 no-op). 롤백이면 호출하지 않는다.
+ *  3. 커밋 후 `TermCacheRegistry.invalidate(projectId)`(§5.1, T9.1 — 다음 자동완성·검증이 새 스냅샷을 적재). 롤백이면 호출하지 않는다.
  */
 @Injectable()
 export class StdWriter {
@@ -39,10 +39,23 @@ export class StdWriter {
     assertWritableState(p.status as ProjectStatus, p.kind as ProjectKind, sysAdmin);
   }
 
-  async write<T>(ctx: ProjectCtx, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  /**
+   * @param opts.prefetch 커밋·무효화 직후 캐시 재적재를 **기다리지 않고** 시작한다(인라인 등록 → 편집기 자동 재시도 경로, G2·§5.8).
+   *   재시도 요청은 진행 중 적재 Promise를 공유하므로 적재 시간이 응답 왕복과 겹친다(CR-08 C1).
+   */
+  async write<T>(
+    ctx: ProjectCtx,
+    fn: (tx: Tx) => Promise<T>,
+    opts: { prefetch?: boolean } = {},
+  ): Promise<T> {
     this.assertWritable(ctx);
     const r = await this.db.transaction(fn);
     this.cache.invalidate(ctx.projectId);
+    if (opts.prefetch) {
+      this.cache.get(ctx.projectId).catch(() => {
+        /* 적재 실패는 다음 요청이 다시 시도한다 */
+      });
+    }
     return r;
   }
 }

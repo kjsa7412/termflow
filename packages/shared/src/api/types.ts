@@ -569,40 +569,117 @@ export interface AutocompleteApplied {
   domainId: number | null;
   matchType: MatchType;
 }
+export type AutocompleteType = 'exact' | 'similar' | 'composed' | 'unregistered';
+/**
+ * 유사 후보 1건(§5.3 ③). `kind: 'composed'`는 편집기의 "조합: …" 행(완전 분절 첫 후보, 마지막에 1개).
+ * 편집기가 선택 즉시 적용할 수 있도록 타입 3분할·코멘트를 함께 준다(CR-08 C4).
+ */
+export interface AutocompleteCandidate {
+  kind: 'domain' | 'composed';
+  domainId?: number;
+  logicalNm: string;
+  physicalNm: string;
+  dataType: StdType | null;
+  dataLength: number | null;
+  dataScale: number | null;
+  typeText: string | null;
+  colComment: string;
+  score: number;
+  /** composed 후보의 조각(배지). */
+  segments?: AutocompleteSegment[];
+  reviewYn?: boolean;
+}
+/** 코드성 후보(§5.6). 선택 시 논리명 = `logicalNm`, code_cls_id·match_type CODE, 도메인 정확일치면 domainId. */
+export interface AutocompleteCodeCandidate {
+  codeClsId: number;
+  bizCd: string;
+  bizNm: string;
+  codeCls: string;
+  codeClsNm: string;
+  logicalNm: string;
+  physicalNm: string;
+  dataType: StdType | null;
+  dataLength: number | null;
+  dataScale: number | null;
+  typeText: string | null;
+  colComment: string;
+  domainId: number | null;
+  codeCnt: number;
+  /** 앞 5개 코드 미리보기. */
+  codes: { code: string; codeNm: string }[];
+  score: number;
+}
 export interface AutocompleteResponse {
-  type: 'exact' | 'similar' | 'composed' | 'unregistered';
+  type: AutocompleteType;
   input: string;
   normalized: string;
   applied: AutocompleteApplied | null;
   segments?: AutocompleteSegment[];
-  candidates?: {
-    kind: 'domain' | 'composed';
-    domainId?: number;
-    logicalNm: string;
-    physicalNm: string;
-    typeText: string | null;
-    score: number;
-  }[];
+  candidates?: AutocompleteCandidate[];
   alternatives?: { physicalNm: string; segments: AutocompleteSegment[] }[];
-  codeCandidates?: {
-    codeClsId: number;
-    bizCd: string;
-    bizNm: string;
-    codeCls: string;
-    codeClsNm: string;
-    physicalNm: string;
-    typeText: string;
-    colComment: string;
-    codeCnt: number;
-  }[];
+  codeCandidates?: AutocompleteCodeCandidate[];
+  /** unregistered: 인라인 등록 카드의 한글 용어 후보(첫 항목이 기본값, CR-08 C7). */
+  registerCandidates?: string[];
   warnings: ValidationIssue[];
   cacheVersion: number;
   elapsedMs: number;
 }
+/** POST P/autocomplete/columns/batch — 입력 순서대로. */
+export interface AutocompleteBatchResponse {
+  items: AutocompleteResponse[];
+  cacheVersion: number;
+  elapsedMs: number;
+}
+/** POST P/tables/suggest-name(§5.5). */
+export interface TableNameSuggestion {
+  tableNm: string;
+  prefix: string | null;
+  segments: AutocompleteSegment[];
+  /** 완전 분절 성공(미매칭 없음). */
+  complete: boolean;
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+  cacheVersion: number;
+}
+/** POST P/standards/terms/inline(§5.4, §4.5). outcome: 신규 PENDING / 반려 → PENDING 갱신 / 이미 있음(그 용어 사용). */
 export interface TermInlineResponse {
   termId: number;
   status: TermStatus;
+  outcome: 'CREATED' | 'REOPENED' | 'EXISTING';
+  termKor: string;
+  termPhysical: string | null;
   conflicts: { termKor: string; termPhysical: string }[];
+  warnings: ValidationIssue[];
+}
+/** GET /admin/cache(§5.1). */
+export interface CacheEntryItem {
+  projectId: number;
+  projectKey: string | null;
+  projectNm: string | null;
+  cacheVersion: number;
+  counts: {
+    terms: number;
+    rejected: number;
+    domains: number;
+    domainCls: number;
+    codeCls: number;
+    bizAreas: number;
+  };
+  loadMs: number;
+  loadedAt: string;
+  lastUsedAt: string;
+}
+export interface CacheStatusResponse {
+  maxProjects: number;
+  idleMinutes: number;
+  items: CacheEntryItem[];
+  stats: {
+    loads: number;
+    hits: number;
+    evictions: number;
+    invalidateCalls: number;
+    invalidateEvents: number;
+  };
 }
 
 // ── DDL ─────────────────────────────────────────────────────────────────────

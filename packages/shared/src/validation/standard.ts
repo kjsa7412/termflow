@@ -7,6 +7,17 @@ import { API_ERROR_CODES } from './codes.js';
  */
 
 /** 한글 용어 정규화: trim, 라틴 문자는 대문자(§3.5.5 "라틴 문자는 대문자 저장", L1 1단계와 같은 규칙). */
+/**
+ * 자동완성 논리명 정규화(설계서 §5.3): trim → 모든 공백 제거 → 유니코드 NFC → 라틴 대문자.
+ * 서버 엔진(캐시 키)과 편집기(같은 입력 재호출 판정)가 같은 함수를 쓴다.
+ */
+export function normalizeLogical(s: string): string {
+  return s
+    .normalize('NFC')
+    .replace(/\s+/g, '')
+    .replace(/[a-z]+/g, (m) => m.toUpperCase());
+}
+
 export function normalizeTermKor(v: string): string {
   return v.trim().replace(/[a-z]+/g, (m) => m.toUpperCase());
 }

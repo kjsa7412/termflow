@@ -211,6 +211,14 @@
 .piece-miss { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-bd); border-style: dashed; font-weight: 600; }
 .piece-sep { color: var(--bd-strong); font-size: 11px; }
 .pieces .arrow { color: var(--tx-3); font-size: 11px; margin: 0 2px; }
+/* 검토대기(PENDING) 용어 조각: 보라(설계서 §4.5) + '검토대기' 텍스트 */
+.piece-pending { background: var(--purple-bg); color: var(--purple); border-color: var(--purple-bd); }
+.piece .piece-flag { font-size: 10px; font-weight: 600; }
+.reg-card .reg-choices { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.reg-card .reg-choices .btn.is-active { border-color: var(--accent); color: var(--accent-tx); background: var(--accent-soft); }
+.grid .cell-status .btn-link { font-size: var(--fs-12); }
+.ed-phys-pieces { margin-top: 4px; }
+.empty-hint { display: flex; align-items: center; gap: 6px; padding: 16px 4px; }
 
 /* ---------- 9. 드롭다운·팝오버 ---------- */
 .dropdown { position: relative; display: inline-block; }

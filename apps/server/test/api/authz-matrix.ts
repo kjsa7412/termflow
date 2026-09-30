@@ -678,6 +678,63 @@ const TABLE_ROWS: readonly MatrixRow[] = [
   },
 ];
 
+/**
+ * 단계 9 자동완성 행(§7.3: `P/autocomplete/**`·`P/tables/suggest-name`·`P/standards/terms/inline` = 편집자 이상 POST,
+ * `/admin/cache/**` = 시스템 관리자). 인라인 등록은 역할마다 다른 한글 용어(seq)로 201.
+ */
+const AUTOCOMPLETE_ROWS: readonly MatrixRow[] = [
+  {
+    path: 'P/autocomplete/columns',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.post(`${P}/autocomplete/columns`, { logicalNm: '용어1용어2' }),
+  },
+  {
+    path: 'P/autocomplete/columns/batch',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c) => c.post(`${P}/autocomplete/columns/batch`, { logicalNms: ['용어1', '용어2'] }),
+  },
+  {
+    path: 'P/tables/suggest-name',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [200],
+    denyByRole: P_DENY,
+    run: (c, x) =>
+      c.post(`${P}/tables/suggest-name`, { logicalNm: '용어1용어2', bizAreaId: x.bizRpId }),
+  },
+  {
+    path: 'P/standards/terms/inline',
+    method: 'POST',
+    allow: EDITOR_UP,
+    ok: [201],
+    denyByRole: P_DENY,
+    run: (c, x) => {
+      const n = x.seq();
+      return c.post(`${S}/terms/inline`, { termKor: `매트릭스${n}`, termPhysical: `MXI${n}` });
+    },
+  },
+  {
+    path: '/admin/cache',
+    method: 'GET',
+    allow: SA,
+    ok: [200],
+    run: (c) => c.get('/api/v1/admin/cache'),
+  },
+  {
+    path: '/admin/cache/{key}/reload',
+    method: 'POST',
+    allow: SA,
+    ok: [200],
+    run: (c) => c.post('/api/v1/admin/cache/PRJA/reload'),
+  },
+];
+
 export const AUTHZ_MATRIX: readonly MatrixRow[] = [
   // ── 인증(§7.3 1행) ─────────────────────────────────────────────
   {
@@ -1002,4 +1059,5 @@ export const AUTHZ_MATRIX: readonly MatrixRow[] = [
   ...STANDARD_ROWS,
   ...DDL_ROWS,
   ...TABLE_ROWS,
+  ...AUTOCOMPLETE_ROWS,
 ];

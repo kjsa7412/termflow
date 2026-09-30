@@ -21,7 +21,7 @@ import { rowsOf } from './sql-util.js';
 /**
  * 업무구분(T5.7, 설계서 §4.2·§3.5.4). 테이블이 1개라도 있으면 코드·접두어 변경·사용 중지·삭제는 409 `E_BIZ_AREA_IN_USE`
  * (목업 가정 M2). 삭제는 테이블 0건일 때만, 소속 코드구분·코드는 FK CASCADE, 다른 업무구분 테이블 컬럼의
- * code_cls_id는 SET NULL(열). 쓰기는 감사 `BIZ_AREA` + 커밋 후 캐시 무효화(TermCacheRegistry, 단계 9 구현).
+ * code_cls_id는 SET NULL(열). 쓰기는 감사 `BIZ_AREA` + 커밋 후 캐시 무효화(TermCacheRegistry, T9.1).
  */
 @Injectable()
 export class BizAreaService {
