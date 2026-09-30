@@ -37,6 +37,7 @@ import { createCsrf, createSessionStore, CSRF_UTILS, SESSION_STORE } from './htt
           NODE_ENV: config.get('NODE_ENV', { infer: true }),
           TERMFLOW_SESSION_SECRET: config.get('TERMFLOW_SESSION_SECRET', { infer: true }),
           TERMFLOW_SESSION_TIMEOUT: config.get('TERMFLOW_SESSION_TIMEOUT', { infer: true }),
+          TERMFLOW_SECURE_COOKIE: config.get('TERMFLOW_SECURE_COOKIE', { infer: true }),
         }),
     },
     {

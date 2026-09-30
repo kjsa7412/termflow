@@ -22,6 +22,18 @@ async function main(): Promise<void> {
     await pool.end();
   }
 
+  // prod 파일 로그 보관 기간 정리(§12.3, T11.5 — 자정 롤이 없는 매일 기동 운영 대비, CR-11a C9)
+  if (env.NODE_ENV === 'production') {
+    const { LOG_RETENTION_DAYS, pruneOldLogFiles } =
+      await import('./common/logging/logger.config.js');
+    const removed = pruneOldLogFiles();
+    if (removed.length > 0) {
+      console.log(
+        `[${APP_NAME}] 파일 로그 ${LOG_RETENTION_DAYS}일 초과 ${removed.length}개 삭제(${removed[0]} …)`,
+      );
+    }
+  }
+
   const { NestFactory } = await import('@nestjs/core');
   const { Logger } = await import('nestjs-pino');
   const { AppModule } = await import('./app.module.js');
