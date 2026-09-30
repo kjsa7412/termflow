@@ -20,7 +20,8 @@
     "migrate:scan": "tsx src/migration/sensitive-scan.ts",
     "corrections:draft": "tsx src/migration/corrections-draft.ts",
     "ddl:reserved": "tsx scripts/reserved-words.ts",
-    "ddl:rp33": "tsx scripts/rp33-snapshot.ts"
+    "ddl:rp33": "tsx scripts/rp33-snapshot.ts",
+    "cr09:sql": "tsx scripts/cr09-rename-sql.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.0",

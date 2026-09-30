@@ -9,13 +9,21 @@ import { findProjectId, RMS, StepFailure, type StepDef, type Tx } from '../conte
 import { readColumns, readTables, type LegacyColumn } from '../legacy-reader.js';
 import { normalizePhysicalName } from '../rules/r09-physical-name.js';
 import { migratedTimes } from '../rules/r13-audit.js';
+import {
+  planRenames,
+  r19ColumnName,
+  R19_REPORT,
+  R19_RULE,
+  r19TableName,
+} from '../rules/r19-term-unify.js';
 import type { Db } from '../../db/client.js';
 
 /**
  * step 10 TABLE/COLUMN(T5.10, 설계서 §11.1·§11.2). legacy 33 테이블·649 컬럼 → RMS 업무구분 RP.
  * 규칙: R6(FINAL·legacy_table_id·PK nullable 보정·EXACT/DEFAULT 연결), R7-b(코멘트의 코드구분), R9(물리명 대문자),
  * R10(타입 없음 → 도메인 타입 → 같은 물리명 컬럼 타입 추정 → 없으면 NULL + review), R11(테이블 내 물리명 중복이면 중단),
- * R13(감사 주체 MIGRATION·원본 일시), R16(타입 3분할), R17(PK 없음 review), R18(코멘트 = 논리명). 이력 MIGRATE 1건/테이블(§8.3).
+ * R13(감사 주체 MIGRATION·원본 일시), R16(타입 3분할), R17(PK 없음 review), R18(코멘트 = 논리명),
+ * R19(CR-09: 테이블명 끝 MST → MAST, 기본컬럼 REG_USER_ID → RGSRT_ID). 이력 MIGRATE 1건/테이블(§8.3).
  * 참조(도메인·코드구분·기본컬럼)는 모두 **RMS의 사본** — 복합 FK가 교차 프로젝트 참조를 막는다(C-D1).
  */
 export const LEGACY_BIZ_CD = 'RP';
@@ -122,6 +130,20 @@ export const tableStep: StepDef = {
     }
     if (dups.length > 0) throw new StepFailure(`R11 테이블 내 물리명 중복: ${dups.join(', ')}`);
 
+    // R19(CR-09): 용어 기준 물리명 정정 계획 — 정정 결과가 다른 테이블·같은 테이블 컬럼 이름과 겹치면 중단
+    try {
+      planRenames(
+        tables.map((t) => ({
+          tableNm: t.table_nm.trim().toUpperCase(),
+          columns: (colsByTable.get(t.table_id) ?? []).map((x) => x.physical_col_nm.trim().toUpperCase()),
+        })),
+      );
+    } catch (e) {
+      throw new StepFailure(e instanceof Error ? e.message : String(e));
+    }
+    report.declare(R19_REPORT);
+    const r19 = { tables: 0, columns: 0 };
+
     // R11 확장(§6.9, CR-04 C15 → 단계 7): 테이블·컬럼 물리명을 3방언 예약어와 대조 — 리포트만(적재는 계속).
     // 기본 방언(PostgreSQL) 예약어는 DDL 생성 시 E_RESERVED, 다른 방언은 W_RESERVED_OTHER가 된다.
     let reservedHits = 0;
@@ -143,9 +165,9 @@ export const tableStep: StepDef = {
         });
       }
     };
-    for (const t of tables) reservedCheck(t.table_id, 'prj_table', 'table_nm', t.table_nm.trim().toUpperCase());
+    for (const t of tables) reservedCheck(t.table_id, 'prj_table', 'table_nm', r19TableName(t.table_nm.trim().toUpperCase()));
     for (const c of columns) {
-      reservedCheck(`${c.table_id}#${c.col_seq}`, 'prj_column', 'physical_nm', c.physical_col_nm.trim().toUpperCase());
+      reservedCheck(`${c.table_id}#${c.col_seq}`, 'prj_column', 'physical_nm', r19ColumnName(c.physical_col_nm.trim().toUpperCase()));
     }
 
     // 같은 물리명 컬럼의 확정 타입(R10 추정용): 물리명 → 파싱된 타입 집합
@@ -176,6 +198,23 @@ export const tableStep: StepDef = {
           action: 'NORMALIZED',
         });
       }
+      // R19(CR-09): 마스터 = MAST — 끝 조각 MST → MAST
+      const tableNm = r19TableName(nm.value);
+      if (tableNm !== nm.value) {
+        r19.tables++;
+        report.add(R19_REPORT, {
+          rule: R19_RULE,
+          step: 'TABLE',
+          legacyKey: t.table_id,
+          targetTable: 'prj_table',
+          targetId: null,
+          field: 'table_nm',
+          before: nm.value,
+          after: tableNm,
+          action: 'NORMALIZED',
+          note: `${RMS.key} ${t.table_logical_nm.trim()}`,
+        });
+      }
       const cols = colsByTable.get(t.table_id) ?? [];
       const noPk = !cols.some((x) => x.is_key === 'Y');
       const notes: string[] = [];
@@ -192,17 +231,17 @@ export const tableStep: StepDef = {
           before: null,
           after: null,
           action: 'REVIEW',
-          note: `${nm.value} ${t.table_logical_nm}: PK 없음(자동 수정 없음, FINAL 유지)`,
+          note: `${tableNm} ${t.table_logical_nm}: PK 없음(자동 수정 없음, FINAL 유지)`,
         });
       }
-      if (rp.prefix && !nm.value.startsWith(rp.prefix)) notes.push(`접두어 ${rp.prefix} 아님`);
+      if (rp.prefix && !tableNm.startsWith(rp.prefix)) notes.push(`접두어 ${rp.prefix} 아님`);
       const times = migratedTimes(t.firs_reg_dts, t.fina_reg_dts);
       return {
         legacy: t,
         value: {
           projectId: rmsId,
           bizAreaId: rp.id,
-          tableNm: nm.value,
+          tableNm,
           tableLogicalNm: t.table_logical_nm.trim(),
           description: blank(t.description) ? null : t.description,
           status: 'FINAL',
@@ -241,6 +280,7 @@ export const tableStep: StepDef = {
 
     // ── 컬럼 ──────────────────────────────────────────────────────
     const typeReviewByTable = new Map<number, string[]>();
+    const tableNmByLegacy = new Map(tableValues.map((t) => [t.legacy.table_id, t.value.tableNm]));
     const columnValues = columns.map((col) => {
       const tableId = tableIdByLegacy.get(col.table_id)!;
       const key = `${col.table_id}#${col.col_seq}`;
@@ -265,6 +305,12 @@ export const tableStep: StepDef = {
         c.r9++;
         add('r09_physical_normalized', 'R09', 'physical_nm', col.physical_col_nm, phys.value, 'NORMALIZED');
       }
+      // R19(CR-09): 등록자 = RGSRT — 기본컬럼 이름 정정(기본컬럼 연결은 정정된 이름으로 찾는다)
+      const physicalNm = r19ColumnName(phys.value);
+      if (physicalNm !== phys.value) {
+        r19.columns++;
+        add(R19_REPORT, R19_RULE, 'physical_nm', phys.value, physicalNm, 'NORMALIZED', `${tableNmByLegacy.get(col.table_id) ?? col.table_id}.${physicalNm}`);
+      }
       const isPk = col.is_key === 'Y';
       let isNullable = col.is_nullable !== 'N';
       if (isPk && isNullable) {
@@ -274,7 +320,7 @@ export const tableStep: StepDef = {
       }
       // 참조(RMS 사본)
       const domain = refs.domainByLogical.get(logicalNm);
-      const defaultColId = refs.defaultColByPhysical.get(phys.value) ?? null;
+      const defaultColId = refs.defaultColByPhysical.get(physicalNm) ?? null;
       let codeClsId: number | null = null;
       let comment = blank(col.col_comment) ? null : col.col_comment!.trim();
       const m = comment ? CODE_COMMENT_RE.exec(comment) : null;
@@ -324,16 +370,16 @@ export const tableStep: StepDef = {
           c.r10++;
           c.r10Review++;
           add('r10_column_type_review', 'R10', 'data_type', null, [...known][0], 'REVIEW', `같은 물리명(${phys.value}) 컬럼의 타입으로 추정 — 확인 필요(R16)`);
-          typeReviewByTable.set(tableId, [...(typeReviewByTable.get(tableId) ?? []), phys.value]);
+          typeReviewByTable.set(tableId, [...(typeReviewByTable.get(tableId) ?? []), physicalNm]);
         } else {
           c.r10Review++;
           add('r10_column_type_review', 'R10', 'data_type', null, null, 'REVIEW', '타입 없음 — NULL 유지(VARCHAR(100) 대체 금지)');
-          typeReviewByTable.set(tableId, [...(typeReviewByTable.get(tableId) ?? []), phys.value]);
+          typeReviewByTable.set(tableId, [...(typeReviewByTable.get(tableId) ?? []), physicalNm]);
         }
       } else {
         c.r10Review++;
         add('r16_type_parse', 'R16', 'data_type', col.data_type, null, 'REVIEW', `파싱 불가(${parsed.reason}) — NULL 유지`);
-        typeReviewByTable.set(tableId, [...(typeReviewByTable.get(tableId) ?? []), phys.value]);
+        typeReviewByTable.set(tableId, [...(typeReviewByTable.get(tableId) ?? []), physicalNm]);
       }
       if (domain) c.exact++;
       if (defaultColId !== null) c.dflt++;
@@ -344,7 +390,7 @@ export const tableStep: StepDef = {
         tableId,
         colSeq: col.col_seq,
         logicalNm,
-        physicalNm: phys.value,
+        physicalNm,
         isPk,
         dataType,
         dataLength,
@@ -454,11 +500,12 @@ export const tableStep: StepDef = {
         { rule: 'R16', source: columns.length, loaded: c.r16, excluded: 0, flagged: 0 },
         { rule: 'R17', source: tables.length, loaded: 0, excluded: 0, flagged: c.r17 },
         { rule: 'R18', source: columns.length, loaded: c.r18, excluded: 0, flagged: 0 },
+        { rule: R19_RULE, source: tables.length + columns.length, loaded: r19.tables + r19.columns, excluded: 0, flagged: 0 },
       ],
       message:
         `테이블 ${insertedTables.length}·컬럼 ${insertedCols.length}(업무구분 ${LEGACY_BIZ_CD}, FINAL) · ` +
         `도메인 연결(EXACT 일치) ${c.exact} · 기본컬럼 연결 ${c.dflt} · 코드구분(R7-b) ${c.code} · ` +
-        `PK nullable 보정 ${c.pkFix} · R9 ${c.r9} · R10 ${c.r10}(검토 ${c.r10Review}) · R17 PK 없음 ${c.r17} · R18 ${c.r18} · 이력 MIGRATE ${history.length}`,
+        `PK nullable 보정 ${c.pkFix} · R9 ${c.r9} · R10 ${c.r10}(검토 ${c.r10Review}) · R17 PK 없음 ${c.r17} · R18 ${c.r18} · R19 테이블명 ${r19.tables}·컬럼명 ${r19.columns} · 이력 MIGRATE ${history.length}`,
     };
   },
 };

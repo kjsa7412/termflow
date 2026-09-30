@@ -3,10 +3,11 @@ import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertAudited, insertMigrated, updateAudited } from '../../db/audit.js';
 import { stdDefaultCol, stdDefaultColSet, tfProject } from '../../db/schema.js';
 import { parseStdType } from '../../standard/std-type-parser.js';
-import { StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
+import { STDV1, StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
 import { readDefaultCols } from '../legacy-reader.js';
 import { normalizePhysicalName } from '../rules/r09-physical-name.js';
 import { migratedTimes } from '../rules/r13-audit.js';
+import { r19ColumnName, R19_REPORT, R19_RULE } from '../rules/r19-term-unify.js';
 
 export const DEFAULT_SET_NM = '기본';
 
@@ -29,6 +30,8 @@ export const defaultColStep: StepDef = {
     const legacy = await readDefaultCols(tx);
     report.declare('r14_default_cols');
     report.declare('r16_type_parse');
+    report.declare(R19_REPORT);
+    let r19 = 0;
     const [set] = await insertAudited(
       tx,
       stdDefaultColSet,
@@ -63,13 +66,30 @@ export const defaultColStep: StepDef = {
       if (phys.formatError || phys.value === null) {
         throw new StepFailure(`기본컬럼 물리명 형식 위반: ${c.physical_col_nm}`);
       }
+      // R19(CR-09): 등록자 = RGSRT — FIRS/FINA_REG_USER_ID → FIRS/FINA_RGSRT_ID
+      const physicalNm = r19ColumnName(phys.value);
+      if (physicalNm !== phys.value) {
+        r19++;
+        report.add(R19_REPORT, {
+          rule: R19_RULE,
+          step: 'DEFAULT_COL',
+          legacyKey: c.col_seq,
+          targetTable: 'std_default_col',
+          targetId: null,
+          field: 'physical_nm',
+          before: phys.value,
+          after: physicalNm,
+          action: 'NORMALIZED',
+          note: `${STDV1.key} 세트 ${DEFAULT_SET_NM}: ${c.logical_col_nm.trim()}`,
+        });
+      }
       const isPk = (c.is_key ?? 'N').trim().toUpperCase() === 'Y';
       return {
         projectId,
         setId,
         colSeq: c.col_seq,
         logicalNm: c.logical_col_nm.trim(),
-        physicalNm: phys.value,
+        physicalNm,
         isPk,
         dataType: t.type,
         dataLength: t.length,
@@ -113,8 +133,9 @@ export const defaultColStep: StepDef = {
       rules: [
         { rule: 'R14', source: legacy.length, loaded: inserted.length, excluded: 0, flagged: 0 },
         { rule: 'R16', source: legacy.length, loaded: legacy.length, excluded: 0, flagged: 0 },
+        { rule: R19_RULE, source: legacy.length, loaded: r19, excluded: 0, flagged: 0 },
       ],
-      message: `세트 '${DEFAULT_SET_NM}'(set_id ${setId}) + ${inserted.length}행, STDV1 default_col_set_id 지정`,
+      message: `세트 '${DEFAULT_SET_NM}'(set_id ${setId}) + ${inserted.length}행, STDV1 default_col_set_id 지정 · R19 물리명 정정 ${r19}`,
     };
   },
 };

@@ -64,7 +64,12 @@ export interface SaveMode {
   action: Extract<HistoryAction, 'UPDATE' | 'RESTORE'>;
   /** RESTORE: "v2 복원" 접두. */
   summaryPrefix?: string;
-  extra?: Pick<TableSnapshot, 'restoredFrom'>;
+  extra?: Pick<TableSnapshot, 'restoredFrom' | 'note'>;
+  /**
+   * 관리자 표준 정정(CR-09 TERM_UNIFY): FINAL 테이블도 같은 저장 경로(version+1·스냅샷 이력·감사 컬럼)로 고치고 상태는 FINAL로 둔다.
+   * API에는 노출하지 않는다(편집기 저장은 항상 E_TABLE_FINAL).
+   */
+  allowFinal?: boolean;
 }
 
 const colValues = (c: ColumnInput, seq: number) => ({
@@ -455,7 +460,7 @@ export class TableService {
     this.assertNotTemplate(ctx);
     const r = await this.db.transaction(async (tx) => {
       const cur = await this.header(tx, ctx, id);
-      if (cur.status === 'FINAL')
+      if (cur.status === 'FINAL' && !mode.allowFinal)
         throw new ConflictProblem('E_TABLE_FINAL', VALIDATION_CODES.E_TABLE_FINAL.message);
       if (cur.version !== raw.version) return { conflict: true as const };
       const c = await this.check(tx, ctx.projectId, raw, {

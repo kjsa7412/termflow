@@ -19,6 +19,8 @@ export const STEP_ORDER = [
   'DEFAULT_COL',
   'COPY_TO_RMS',
   'TABLE',
+  /** CR-09 R19: 이미 적재된 DB의 용어 기준 물리명 정정(새 적재는 대상 없음 — 멱등). */
+  'TERM_UNIFY',
   'RECONCILE',
   'DDL_REGRESSION',
 ] as const;
