@@ -6,6 +6,7 @@
 **/.vite
 .git
 .gitignore
+.github
 # 개발 도구 폴더(에이전트 worktree 사본 포함). 대괄호는 check:no-ai 문자열 검사를 피하려는 glob 표기(.prettierignore와 같음)
 .[c]laude
 .env
