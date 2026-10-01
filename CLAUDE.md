@@ -12,12 +12,13 @@
 
 ## 테스트 실행 원칙(과도한 반복 금지)
 - 개발 중에는 고친 모듈의 테스트만 파일 필터로 돌린다(`pnpm -C C:/project/termflow test:db -- <필터>`). 전체 `test:db`는 게이트에서 한 번만.
-- main 병합 뒤 재검증은 조건부: 브랜치를 만든 뒤 main이 앞으로 나가지 않았으면(병합 결과 트리 = 브랜치 트리) 브랜치 게이트 결과를 그대로 인정하고 lint·typecheck만 확인한다. main이 앞으로 나갔으면 main을 브랜치에 먼저 합쳐 게이트를 한 번 돌린다.
+- (사용자 요청으로 브랜치를 쓴 경우) main 병합 뒤 재검증은 조건부: 브랜치를 만든 뒤 main이 앞으로 나가지 않았으면(병합 결과 트리 = 브랜치 트리) 브랜치 게이트 결과를 그대로 인정하고 lint·typecheck만 확인한다. main이 앞으로 나갔으면 main을 브랜치에 먼저 합쳐 게이트를 한 번 돌린다.
 - 같은 테스트를 통과 확인 목적으로 반복 실행하지 않는다. 불안정 테스트는 원인을 고치고 기록한다.
 
 ## 진행 규칙
 - 절차는 `docs/03_TODO.md`를 따른다. 항목 완료 시 체크 `[x]` + 커밋 해시.
-- 단계 브랜치 `stage/{N}-{slug}`, 게이트 통과 시 main에 `--no-ff` 병합 + `git tag stage-{N}`.
+- 작업·커밋·푸시는 기본적으로 `main` 브랜치에서 한다(커밋 후 `git -C C:/project/termflow push origin main`). 별도 브랜치는 사용자가 요청할 때만 만든다. push마다 GitHub Actions CI(`.github/workflows/ci.yml`)가 돌므로 push 전에 고친 범위의 lint·typecheck·테스트를 로컬에서 확인한다.
+- 태그는 버전 태그 `v{X.Y.Z}`만 쓴다(릴리스 때). 단계 태그(`stage-*`)는 만들지 않는다.
 - 항목 단위로 자주 커밋한다(사용량 한도·세션 종료로 중단될 수 있음). 재개 시 git 상태와 TODO 체크로 이어서 진행.
 - 커밋 메시지는 한국어, 마지막 줄 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - 사용자 결정이 필요한 항목은 설계서·TODO의 권장안으로 처리하고 기록한다. 설계 수준 변경은 `docs/CR-{nn}_*.md`로 남긴다.
