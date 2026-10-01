@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
 
 /**
  * 브라우저 E2E(T10.4·T10.7, 설계서 §13.1): `pnpm e2e` → dev 서버(`pnpm dev`: 8080 + vite 5173)를 띄우거나 이미 떠 있으면 재사용하고,
- * dev DB(termflow-db 5434, RMS 33 테이블)를 대상으로 Chrome·Edge(설치된 브라우저 채널 — 별도 다운로드 없음, §12.7)에서 실행한다.
+ * dev DB(termflow-db, 호스트 포트 `.env`의 TERMFLOW_DB_PORT(기본 7341), RMS 33 테이블)를 대상으로 Chrome·Edge(설치된 브라우저 채널 — 별도 다운로드 없음, §12.7)에서 실행한다.
  * 로그인 계정은 루트 `.env`의 `TERMFLOW_ADMIN_LOGIN` + `TERMFLOW_ADMIN_DEV_CURRENT_PASSWORD`(dev에서 바꾼 현재 비밀번호)를 읽는다
  * — 값은 출력하지 않는다. 테스트가 만든 용어·테이블은 각 테스트가 끝날 때 API로 지운다(RMS 33 테이블 유지).
  */

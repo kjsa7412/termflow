@@ -68,7 +68,7 @@ systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이
             </tr>
             <tr>
               <th scope="row">포트</th>
-              <td colspan="2">8080(앱) · 5434(DB) — 겹치면 바꾼다</td>
+              <td colspan="2">7340(앱) · 7341(DB) — 흔한 서비스 포트(8080 · 5432 등)와 겹치지 않게 골랐다. 겹치면 바꾼다</td>
             </tr>
             <tr>
               <th scope="row">브라우저</th>
@@ -127,7 +127,7 @@ systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이
       <h2>첫 로그인</h2>
       <ol class="steps">
         <li>
-          브라우저로 <span class="mono">http://&lt;서버 주소&gt;:8080</span>. 아이디
+          브라우저로 <span class="mono">http://&lt;서버 주소&gt;:7340</span>. 아이디
           <span class="mono">admin</span>, 비밀번호는 <span class="mono">.env</span>의
           <span class="mono">TERMFLOW_ADMIN_PASSWORD</span>.
         </li>
