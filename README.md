@@ -124,6 +124,7 @@ Linux 서버(가이드 §14):
 ```bash
 scripts/bundle.sh                              # 오프라인 번들 release/termflow-linux-<판>.tar.gz(소스 + app·postgres 이미지), Windows는 Git Bash
 sudo ./install.sh --migrate yes --migrate-all  # 서버: .env 난수 생성 · 이미지 적재 · systemd(기동·매일 백업) · start.sh
+scp release/termflow-linux-<판>.tar.gz* <계정>@<서버>:/tmp/   # 번들 옮기기 → 업그레이드: sudo bash /opt/termflow/scripts/upgrade.sh /tmp/termflow-linux-<판>.tar.gz
 ./start.sh · scripts/backup.sh · scripts/restore.sh <덤프>
 ```
 
