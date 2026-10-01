@@ -88,7 +88,20 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/web/vite.config.ts', 'apps/web/build/**/*.ts'],
+    // 소개 사이트(T12.7): 브라우저 + 빌드 상수. 그림 컴포넌트 이름(Shot·Lightbox)은 한 낱말로 둔다
+    files: ['site/src/**/*.{ts,vue}'],
+    languageOptions: {
+      globals: { ...globals.browser, __TF_VERSION__: 'readonly', __TF_BASE__: 'readonly' },
+    },
+    rules: { 'vue/require-default-prop': 'off', 'vue/multi-word-component-names': 'off' },
+  },
+  {
+    files: [
+      'apps/web/vite.config.ts',
+      'apps/web/build/**/*.ts',
+      'site/vite.config.ts',
+      'site/tools/**/*.mjs',
+    ],
     languageOptions: { globals: { ...globals.node } },
   },
   prettier,

@@ -1,0 +1,17 @@
+# 소개 사이트(사외 공개)에 나오면 안 되는 이름 — tools/leaks.mjs가 빌드 산출물에서 찾는다.
+# 새 사내 이름·주소가 보이면 여기에 더한다. 영문·숫자는 대소문자 구분 + 단어 경계.
+# 이관 프로젝트·원본 시스템
+RMS
+연구관리
+연구과제
+RP_RSCH
+gen-table
+gen_table
+STDV1
+# 회사·사람·내부 주소
+sjinc
+세정
+kjsa
+10.10.
+termflow-prod
+termflow-rehearsal
