@@ -8,6 +8,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.1.1',
+    date: '2026-10-01',
+    summary: '기본 포트를 흔한 서비스와 겹치지 않게.',
+    items: [
+      '설치 기본 포트 — 앱 8080 → 7340, DB 5434 → 7341(Tomcat · Jenkins · PostgreSQL 등 기본값과 충돌 방지)',
+      '기존 설치는 업그레이드할 때 이전 포트를 설정에 고정해 접속 주소를 그대로 둔다',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-10-01',
     summary: 'Linux 서버 설치형, 제품 안 설명서, 소개 사이트.',

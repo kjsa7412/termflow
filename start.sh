@@ -187,9 +187,26 @@ if [ "${#PROBLEMS[@]}" -gt 0 ]; then
 fi
 ok ".env 필수 변수 ${#REQUIRED_VARS[@]}개 확인"
 
+# 기본 포트 변경(v1.1.1: app 8080 → 7340 · db 5434 → 7341, CR-12 C16) 전 설치: .env에 포트를 적지 않고 옛 기본값으로
+# 떠 있던 컨테이너가 있으면 그 값을 .env에 적어 둔다 — 업그레이드로 접속 주소가 바뀌지 않게.
+pin_old_port() { # $1 서비스 $2 변수 $3 옛 기본값 $4 새 기본값
+  local key="$2" id bound
+  [ -n "$(dotenv "$key")" ] && return 0
+  [ -n "${!key-}" ] && return 0
+  id="$("${COMPOSE[@]}" ps -aq "$1" 2>/dev/null | head -n1)"
+  [ -n "$id" ] || return 0
+  bound="$(docker inspect -f '{{range $p, $b := .HostConfig.PortBindings}}{{range $b}}{{.HostPort}}{{end}}{{end}}' "$id" 2>/dev/null)"
+  [ "$bound" = "$3" ] || return 0
+  printf '\n# v1.1.1 기본 포트 변경 전 설치 — 접속 주소 유지(CR-12 C16). 새 기본값 %s로 옮기려면 이 줄을 지운다\n%s=%s\n' "$4" "$key" "$3" >>"$ENV_FILE"
+  printf -v "DOTENV_$key" '%s' "$3"
+  info "$key=$3 을 .env에 고정했습니다(이전 기본값 — 접속 주소 유지)."
+}
+pin_old_port app TERMFLOW_APP_PORT 8080 7340
+pin_old_port db TERMFLOW_DB_PORT 5434 7341
+
 # 호스트 포트: 셸 환경 변수 > .env > 기본값(compose 변수 치환과 같은 우선순위)
 APP_PORT="${TERMFLOW_APP_PORT:-$(dotenv TERMFLOW_APP_PORT)}"
-APP_PORT="${APP_PORT:-8080}"
+APP_PORT="${APP_PORT:-7340}"
 APP_URL="http://localhost:$APP_PORT"
 
 # bind mount 대상(없으면 Docker가 root 소유로 만든다 — 미리 만들어 app(이미지의 node 사용자, uid 1000)이 쓸 수 있게 둔다).

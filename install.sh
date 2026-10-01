@@ -7,8 +7,8 @@
 # 다시 실행해도 된다: .env·DB 볼륨·등록된 서비스는 그대로 두고 빠진 것만 채운다.
 #
 # 옵션:
-#   --port N               앱 포트(기본 8080, .env를 새로 만들 때만 반영)
-#   --db-port N            DB 호스트 포트(기본 5434, 같은 조건)
+#   --port N               앱 포트(기본 7340, .env를 새로 만들 때만 반영)
+#   --db-port N            DB 호스트 포트(기본 7341, 같은 조건)
 #   --migrate ask|yes|no   승계(초기 데이터) 실행 여부 — start.sh로 넘긴다(기본 ask)
 #   --migrate-all          승계를 1~12 한 번에(start.sh --migrate-all)
 #   --no-systemd           systemd 서비스·타이머를 등록하지 않는다
@@ -20,8 +20,8 @@ set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE=(docker compose --project-directory "$ROOT" -f "$ROOT/docker-compose.yml")
-APP_PORT=8080
-DB_PORT=5434
+APP_PORT=7340
+DB_PORT=7341
 START_ARGS=()
 USE_SYSTEMD=1
 DO_START=1
@@ -173,10 +173,10 @@ else
   # 관리자 비밀번호 정책(8~64자, 2종 이상, 로그인 ID 미포함) — 영문·숫자 22자 + '-' + 숫자(CR-11 C3과 같은 형식)
   set_env TERMFLOW_ADMIN_PASSWORD "$(rand_alnum 22)-$((RANDOM % 10))"
   set_env TERMFLOW_SESSION_SECRET "$(rand_hex 32)"
-  [ "$APP_PORT" != 8080 ] && set_env TERMFLOW_APP_PORT "$APP_PORT"
-  [ "$DB_PORT" != 5434 ] && set_env TERMFLOW_DB_PORT "$DB_PORT"
+  [ "$APP_PORT" != 7340 ] && set_env TERMFLOW_APP_PORT "$APP_PORT"
+  [ "$DB_PORT" != 7341 ] && set_env TERMFLOW_DB_PORT "$DB_PORT"
   umask 022
-  ok ".env 생성(권한 600): 비밀값 3개 난수, NODE_ENV=production$([ "$APP_PORT" != 8080 ] && printf ', 앱 포트 %s' "$APP_PORT")"
+  ok ".env 생성(권한 600): 비밀값 3개 난수, NODE_ENV=production$([ "$APP_PORT" != 7340 ] && printf ', 앱 포트 %s' "$APP_PORT")"
   info '초기 관리자 비밀번호는 화면에 내지 않습니다 — 첫 로그인 전에 확인: sudo grep ^TERMFLOW_ADMIN_PASSWORD= .env'
 fi
 # sudo로 설치했으면 .env를 실행 사용자 것으로 둔다(백업 타이머·start.sh는 root로 돈다)

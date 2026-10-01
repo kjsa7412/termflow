@@ -9,11 +9,16 @@ sudo git clone --branch v${ver} <저장소 주소> /opt/termflow
 sudo /opt/termflow/install.sh`;
 const BUNDLE_MAKE = `# 인터넷이 되는 PC(Windows는 Git Bash)에서 — 소스 + 이미지(app · postgres)를 파일 하나로
 scripts/bundle.sh            # → release/termflow-linux-${ver}.tar.gz (+ .sha256)`;
-const BUNDLE_INSTALL = `# 서버에서 — 설치와 업그레이드가 같은 명령(.env · backup · logs는 번들에 없어 그대로 남는다)
-sha256sum -c termflow-linux-${ver}.tar.gz.sha256
+const BUNDLE_COPY = `# 개발 PC → 서버 /tmp/ (Windows도 PowerShell에 scp · ssh가 있다. SSH가 막혔으면 USB 등으로 같은 두 파일을)
+scp release/termflow-linux-${ver}.tar.gz release/termflow-linux-${ver}.tar.gz.sha256 <계정>@<서버>:/tmp/
+ssh <계정>@<서버>`;
+const BUNDLE_INSTALL = `# 서버 — 처음 설치
+cd /tmp && sha256sum -c termflow-linux-${ver}.tar.gz.sha256
 sudo mkdir -p /opt/termflow
-sudo tar -xzf termflow-linux-${ver}.tar.gz -C /opt/termflow --strip-components=1
+sudo tar -xzf /tmp/termflow-linux-${ver}.tar.gz -C /opt/termflow --strip-components=1 --no-same-owner
 sudo /opt/termflow/install.sh`;
+const BUNDLE_UPGRADE = `# 서버 — 업그레이드(체크섬 → 백업 → 풀기 → install.sh, .env · backup · logs는 그대로)
+sudo bash /opt/termflow/scripts/upgrade.sh /tmp/termflow-linux-${ver}.tar.gz`;
 const WINDOWS = `# 설치 폴더(예 C:\\TermFlow)에서 — .env를 만들고 비밀값 3개를 채운 뒤
 copy .env.example .env
 start.bat`;
@@ -68,7 +73,10 @@ systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이
             </tr>
             <tr>
               <th scope="row">포트</th>
-              <td colspan="2">8080(앱) · 5434(DB) — 겹치면 바꾼다</td>
+              <td colspan="2">
+                7340(앱) · 7341(DB) — 흔한 서비스 포트(8080 · 5432 등)와 겹치지 않게 골랐다. 겹치면
+                바꾼다
+              </td>
             </tr>
             <tr>
               <th scope="row">브라우저</th>
@@ -96,10 +104,17 @@ systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이
           <span class="mono">install.sh</span>는 <span class="mono">images/</span>의 이미지 파일을
           <span class="mono">docker load</span> 하고 빌드하지 않는다.
           <CodeBlock :code="BUNDLE_MAKE" />
+          번들과 체크섬 두 파일을 서버로 옮긴다.
+          <CodeBlock :code="BUNDLE_COPY" />
           <CodeBlock :code="BUNDLE_INSTALL" />
         </li>
         <li>
-          <b>옵션.</b> <span class="mono">--port 8090</span>(앱 포트) ·
+          <b>업그레이드는 한 줄.</b> 새 번들을 같은 방법으로 <span class="mono">/tmp/</span>에
+          옮기고 실행한다 — 체크섬 확인 → 백업 → 풀기 → 새 이미지로 다시 기동(DB 스키마 자동 적용).
+          <CodeBlock :code="BUNDLE_UPGRADE" />
+        </li>
+        <li>
+          <b>옵션.</b> <span class="mono">--port 7350</span>(앱 포트, 기본 7340) ·
           <span class="mono">--migrate yes|no|ask</span>(초기 데이터 적재) ·
           <span class="mono">--no-systemd</span> · <span class="mono">--no-start</span>. 다시
           실행해도 된다 — 있는 <span class="mono">.env</span>·데이터·서비스는 그대로 두고 빠진 것만
@@ -127,7 +142,7 @@ systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이
       <h2>첫 로그인</h2>
       <ol class="steps">
         <li>
-          브라우저로 <span class="mono">http://&lt;서버 주소&gt;:8080</span>. 아이디
+          브라우저로 <span class="mono">http://&lt;서버 주소&gt;:7340</span>. 아이디
           <span class="mono">admin</span>, 비밀번호는 <span class="mono">.env</span>의
           <span class="mono">TERMFLOW_ADMIN_PASSWORD</span>.
         </li>
@@ -147,10 +162,9 @@ systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이
       <h2>운영 한눈에</h2>
       <CodeBlock :code="OPS" />
       <p class="note">
-        업그레이드는 새 번들(또는 새 판 소스)을 같은 폴더에 풀고
-        <span class="mono">install.sh</span>를 다시 실행한다 — 기동할 때 DB 스키마를 자동으로
-        맞춘다. 먼저 백업한다. 자세한 절차(HTTPS 프록시 · 복구 · 문제 해결)는 제품 안
-        <b>설치·운영 가이드</b>(시스템 관리자).
+        Linux 업그레이드는 위의 <span class="mono">scripts/upgrade.sh</span> 한 줄(백업 포함),
+        Windows는 새 판 소스로 <span class="mono">start.bat -Build</span>. 자세한 절차(HTTPS 프록시
+        · 복구 · 문제 해결)는 제품 안 <b>설치·운영 가이드</b>(시스템 관리자).
       </p>
     </section>
   </div>

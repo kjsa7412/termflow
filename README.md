@@ -1,11 +1,11 @@
 # TermFlow (텀플로)
 
-표준 용어를 관리하고, 용어로 컬럼을 자동완성해 테이블을 설계하고, DDL까지 한 흐름으로 생성하는 다중 사용자·프로젝트 기반 데이터 표준 설계 서비스. 현재 릴리스 **v1.1.0**(`docs/릴리스_노트_v1.1.0.md`) — Linux 서버 설치형·제품 안 설명서·소개 사이트(CR-12).
+표준 용어를 관리하고, 용어로 컬럼을 자동완성해 테이블을 설계하고, DDL까지 한 흐름으로 생성하는 다중 사용자·프로젝트 기반 데이터 표준 설계 서비스. 현재 릴리스 **v1.1.1**(`docs/릴리스_노트_v1.1.1.md`, 기본 포트 7340·7341) — v1.1.0: Linux 서버 설치형·제품 안 설명서·소개 사이트(CR-12).
 
 | 구분      | 내용                                                                                                                                                                                                                                                                                  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 기능      | 프로젝트·업무구분·표준 템플릿, 표준 사전 7종(용어·도메인분류·도메인·코드구분·코드·기본컬럼·승인 큐) + 엑셀 일괄 등록, 테이블 편집기(자동완성·인라인 용어 등록·이력·복제·충돌 병합), PostgreSQL DDL(단건·다중·ZIP·정보 추출), 사용자·역할(시스템 관리자·프로젝트 관리자·편집자·조회자) |
-| 기술      | NestJS 12(Node 22) + Vue 3/Vite SPA + PostgreSQL 17, 단일 이미지 `termflow-app:1.1.0` + compose                                                                                                                                                                                       |
+| 기술      | NestJS 12(Node 22) + Vue 3/Vite SPA + PostgreSQL 17, 단일 이미지 `termflow-app:1.1.1` + compose                                                                                                                                                                                       |
 | 운영 설치 | **`docs/설치_운영_가이드.md`**(Windows: Docker Desktop + `start.bat` · **Linux 서버: `install.sh`**·오프라인 번들 §14, 승계·백업·복구·업그레이드)                                                                                                                                     |
 | 사용법    | **`docs/사용자_가이드.md`**(역할별, 제품 화면 `/manual`에서도 — 빌드 때 이 파일을 HTML로 싣는다)                                                                                                                                                                                      |
 | 설계·기록 | `docs/00_네이밍.md`, `docs/01_검토안.md`, `docs/02_설계서.md`, `docs/03_TODO.md`, `docs/CR-*.md`(설계 변경), `docs/수용_테스트_결과.md`·`docs/측정_결과.md`, `docs/mockups/`                                                                                                          |
@@ -52,11 +52,11 @@ pnpm dev                     # shared 빌드 후 shared(watch)·server(nest buil
 
 ### 포트
 
-| 포트 | 용도                                  | 비고                                       |
-| ---- | ------------------------------------- | ------------------------------------------ |
-| 5173 | 웹 개발 서버(Vite, HMR)               | `/api`·`/health` → 8080 프록시             |
-| 8080 | API 서버(NestJS)                      | `GET /health`, 업무 API는 `/api/v1/**`     |
-| 5434 | PostgreSQL(`termflow-db`) 호스트 포트 | 컨테이너 내부 5432, 볼륨 `termflow-pgdata` |
+| 포트 | 용도                                  | 비고                                                                                                             |
+| ---- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 5173 | 웹 개발 서버(Vite, HMR)               | `/api`·`/health` → 8080 프록시                                                                                   |
+| 8080 | API 서버(NestJS, `pnpm dev`)          | `GET /health`, 업무 API는 `/api/v1/**`. 설치본(compose)의 호스트 포트는 7340                                     |
+| 7341 | PostgreSQL(`termflow-db`) 호스트 포트 | 컨테이너 내부 5432, 볼륨 `termflow-pgdata`. v1.1.1 전부터 쓰던 개발 PC는 `.env`의 `TERMFLOW_DB_PORT=5434`로 유지 |
 
 ### 품질 게이트
 
@@ -114,7 +114,7 @@ pnpm --filter @termflow/server cr09:sql       # 운영 DB 전환 스크립트 do
 ### 컨테이너 이미지·운영 실행(요약)
 
 ```bash
-docker build -t termflow-app:1.1.0 .          # 멀티스테이지(node:22-alpine), 약 3~10분, 약 410MB
+docker build -t termflow-app:1.1.1 .          # 멀티스테이지(node:22-alpine), 약 3~10분, 약 410MB
 start.bat                                      # Windows 원클릭: Docker·.env 확인 → db → 승계 질문 → app → 브라우저
 docker compose run --rm app node apps/server/dist/migration/seed.js --steps=LOAD_LEGACY..DDL_REGRESSION   # 승계 러너(컨테이너)
 ```
@@ -124,10 +124,11 @@ Linux 서버(가이드 §14):
 ```bash
 scripts/bundle.sh                              # 오프라인 번들 release/termflow-linux-<판>.tar.gz(소스 + app·postgres 이미지), Windows는 Git Bash
 sudo ./install.sh --migrate yes --migrate-all  # 서버: .env 난수 생성 · 이미지 적재 · systemd(기동·매일 백업) · start.sh
+scp release/termflow-linux-<판>.tar.gz* <계정>@<서버>:/tmp/   # 번들 옮기기 → 업그레이드: sudo bash /opt/termflow/scripts/upgrade.sh /tmp/termflow-linux-<판>.tar.gz
 ./start.sh · scripts/backup.sh · scripts/restore.sh <덤프>
 ```
 
-전체 절차·`.env` 항목·백업·복구는 `docs/설치_운영_가이드.md`. 개발 DB(`termflow-db`, 5434)와 같은 PC에 운영·검증 인스턴스를 둘 때는 **다른 폴더에 소스를 두고** 그 폴더 `.env`에 `COMPOSE_PROJECT_NAME`·컨테이너 이름·포트를 따로 지정한다(가이드 §11).
+전체 절차·`.env` 항목·백업·복구는 `docs/설치_운영_가이드.md`. 개발 DB(`termflow-db`, 7341 — 기존 개발 PC는 5434)와 같은 PC에 운영·검증 인스턴스를 둘 때는 **다른 폴더에 소스를 두고** 그 폴더 `.env`에 `COMPOSE_PROJECT_NAME`·컨테이너 이름·포트를 따로 지정한다(가이드 §11).
 
 ### 소개 사이트·화면 그림(단계 12, CR-12)
 

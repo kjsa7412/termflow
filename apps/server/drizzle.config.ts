@@ -6,6 +6,6 @@ export default defineConfig({
   schema: './src/db/schema.ts',
   out: './drizzle',
   dbCredentials: {
-    url: process.env['TERMFLOW_DB_URL_WITH_AUTH'] ?? 'postgres://termflow@localhost:5434/termflow',
+    url: process.env['TERMFLOW_DB_URL_WITH_AUTH'] ?? 'postgres://termflow@localhost:7341/termflow',
   },
 });

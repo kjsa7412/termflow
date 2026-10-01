@@ -1,6 +1,6 @@
 # TermFlow 실행 구성(설계서 부록 B.1 db + B.3 N안 app, T11.2). 값은 같은 디렉터리의 .env에서 읽는다(.env.example 참고).
 #
-# 운영 기본값: 프로젝트 termflow, 컨테이너 termflow-db/termflow-app, 호스트 포트 5434/8080.
+# 운영 기본값: 프로젝트 termflow, 컨테이너 termflow-db/termflow-app, 호스트 포트 app 7340 · db 7341(흔한 서비스 기본값과 겹치지 않게, CR-12 C16).
 # 같은 PC에서 두 번째 인스턴스(검증 등)를 띄울 때는 .env 또는 환경 변수로 바꾼다(CR-11a C3):
 #   COMPOSE_PROJECT_NAME(볼륨 이름 접두어도 바뀜) · TERMFLOW_DB_CONTAINER · TERMFLOW_APP_CONTAINER · TERMFLOW_DB_PORT · TERMFLOW_APP_PORT
 name: termflow
@@ -15,7 +15,7 @@ services:
       POSTGRES_USER: termflow
       POSTGRES_PASSWORD: ${TERMFLOW_DB_PASSWORD:?required}
       TZ: Asia/Seoul
-    ports: ['${TERMFLOW_DB_PORT:-5434}:5432']
+    ports: ['${TERMFLOW_DB_PORT:-7341}:5432']
     volumes:
       - termflow-pgdata:/var/lib/postgresql/data
       - ./seed:/seed:ro # migrate 단계 psql 적재용(읽기 전용)
@@ -29,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile # §2.5.8 멀티스테이지(node:22-alpine)
-    image: termflow-app:1.1.0
+    image: termflow-app:1.1.1
     container_name: ${TERMFLOW_APP_CONTAINER:-termflow-app}
     restart: unless-stopped
     depends_on:
@@ -48,7 +48,7 @@ services:
       TERMFLOW_LEGACY_DUMP: /seed/original/dump-gen_table-new.sql
       TERMFLOW_REPORT_DIR: /app/migration/report
       TZ: Asia/Seoul
-    ports: ['${TERMFLOW_APP_PORT:-8080}:8080']
+    ports: ['${TERMFLOW_APP_PORT:-7340}:8080']
     volumes:
       - ./logs:/app/logs # pino-roll 일 단위 30개(§12.3, T11.5)
       - ./migration/report:/app/migration/report # 승계 리포트(§11.3)

@@ -191,8 +191,25 @@ if ($problems.Count -gt 0) {
 }
 Write-Ok ".env 필수 변수 $($RequiredVars.Count)개 확인"
 
+# 기본 포트 변경(v1.1.1: app 8080 → 7340 · db 5434 → 7341, CR-12 C16) 전 설치: .env에 포트를 적지 않고 옛 기본값으로
+# 떠 있던 컨테이너가 있으면 그 값을 .env에 적어 둔다 — 업그레이드로 접속 주소가 바뀌지 않게.
+function Set-OldPort([string]$Service, [string]$Key, [string]$Old, [string]$New) {
+  if ($dotenv.ContainsKey($Key) -and $dotenv[$Key]) { return }
+  if ([Environment]::GetEnvironmentVariable($Key)) { return }
+  $id = & docker @ComposeArgs ps -aq $Service 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $id) { return }
+  $bound = & docker inspect -f '{{range $p, $b := .HostConfig.PortBindings}}{{range $b}}{{.HostPort}}{{end}}{{end}}' (($id | Select-Object -First 1).Trim()) 2>$null
+  if (-not $bound -or $bound.Trim() -ne $Old) { return }
+  $lines = "`r`n# v1.1.1 기본 포트 변경 전 설치 — 접속 주소 유지(CR-12 C16). 새 기본값 $New(으)로 옮기려면 이 줄을 지운다`r`n$Key=$Old`r`n"
+  [System.IO.File]::AppendAllText($envFile, $lines, (New-Object System.Text.UTF8Encoding($false)))
+  $dotenv[$Key] = $Old
+  Write-Info "$Key=$Old 을 .env에 고정했습니다(이전 기본값 — 접속 주소 유지)."
+}
+Set-OldPort 'app' 'TERMFLOW_APP_PORT' '8080' '7340'
+Set-OldPort 'db' 'TERMFLOW_DB_PORT' '5434' '7341'
+
 # 호스트 포트: 셸 환경 변수 > .env > 기본값(compose 변수 치환과 같은 우선순위)
-$appPort = if ($env:TERMFLOW_APP_PORT) { $env:TERMFLOW_APP_PORT } elseif ($dotenv.ContainsKey('TERMFLOW_APP_PORT') -and $dotenv['TERMFLOW_APP_PORT']) { $dotenv['TERMFLOW_APP_PORT'] } else { '8080' }
+$appPort = if ($env:TERMFLOW_APP_PORT) { $env:TERMFLOW_APP_PORT } elseif ($dotenv.ContainsKey('TERMFLOW_APP_PORT') -and $dotenv['TERMFLOW_APP_PORT']) { $dotenv['TERMFLOW_APP_PORT'] } else { '7340' }
 $appUrl = "http://localhost:$appPort"
 
 # bind mount 대상(없으면 Docker가 만들지만 미리 만들어 둔다)
