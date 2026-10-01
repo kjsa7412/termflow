@@ -84,6 +84,20 @@ E2E_SHOTS=1 pnpm -C e2e exec playwright test mockup-shots --project=chrome   # �
 
 권장 게이트 순서(단계 10 기준 소요): `pnpm lint` → `pnpm typecheck` → `pnpm test`(약 1~2분) → `pnpm test:db`(약 5분, 오래 걸리면 파일 필터로 나눈다) → `pnpm e2e`(약 8분).
 
+### CI(GitHub Actions, 단계 13·CR-13)
+
+`main`·`stage/**`·`v*` 태그 push와 main 대상 PR마다 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)이 ubuntu 러너에서 돈다(Actions 탭에서 수동 실행도 가능).
+
+| 작업                | 내용                                                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| lint · typecheck    | `pnpm lint`(ESLint·Prettier·check:no-ai) + `pnpm typecheck` — 실패하면 아래 test·test:db·build·install을 돌리지 않는다                  |
+| 설치 스크립트 검사  | shellcheck(`install.sh`·`start.sh`·`scripts/*.sh`) + PowerShell 구문(`start.ps1`·`scripts/*.ps1`)                                       |
+| test · test:db      | 단위 테스트, Testcontainers postgres:17(`TF_TEST_DB_REUSE=0`)                                                                           |
+| build               | `pnpm build`(shared → web → server, 소개 사이트 누출 검사 포함)                                                                         |
+| 이미지 · Linux 설치 | `docker build` → `./install.sh --no-systemd --migrate yes --migrate-all`(빈 서버 첫 설치·승계 1~12) → `/health`·`/manual` → 백업 → 복구 |
+
+E2E(`pnpm e2e`)는 dev DB(RMS)·설치된 Chrome·Edge가 필요해 로컬 게이트에 남는다. 실패한 install 작업은 compose 로그·`logs/`·`migration/report/`를 산출물(7일)로 올린다.
+
 ### DB 명령
 
 | 명령                                           | 동작                                                                |
