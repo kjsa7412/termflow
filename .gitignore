@@ -22,3 +22,6 @@ e2e/shots/
 
 # drizzle-kit pull 임시 출력(T1.4 PoC, db:pull)
 apps/server/.drizzle-pull/
+
+# Linux 오프라인 번들 산출물(scripts/bundle.sh, T12.4)
+release/

@@ -16,14 +16,32 @@
     {
       "name": "server",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@termflow/server", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@termflow/server",
+        "dev"
+      ],
       "port": 8080
     },
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@termflow/web", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@termflow/web",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@termflow/site",
+        "dev"
+      ],
+      "port": 5175
     }
   ]
 }

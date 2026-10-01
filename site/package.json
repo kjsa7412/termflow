@@ -1,0 +1,27 @@
+{
+  "name": "@termflow/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TermFlow 소개 사이트(정적 SPA, 로그인·서버 API 없음 — T12.7, CR-12 C1)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -p tsconfig.json --noEmit && vite build && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/postbuild.mjs",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc -p tsconfig.json --noEmit",
+    "test": "node ../scripts/run-vitest.mjs run"
+  },
+  "dependencies": {
+    "vue": "^3.5.43"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/test-utils": "^2.5.1",
+    "jsdom": "^30.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2",
+    "vue-tsc": "^3.3.11"
+  }
+}

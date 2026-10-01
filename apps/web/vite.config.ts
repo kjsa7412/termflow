@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vitest/config';
+import { manualPlugin } from './build/manual.js';
 
 const SERVER = process.env['TERMFLOW_DEV_SERVER_URL'] ?? 'http://localhost:8080';
 const ROOT_PKG = JSON.parse(
@@ -11,8 +13,11 @@ const ROOT_PKG = JSON.parse(
 
 // 설계서 §2.5.6: vite 개발 서버(5173) → /api 프록시 → 서버 8080.
 // /health는 업무 API 접두어(/api/v1) 밖에 있으므로 따로 프록시한다.
+// 제품 내 설명서 원문은 저장소 docs/(T12.5, CR-12 C4) — 이미지 빌드는 .dockerignore 예외로 그 파일만 넣는다(C5)
+const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
+
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), manualPlugin(REPO_ROOT)],
   define: { __APP_VERSION__: JSON.stringify(ROOT_PKG.version) },
   server: {
     port: 5173,
@@ -26,7 +31,7 @@ export default defineConfig({
     port: 4173,
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'build/**/*.test.ts'],
     environment: 'jsdom',
     // 불안정 실패 원인 제거(CR-10 C1): 기본 forks 풀은 테스트 파일마다 새 프로세스에서 jsdom을 다시 만든다
     // (단독 1.9초, 서버 테스트와 동시 실행 시 파일당 약 11초 · 11파일 합계 127초). 부하가 크면 워커 준비가
