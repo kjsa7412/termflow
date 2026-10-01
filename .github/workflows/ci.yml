@@ -149,7 +149,8 @@ jobs:
           scripts/backup.sh
           dump="$(ls -1 backup/termflow_*.dump | head -n1)"
           scripts/restore.sh "$dump" --force
-          curl -fsS http://localhost:7340/health
+          # restore.sh는 app 기동 요청까지만 한다(healthy 대기 없음) — 기동(약 수십 초)을 재시도로 기다린다
+          curl -fsS --retry 45 --retry-delay 2 --retry-all-errors http://localhost:7340/health
       - name: 실패 시 로그 모으기
         if: failure()
         run: |
