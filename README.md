@@ -1,13 +1,13 @@
 # TermFlow (텀플로)
 
-표준 용어를 관리하고, 용어로 컬럼을 자동완성해 테이블을 설계하고, DDL까지 한 흐름으로 생성하는 다중 사용자·프로젝트 기반 데이터 표준 설계 서비스. 현재 릴리스 **v1.0.0**(`docs/릴리스_노트_v1.0.0.md`).
+표준 용어를 관리하고, 용어로 컬럼을 자동완성해 테이블을 설계하고, DDL까지 한 흐름으로 생성하는 다중 사용자·프로젝트 기반 데이터 표준 설계 서비스. 현재 릴리스 **v1.1.0**(`docs/릴리스_노트_v1.1.0.md`) — Linux 서버 설치형·제품 안 설명서·소개 사이트(CR-12).
 
 | 구분      | 내용                                                                                                                                                                                                                                                                                  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 기능      | 프로젝트·업무구분·표준 템플릿, 표준 사전 7종(용어·도메인분류·도메인·코드구분·코드·기본컬럼·승인 큐) + 엑셀 일괄 등록, 테이블 편집기(자동완성·인라인 용어 등록·이력·복제·충돌 병합), PostgreSQL DDL(단건·다중·ZIP·정보 추출), 사용자·역할(시스템 관리자·프로젝트 관리자·편집자·조회자) |
-| 기술      | NestJS 12(Node 22) + Vue 3/Vite SPA + PostgreSQL 17, 단일 이미지 `termflow-app:1.0.0` + compose                                                                                                                                                                                       |
-| 운영 설치 | **`docs/설치_운영_가이드.md`**(Docker Desktop + `start.bat`, 승계·백업·복구·업그레이드)                                                                                                                                                                                               |
-| 사용법    | **`docs/사용자_가이드.md`**(역할별)                                                                                                                                                                                                                                                   |
+| 기술      | NestJS 12(Node 22) + Vue 3/Vite SPA + PostgreSQL 17, 단일 이미지 `termflow-app:1.1.0` + compose                                                                                                                                                                                       |
+| 운영 설치 | **`docs/설치_운영_가이드.md`**(Windows: Docker Desktop + `start.bat` · **Linux 서버: `install.sh`**·오프라인 번들 §14, 승계·백업·복구·업그레이드)                                                                                                                                     |
+| 사용법    | **`docs/사용자_가이드.md`**(역할별, 제품 화면 `/manual`에서도 — 빌드 때 이 파일을 HTML로 싣는다)                                                                                                                                                                                      |
 | 설계·기록 | `docs/00_네이밍.md`, `docs/01_검토안.md`, `docs/02_설계서.md`, `docs/03_TODO.md`, `docs/CR-*.md`(설계 변경), `docs/수용_테스트_결과.md`·`docs/측정_결과.md`, `docs/mockups/`                                                                                                          |
 | 전신      | gen-table v1.0.0 (`C:\project\gen_table_promotion`, 읽기 전용 참조)                                                                                                                                                                                                                   |
 | 승계 원본 | `seed/original/` (원본 SQL 복사본, 수정 금지) → 승계 러너가 DB `legacy` 스키마로 적재 후 정제                                                                                                                                                                                         |
@@ -114,12 +114,33 @@ pnpm --filter @termflow/server cr09:sql       # 운영 DB 전환 스크립트 do
 ### 컨테이너 이미지·운영 실행(요약)
 
 ```bash
-docker build -t termflow-app:1.0.0 .          # 멀티스테이지(node:22-alpine), 약 3~10분, 약 410MB
+docker build -t termflow-app:1.1.0 .          # 멀티스테이지(node:22-alpine), 약 3~10분, 약 410MB
 start.bat                                      # Windows 원클릭: Docker·.env 확인 → db → 승계 질문 → app → 브라우저
 docker compose run --rm app node apps/server/dist/migration/seed.js --steps=LOAD_LEGACY..DDL_REGRESSION   # 승계 러너(컨테이너)
 ```
 
+Linux 서버(가이드 §14):
+
+```bash
+scripts/bundle.sh                              # 오프라인 번들 release/termflow-linux-<판>.tar.gz(소스 + app·postgres 이미지), Windows는 Git Bash
+sudo ./install.sh --migrate yes --migrate-all  # 서버: .env 난수 생성 · 이미지 적재 · systemd(기동·매일 백업) · start.sh
+./start.sh · scripts/backup.sh · scripts/restore.sh <덤프>
+```
+
 전체 절차·`.env` 항목·백업·복구는 `docs/설치_운영_가이드.md`. 개발 DB(`termflow-db`, 5434)와 같은 PC에 운영·검증 인스턴스를 둘 때는 **다른 폴더에 소스를 두고** 그 폴더 `.env`에 `COMPOSE_PROJECT_NAME`·컨테이너 이름·포트를 따로 지정한다(가이드 §11).
+
+### 소개 사이트·화면 그림(단계 12, CR-12)
+
+```bash
+pnpm --filter @termflow/site dev               # http://localhost:5175 — 제품과 따로 서는 정적 소개 사이트
+pnpm --filter @termflow/site build             # site/dist — 주소별 사본·404·robots(·sitemap) → 누출 검사(걸리면 실패)
+pnpm -C e2e exec playwright test -c site-review.config.ts   # 사이트 검수(데스크톱·모바일 가로 스크롤 0, 콘솔 오류 0)
+# 화면 그림 docs/img/screens/*.png(설명서·사이트 공용) — 데모 인스턴스(STDV1만 승계)의 가상 프로젝트 EDU를 찍는다
+DEMO_BASE_URL=http://localhost:8095 DEMO_ADMIN_PASSWORD=<데모 .env 초기 비밀번호> pnpm -C e2e exec playwright test -c site-shots.config.ts
+```
+
+Vercel 배포 설정은 루트 `vercel.json`(사이트 파일이 바뀐 커밋만 빌드). 사이트 문구·그림에 사내 이름을 넣지 않는다 — 새 이름은 `site/tools/leak-names.txt`.
+제품 내 설명서는 `apps/web/build/manual.ts`(Vite 플러그인)가 `docs/사용자_가이드.md`·`docs/설치_운영_가이드.md`를 빌드 때 HTML로 바꾼다(`/manual`).
 
 ### 저장소 구조
 
@@ -127,10 +148,13 @@ docker compose run --rm app node apps/server/dist/migration/seed.js --steps=LOAD
 apps/server/       NestJS 서버(Express 어댑터, ESM) — src/migration: 승계 러너
 apps/web/          Vue 3 + Vite SPA
 packages/shared/   서버·웹 공용 상수·타입·zod 스키마(@termflow/shared)
-e2e/               Playwright 브라우저 E2E·접근성(@termflow/e2e)
-scripts/           check-no-ai.mjs · run-vitest.mjs · load-concurrency.mjs(부하) · backup.ps1 · restore.ps1
+e2e/               Playwright 브라우저 E2E·접근성(@termflow/e2e) · 데모 그림(site-shots) · 사이트 검수(site-review)
+site/              소개 사이트(@termflow/site, Vue 정적 SPA)
+docs/img/screens/  화면 그림(가상 데모 데이터, 설명서·사이트 공용)
+scripts/           check-no-ai.mjs · run-vitest.mjs · load-concurrency.mjs(부하) · backup.ps1/.sh · restore.ps1/.sh · bundle.sh
 migration/corrections/  승계 정정 초안 xlsx(용어·도메인분류·도메인)
 docker-compose.yml db + app 서비스(설계서 부록 B)
 Dockerfile         운영 이미지(CR-11a)
-start.ps1 / start.bat   운영 원클릭 실행
+start.ps1 / start.bat   운영 원클릭 실행(Windows)
+install.sh / start.sh   Linux 서버 설치·실행
 ```
