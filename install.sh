@@ -34,7 +34,7 @@ ok() { printf '%s  - %s%s\n' "$C_OK" "$1" "$C_END"; }
 info() { printf '  - %s\n' "$1"; }
 warn() { printf '%s  - %s%s\n' "$C_WARN" "$1" "$C_END"; }
 die() {
-  printf '\n'
+  printf '\n' >&2
   local l
   for l in "$@"; do printf '%s[install] %s%s\n' "$C_ERR" "$l" "$C_END" >&2; done
   exit 1
@@ -67,9 +67,9 @@ write_units() {
   mkdir -p "$dir"
   cat >"$dir/$SERVICE.service" <<EOF
 # TermFlow — docker compose 기동/중지(install.sh가 만든다, CR-12 C9). 폴더를 옮기면 install.sh를 다시 실행한다.
+# 안내: $ROOT/docs/설치_운영_가이드.md §14
 [Unit]
 Description=TermFlow (docker compose: db + app)
-Documentation=file://$ROOT/docs/설치_운영_가이드.md
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
@@ -109,6 +109,7 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
+  chmod 644 "$dir/$SERVICE.service" "$dir/$SERVICE-backup.service" "$dir/$SERVICE-backup.timer"
 }
 if [ -n "$UNITS_DIR" ]; then
   write_units "$UNITS_DIR"

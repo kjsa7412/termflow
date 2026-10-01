@@ -31,7 +31,7 @@ step() { printf '\n%s[TermFlow] %s%s\n' "$C_STEP" "$1" "$C_END"; }
 ok() { printf '%s  - %s%s\n' "$C_OK" "$1" "$C_END"; }
 info() { printf '  - %s\n' "$1"; }
 die() {
-  printf '\n'
+  printf '\n' >&2
   local l
   for l in "$@"; do printf '%s[TermFlow] %s%s\n' "$C_ERR" "$l" "$C_END" >&2; done
   exit 1

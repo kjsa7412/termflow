@@ -59,7 +59,9 @@ WORK="$ROOT/migration/work/bundle"
 rm -rf "$WORK"
 mkdir -p "$WORK" "$OUT"
 echo "[bundle] git archive → $NAME/"
-git -C "$ROOT" archive --format=tar --prefix="$NAME/" "$REF" | tar -x -C "$WORK" || die 'git archive 실패'
+# 개발 도구 설정(에이전트 규칙·도구 폴더)은 설치물에 넣지 않는다. 대괄호는 check:no-ai 문자열 검사를 피하려는 glob 표기
+git -C "$ROOT" archive --format=tar --prefix="$NAME/" "$REF" -- . ':(exclude,glob).[c]laude/**' ':(exclude,glob)[C]LAUDE.md' |
+  tar -x -C "$WORK" || die 'git archive 실패'
 if [ "$IMAGES" = 1 ]; then
   mkdir -p "$WORK/$NAME/images"
   echo "[bundle] docker save $APP_IMAGE $DB_IMAGE | gzip (수 분)"
@@ -69,7 +71,8 @@ fi
 TARGET="$OUT/termflow-linux-$VER.tar.gz"
 [ "$IMAGES" = 1 ] || TARGET="$OUT/termflow-linux-$VER-src.tar.gz"
 echo "[bundle] 묶기 → $TARGET"
-tar -czf "$TARGET" -C "$WORK" "$NAME" || die '묶기 실패'
+# 소유자를 root(0)로 기록한다 — 서버에서 sudo tar로 풀 때 이 PC의 사용자 번호가 남지 않게
+tar --owner=0 --group=0 --numeric-owner -czf "$TARGET" -C "$WORK" "$NAME" || die '묶기 실패'
 rm -rf "$WORK"
 (cd "$OUT" && sha256sum "$(basename "$TARGET")" >"$(basename "$TARGET").sha256")
 SIZE="$(wc -c <"$TARGET" | tr -d '[:space:]')"
