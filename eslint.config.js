@@ -88,7 +88,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/web/vite.config.ts'],
+    files: ['apps/web/vite.config.ts', 'apps/web/build/**/*.ts'],
     languageOptions: { globals: { ...globals.node } },
   },
   prettier,

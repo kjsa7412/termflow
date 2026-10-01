@@ -20,7 +20,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     public?: boolean;
     sysAdmin?: boolean;
-    layout?: 'app' | 'auth';
+    layout?: 'app' | 'auth' | 'doc';
     rail?: boolean;
     title?: string;
   }
@@ -153,6 +153,13 @@ export const routes: RouteRecordRaw[] = [
     name: 'admin-templates',
     component: () => import('./pages/AdminTemplatesPage.vue'),
     meta: { sysAdmin: true, title: '템플릿' },
+  },
+  {
+    // 설명서(T12.5): 로그인 전에도 열람(사용자 가이드). 설치·운영 가이드의 시스템 관리자 제한은 화면이 한다(CR-12 C4)
+    path: '/manual/:id?',
+    name: 'manual',
+    component: () => import('./pages/ManualPage.vue'),
+    meta: { public: true, layout: 'doc', title: '설명서' },
   },
   {
     path: '/forbidden',

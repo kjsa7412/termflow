@@ -193,6 +193,15 @@ async function logout(close: () => void): Promise<void> {
       <span class="kbd">/</span>
     </div>
     <div class="topbar-right">
+      <RouterLink
+        class="btn btn-ghost btn-icon"
+        to="/manual"
+        title="설명서(사용자 가이드)"
+        aria-label="설명서"
+        data-testid="manual-link"
+      >
+        <TfIcon name="help" />
+      </RouterLink>
       <TfPopover align="right">
         <template #trigger="{ toggle, open, menuId }">
           <button
@@ -215,6 +224,9 @@ async function logout(close: () => void): Promise<void> {
           </div>
           <RouterLink class="dropdown-item" to="/me" role="menuitem" @click="close()">
             <TfIcon name="user" />내 계정
+          </RouterLink>
+          <RouterLink class="dropdown-item" to="/manual" role="menuitem" @click="close()">
+            <TfIcon name="book" />설명서
           </RouterLink>
           <button class="dropdown-item" type="button" role="menuitem" @click="logout(close)">
             <TfIcon name="log-out" />로그아웃

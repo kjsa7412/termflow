@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { APP_NAME, PASSWORD_POLICY } from '@termflow/shared';
 import { ApiError } from '../api/client.js';
 import TfButton from '../components/ui/TfButton.vue';
@@ -136,6 +136,10 @@ async function submit(): Promise<void> {
     <div class="divider" />
     <p class="auth-foot">
       계정은 관리자가 발급합니다. 비밀번호를 잊었다면 관리자에게 초기화를 요청하세요.
+    </p>
+    <p class="auth-foot mt-2">
+      처음이라면 <RouterLink to="/manual/사용자_가이드">사용자 가이드</RouterLink>를 먼저 읽어
+      보세요.
     </p>
   </div>
 </template>
