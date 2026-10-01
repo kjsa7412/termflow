@@ -210,7 +210,8 @@ async function onClick(e: MouseEvent): Promise<void> {
       <template v-else-if="book">
         <div class="manual-crumb">설명서 › {{ shortTitle(book.title) }}</div>
         <!-- 빌드 때 저장소 docs/*.md를 변환한 HTML(원문 HTML은 이스케이프, build/manual.ts) — 사용자 입력이 아니다 -->
-        <!-- eslint-disable-next-line vue/no-v-html -->
+        <!-- 여러 줄 요소라 disable-next-line은 v-html 줄에 닿지 않는다 — 범위로 끈다 -->
+        <!-- eslint-disable vue/no-v-html -->
         <article
           ref="body"
           class="doc"
@@ -218,6 +219,7 @@ async function onClick(e: MouseEvent): Promise<void> {
           @click="onClick"
           v-html="book.html"
         />
+        <!-- eslint-enable vue/no-v-html -->
       </template>
     </div>
   </div>

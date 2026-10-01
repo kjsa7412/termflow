@@ -1,0 +1,150 @@
+# TermFlow 릴리스(CD, T14.1·CR-14). 버전 태그 vX.Y.Z → 검사(ci.yml) → Linux 오프라인 번들 → 번들만으로 설치 확인 → GitHub Release 초안.
+#
+#   meta     판 번호 일치: 태그 vX.Y.Z = package.json version = docker-compose.yml termflow-app:X.Y.Z, docs/릴리스_노트_vX.Y.Z.md 있음
+#   ci       ci.yml 전체(lint·scripts·test·test:db·build·install)를 태그 커밋으로 — 실패하면 배포물을 만들지 않는다
+#   bundle   docker build → scripts/bundle.sh → 이미지를 지운 뒤 번들을 새 폴더에 풀어 install.sh(images/ docker load만) → healthy
+#   publish  Release 초안(draft)에 termflow-linux-X.Y.Z.tar.gz·.sha256 첨부, 본문 = 릴리스 노트. 게시는 사람이 확인한 뒤 한다
+#
+# 이미 있는 태그로 다시 만들 때: Actions › release › Run workflow(tag 입력). 같은 판의 초안·릴리스가 있으면 파일만 바꿔 올린다.
+# 저장소·Release는 비공개로 둔다 — 번들에 승계 원본(seed/original)이 들어 있다(CR-14 C7).
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 릴리스할 버전 태그(예 v1.1.1, 원격에 있어야 한다)
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TZ: Asia/Seoul
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  meta:
+    name: 판 번호 확인
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      ver: ${{ steps.check.outputs.ver }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - id: check
+        run: |
+          case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "::error::버전 태그 형식이 아닙니다: $TAG (vX.Y.Z)"; exit 1 ;; esac
+          ver="${TAG#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          img="$(sed -nE 's/^[[:space:]]*image:[[:space:]]*termflow-app:([^[:space:]]+).*/\1/p' docker-compose.yml | head -n1)"
+          notes="docs/릴리스_노트_${TAG}.md"
+          bad=0
+          [ "$pkg" = "$ver" ] || { echo "::error::package.json version $pkg ≠ 태그 $ver"; bad=1; }
+          [ "$img" = "$ver" ] || { echo "::error::docker-compose.yml termflow-app:$img ≠ 태그 $ver"; bad=1; }
+          [ -f "$notes" ] || { echo "::error::릴리스 노트가 없습니다: $notes"; bad=1; }
+          [ "$bad" = 0 ] || exit 1
+          echo "판 $ver 일치(package.json · compose · 릴리스 노트)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: ci
+    needs: meta
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: refs/tags/${{ needs.meta.outputs.tag }}
+
+  bundle:
+    name: 번들 · 오프라인 설치 확인
+    needs: [meta, ci]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      VER: ${{ needs.meta.outputs.ver }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.meta.outputs.tag }}
+      - uses: docker/setup-buildx-action@v4
+      - name: docker build
+        uses: docker/build-push-action@v7
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
+        with:
+          context: .
+          load: true
+          tags: termflow-app:${{ needs.meta.outputs.ver }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: bundle.sh
+        run: |
+          docker image inspect --format '{{.Id}}' "termflow-app:$VER" > "$RUNNER_TEMP/app-image-id"
+          scripts/bundle.sh --out "$GITHUB_WORKSPACE/release"
+          ls -l release
+      # 서버와 같은 조건: 레지스트리·소스 빌드 없이 번들 안 images/만으로 설치되는지 본다
+      - name: 번들만으로 설치
+        run: |
+          docker image rm "termflow-app:$VER" postgres:17
+          dest="$RUNNER_TEMP/opt-termflow"
+          mkdir -p "$dest"
+          tar -xzf "release/termflow-linux-$VER.tar.gz" -C "$dest" --strip-components=1
+          "$dest/install.sh" --no-systemd --migrate no
+          loaded="$(docker image inspect --format '{{.Id}}' "termflow-app:$VER")"
+          [ "$loaded" = "$(cat "$RUNNER_TEMP/app-image-id")" ] || { echo '::error::설치에 쓴 이미지가 번들의 이미지가 아닙니다(다시 빌드됨)'; exit 1; }
+          curl -fsS --retry 45 --retry-delay 2 --retry-all-errors http://localhost:7340/health
+          echo
+          curl -fsS -o /dev/null -w '/manual %{http_code}\n' http://localhost:7340/manual
+      - name: 릴리스 노트
+        run: |
+          mkdir -p notes
+          cp "docs/릴리스_노트_v$VER.md" notes/notes.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ needs.meta.outputs.tag }}
+          path: |
+            release/termflow-linux-${{ needs.meta.outputs.ver }}.tar.gz
+            release/termflow-linux-${{ needs.meta.outputs.ver }}.tar.gz.sha256
+            notes/notes.md
+          # 이미 gzip이라 다시 압축하지 않는다. Release로 옮기기 위한 잠깐 보관
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    name: Release 초안
+    needs: [meta, bundle]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VER: ${{ needs.meta.outputs.ver }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-${{ needs.meta.outputs.tag }}
+      - name: GitHub Release
+        run: |
+          files=("release/termflow-linux-$VER.tar.gz" "release/termflow-linux-$VER.tar.gz.sha256")
+          (cd release && sha256sum -c "termflow-linux-$VER.tar.gz.sha256")
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "같은 판의 Release가 있습니다 — 파일만 바꿔 올립니다"
+            gh release upload "$TAG" "${files[@]}" --clobber
+          else
+            gh release create "$TAG" "${files[@]}" --draft --verify-tag \
+              --title "TermFlow $TAG" --notes-file notes/notes.md
+          fi
+          gh release view "$TAG" --json url,isDraft,assets --jq '"\(.url) draft=\(.isDraft) assets=\([.assets[].name] | join(", "))"'

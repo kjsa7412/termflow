@@ -7,19 +7,27 @@
 #   build       pnpm build(shared → web → server, site 누출 검사 포함)
 #   install     docker build → install.sh(빈 Linux 설치·승계 1~12·대사·DDL 회귀) → /health·/manual → 백업·복구
 #
+# 배포물(Linux 오프라인 번들 → GitHub Release)은 release.yml(CR-14)이 이 워크플로를 먼저 부른 뒤 만든다.
+#
 # E2E(Playwright)는 dev DB(RMS 33 테이블)·설치된 Chrome·Edge 채널을 전제로 하므로 로컬 게이트에 둔다(CR-13 C4).
 name: ci
 
+# 버전 태그(v*)는 release.yml이 이 워크플로를 불러(workflow_call) 같은 검사를 한 번만 돌린다(CR-14 C2)
 on:
   push:
     branches: [main, 'stage/**']
-    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: 검사할 git ref(예 refs/tags/v1.2.0). 비우면 이벤트의 ref
+        type: string
+        default: ''
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ inputs.ref || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -34,10 +42,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
       # pnpm 버전은 루트 package.json의 packageManager(pnpm@10.33.0)를 따른다
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -50,7 +60,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
       - name: shellcheck
         run: shellcheck install.sh start.sh scripts/*.sh
       - name: PowerShell 구문
@@ -70,9 +82,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -89,9 +103,11 @@ jobs:
       # 실행마다 새 컨테이너(종료 시 삭제) — 러너는 매번 새 VM이라 재사용할 것이 없다
       TF_TEST_DB_REUSE: '0'
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -105,9 +121,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -120,16 +138,21 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
       - name: 이미지 태그(docker-compose.yml)
         id: tag
         run: |
           image="$(sed -nE 's/^[[:space:]]*image:[[:space:]]*(termflow-app:[^[:space:]]+).*/\1/p' docker-compose.yml | head -n1)"
           [ -n "$image" ] || { echo '::error::docker-compose.yml에서 termflow-app 이미지 태그를 찾지 못했습니다'; exit 1; }
           echo "image=$image" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: docker build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
+        env:
+          # 빌드 기록(.dockerbuild) 산출물은 올리지 않는다 — 요약은 작업 화면에 남는다(CR-14 C9)
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
         with:
           context: .
           load: true
@@ -157,7 +180,7 @@ jobs:
           mkdir -p ci-logs
           docker compose ps -a > ci-logs/compose-ps.txt 2>&1 || true
           docker compose logs --no-color > ci-logs/compose.log 2>&1 || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: install-logs

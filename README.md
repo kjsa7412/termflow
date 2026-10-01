@@ -98,6 +98,15 @@ E2E_SHOTS=1 pnpm -C e2e exec playwright test mockup-shots --project=chrome   # �
 
 E2E(`pnpm e2e`)는 dev DB(RMS)·설치된 Chrome·Edge가 필요해 로컬 게이트에 남는다. 실패한 install 작업은 compose 로그·`logs/`·`migration/report/`를 산출물(7일)로 올린다.
 
+### CD(GitHub Release, 단계 14·CR-14)
+
+버전 태그 `vX.Y.Z`를 push하면 [`.github/workflows/release.yml`](.github/workflows/release.yml)이 판 번호 확인(태그 = `package.json` = compose 이미지 태그, 릴리스 노트 있음) → CI 전체 → `scripts/bundle.sh` → 번들만으로 빈 폴더 설치 확인 → **Release 초안**에 `termflow-linux-<판>.tar.gz`·`.sha256`을 올린다. 초안을 확인한 뒤 Releases 화면에서 게시한다. 이미 있는 태그는 Actions › release › Run workflow(tag 입력)로 만든다. 서버 반입·업그레이드는 [설치·운영 가이드 §14.2·§14.5](docs/설치_운영_가이드.md).
+
+```bash
+git -C C:/project/termflow tag v1.2.0
+git -C C:/project/termflow push origin v1.2.0
+```
+
 ### DB 명령
 
 | 명령                                           | 동작                                                                |
