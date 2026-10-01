@@ -24,3 +24,7 @@ docker-compose*.yml
 start.ps1
 start.bat
 scripts/*.ps1
+start.sh
+install.sh
+scripts/*.sh
+release
