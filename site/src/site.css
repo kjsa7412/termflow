@@ -580,10 +580,53 @@ pre {
 .shot figcaption b {
   color: var(--tx-1);
 }
-.gallery {
+/* 화면 페이지 — 한 장씩 그림(왼쪽) + 설명(오른쪽), 좁으면 위아래 */
+.shots {
   display: grid;
-  gap: 28px 24px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 40px;
+}
+.shots__item {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .shots__item {
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+.shots__txt h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+.shots__role {
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--bd-strong);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx-2);
+}
+.shots__txt p {
+  margin-bottom: 10px;
+  font-size: 14.5px;
+  color: var(--tx-2);
+}
+.shots__txt ul {
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--tx-3);
+}
+.shots__txt li::marker {
+  color: var(--accent);
 }
 .lb {
   position: fixed;
