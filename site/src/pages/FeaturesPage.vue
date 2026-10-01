@@ -2,12 +2,13 @@
 import Shot from '../components/Shot.vue';
 import { SiteLink } from '../router.js';
 
-/** 기능 — 영역마다 그림 한 장과 할 수 있는 일. 끝에 하지 않는 것. */
+/** 기능 — 영역마다 그림 한 장(왼쪽)과 요약·할 수 있는 일(오른쪽), 화면 페이지와 같은 배치. 끝에 하지 않는 것. */
 const SECTIONS = [
   {
     id: 'project',
     title: '프로젝트·권한',
     shot: '13-project-new',
+    desc: '새 프로젝트 화면 — 기본 정보 · 표준 가져오기 · 멤버를 한 페이지에서. 모든 데이터는 프로젝트 안에 있다.',
     points: [
       '프로젝트(작업 공간)마다 표준 사전·업무구분·테이블·멤버를 따로 둔다',
       '생성 마법사 한 페이지 3단계 — 표준 항목마다 원본을 템플릿 / 다른 프로젝트 / 비움 중에서, 건수 미리보기',
@@ -19,6 +20,7 @@ const SECTIONS = [
     id: 'standards',
     title: '표준 사전 7종',
     shot: '05-domains',
+    desc: '도메인 화면 — 조각(용어)과 접미어(도메인분류)로 물리명·타입을 계산한다. 표준은 프로젝트마다 독립 사본이다.',
     points: [
       '용어(한글 ↔ 물리약어, 승인·검토대기·반려) · 도메인분류(접미어 → 타입) · 도메인(명칭 조각 → 논리명·물리명·타입 자동 계산)',
       '코드구분·코드(업무구분 아래 트리) · 기본컬럼 세트(최초·최종 등록자·일시 등)',
@@ -30,6 +32,7 @@ const SECTIONS = [
     id: 'editor',
     title: '테이블 편집기',
     shot: '09-autocomplete',
+    desc: "자동완성 — '신청일'처럼 정확히 맞는 도메인이 없으면 비슷한 도메인과 용어 조합을 고른다.",
     points: [
       '논리명 Enter 자동완성 — 표준(정확 일치) · 비슷한 후보 목록 · 용어 조합 · 코드성 컬럼(코드구분 후보)',
       '미등록 조각은 행 아래 인라인 카드로 등록 → 자동으로 다시 계산',
@@ -42,6 +45,7 @@ const SECTIONS = [
     id: 'ddl',
     title: 'DDL',
     shot: '11-ddl-export',
+    desc: 'DDL 내보내기 — 여러 테이블을 옵션별 미리보기로 확인하고 한 번에 받는다. 실행은 담당 DBA가 한다.',
     points: [
       'PostgreSQL DDL — 식별자 규칙, 테이블·컬럼 코멘트, 기본값, 코드성 컬럼 표현(코멘트 요약 · CHECK), DROP IF EXISTS',
       '편집기 오른쪽 패널 — 저장 전 편집본도 미리보기, 경고를 누르면 그 행으로',
@@ -52,6 +56,7 @@ const SECTIONS = [
     id: 'manual',
     title: '제품 안 설명서',
     shot: '18-manual',
+    desc: '설명서 화면 — 이 사이트와 같은 화면 그림으로 역할별 사용법을 제품 안에서 읽는다.',
     points: [
       '사용자 가이드를 제품 화면에서 — 상단 바 ? 단추, 로그인 화면의 링크(로그인 전에도 열린다)',
       '역할별 사용법과 화면 그림, 목차·절 링크. 설치·운영 가이드는 시스템 관리자에게만',
@@ -73,20 +78,18 @@ const SECTIONS = [
       <a href="#not">하지 않는 것</a>
     </nav>
 
-    <section
-      v-for="(s, i) in SECTIONS"
-      :id="s.id"
-      :key="s.id"
-      :class="['feat', { 'feat--rev': i % 2 === 1 }]"
-    >
-      <div class="feat__text">
-        <h2>{{ s.title }}</h2>
-        <ul class="list">
-          <li v-for="p in s.points" :key="p">{{ p }}</li>
-        </ul>
-      </div>
-      <Shot :id="s.shot" />
-    </section>
+    <div class="shots shots--feat">
+      <section v-for="s in SECTIONS" :id="s.id" :key="s.id" class="shots__item">
+        <Shot :id="s.shot" :caption="false" />
+        <div class="shots__txt">
+          <h2>{{ s.title }}</h2>
+          <p>{{ s.desc }}</p>
+          <ul>
+            <li v-for="p in s.points" :key="p">{{ p }}</li>
+          </ul>
+        </div>
+      </section>
+    </div>
 
     <section id="ops" class="sec">
       <h2>운영</h2>

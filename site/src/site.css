@@ -972,25 +972,21 @@ pre {
   border-color: var(--accent);
   color: var(--tx-1);
 }
-.feat {
-  display: grid;
-  gap: 24px;
-  margin-top: 64px;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: center;
+/* 기능 페이지 — 화면 페이지의 그림+설명 배치(.shots)에 영역 제목(h2)과 본문 크기 요점 */
+.shots--feat {
+  gap: 56px;
+  margin-top: 48px;
+}
+.shots--feat .shots__item {
   scroll-margin-top: calc(var(--bar-h) + 12px);
 }
-@media (min-width: 980px) {
-  .feat {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: 40px;
-  }
-  .feat--rev .feat__text {
-    order: 2;
-  }
+.shots--feat .shots__txt h2 {
+  margin: 0 0 10px;
 }
-.feat h2 {
-  margin-bottom: 14px;
+.shots--feat .shots__txt ul {
+  gap: 6px;
+  font-size: 14px;
+  color: var(--tx-2);
 }
 .steps {
   padding-left: 22px;
