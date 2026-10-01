@@ -8,6 +8,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.1.2',
+    date: '2026-10-01',
+    summary: '자동 검사와 자동 배포물.',
+    items: [
+      '코드를 올릴 때마다 검사·테스트·빈 서버 설치·백업·복구를 자동으로 확인',
+      '판을 올리면 검사를 통과한 설치 파일(오프라인 번들)이 자동으로 만들어진다',
+    ],
+  },
+  {
     version: '1.1.1',
     date: '2026-10-01',
     summary: '기본 포트를 흔한 서비스와 겹치지 않게.',
