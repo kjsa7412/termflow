@@ -100,12 +100,17 @@ E2E(`pnpm e2e`)는 dev DB(RMS)·설치된 Chrome·Edge가 필요해 로컬 게�
 
 ### CD(GitHub Release, 단계 14·CR-14)
 
-버전 태그 `vX.Y.Z`를 push하면 [`.github/workflows/release.yml`](.github/workflows/release.yml)이 판 번호 확인(태그 = `package.json` = compose 이미지 태그, 릴리스 노트 있음) → CI 전체 → `scripts/bundle.sh` → 번들만으로 빈 폴더 설치 확인 → **Release 초안**에 `termflow-linux-<판>.tar.gz`·`.sha256`을 올린다. 초안을 확인한 뒤 Releases 화면에서 게시한다. 이미 있는 태그는 Actions › release › Run workflow(tag 입력)로 만든다. 서버 반입·업그레이드는 [설치·운영 가이드 §14.2·§14.5](docs/설치_운영_가이드.md).
+**판을 올린 커밋을 main에 push하면 릴리스까지 자동으로 된다. 태그는 손으로 달지 않는다.** 판 번호의 원천은 `package.json`의 `version` 하나다.
+
+1. 판 올림 커밋: `package.json` version · `docker-compose.yml` `termflow-app:<판>` · `docs/릴리스_노트_v<판>.md`를 함께 고치고 `scripts/release-check.sh`로 확인한 뒤 main에 push.
+2. main CI가 통과하면 [`auto-release.yml`](.github/workflows/auto-release.yml)이 `v<판>` 태그가 원격에 없을 때만(= 판을 올린 커밋) 판 번호 일치를 다시 확인하고 그 커밋에 태그를 만든 뒤 [`release.yml`](.github/workflows/release.yml)을 부른다.
+3. `release.yml`: `scripts/bundle.sh` → 번들만으로 빈 폴더 설치 확인 → **Release 초안**에 `termflow-linux-<판>.tar.gz`·`.sha256`. 초안을 확인한 뒤 Releases 화면에서 게시한다.
 
 ```bash
-git -C C:/project/termflow tag v1.2.0
-git -C C:/project/termflow push origin v1.2.0
+bash scripts/release-check.sh
 ```
+
+판을 올리지 않은 평소 커밋은 태그가 이미 있어 릴리스하지 않는다. 이미 있는 태그로 배포물을 다시 만들 때는 Actions › release › Run workflow(tag 입력). 서버 반입·업그레이드는 [설치·운영 가이드 §14.2·§14.5](docs/설치_운영_가이드.md).
 
 ### DB 명령
 

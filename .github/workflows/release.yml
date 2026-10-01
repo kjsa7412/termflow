@@ -1,11 +1,14 @@
 # TermFlow 릴리스(CD, T14.1·CR-14). 버전 태그 vX.Y.Z → 검사(ci.yml) → Linux 오프라인 번들 → 번들만으로 설치 확인 → GitHub Release 초안.
 #
-#   meta     판 번호 일치: 태그 vX.Y.Z = package.json version = docker-compose.yml termflow-app:X.Y.Z, docs/릴리스_노트_vX.Y.Z.md 있음
-#   ci       ci.yml 전체(lint·scripts·test·test:db·build·install)를 태그 커밋으로 — 실패하면 배포물을 만들지 않는다
+#   meta     판 번호 일치(scripts/release-check.sh): 태그 vX.Y.Z = package.json version = docker-compose.yml termflow-app:X.Y.Z, 릴리스 노트 있음
+#   ci       ci.yml 전체(lint·scripts·test·test:db·build·install)를 태그 커밋으로 — 실패하면 배포물을 만들지 않는다(skip_ci면 건너뜀)
 #   bundle   docker build → scripts/bundle.sh → 이미지를 지운 뒤 번들을 새 폴더에 풀어 install.sh(images/ docker load만) → healthy
 #   publish  Release 초안(draft)에 termflow-linux-X.Y.Z.tar.gz·.sha256 첨부, 본문 = 릴리스 노트. 게시는 사람이 확인한 뒤 한다
 #
-# 이미 있는 태그로 다시 만들 때: Actions › release › Run workflow(tag 입력). 같은 판의 초안·릴리스가 있으면 파일만 바꿔 올린다.
+# 시작 경로 세 가지:
+#   ① 자동(기본, CR-14 C11) — 판을 올린 커밋이 main CI를 통과하면 auto-release.yml이 태그를 만들고 이 워크플로를 부른다(skip_ci: CI는 이미 통과)
+#   ② 태그 push — 손으로 v* 태그를 push한 경우(ci부터 돈다)
+#   ③ 수동 — Actions › release › Run workflow(tag 입력). 같은 판의 초안·릴리스가 있으면 파일만 바꿔 올린다
 # 저장소·Release는 비공개로 둔다 — 번들에 승계 원본(seed/original)이 들어 있다(CR-14 C7).
 name: release
 
@@ -18,6 +21,16 @@ on:
         description: 릴리스할 버전 태그(예 v1.1.1, 원격에 있어야 한다)
         required: true
         type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: 릴리스할 버전 태그(원격에 있어야 한다)
+        required: true
+        type: string
+      skip_ci:
+        description: 부르는 쪽에서 같은 커밋의 ci가 이미 통과했으면 true
+        type: boolean
+        default: false
 
 concurrency:
   group: release-${{ inputs.tag || github.ref_name }}
@@ -43,24 +56,12 @@ jobs:
         with:
           ref: refs/tags/${{ env.TAG }}
       - id: check
-        run: |
-          case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "::error::버전 태그 형식이 아닙니다: $TAG (vX.Y.Z)"; exit 1 ;; esac
-          ver="${TAG#v}"
-          pkg="$(node -p "require('./package.json').version")"
-          img="$(sed -nE 's/^[[:space:]]*image:[[:space:]]*termflow-app:([^[:space:]]+).*/\1/p' docker-compose.yml | head -n1)"
-          notes="docs/릴리스_노트_${TAG}.md"
-          bad=0
-          [ "$pkg" = "$ver" ] || { echo "::error::package.json version $pkg ≠ 태그 $ver"; bad=1; }
-          [ "$img" = "$ver" ] || { echo "::error::docker-compose.yml termflow-app:$img ≠ 태그 $ver"; bad=1; }
-          [ -f "$notes" ] || { echo "::error::릴리스 노트가 없습니다: $notes"; bad=1; }
-          [ "$bad" = 0 ] || exit 1
-          echo "판 $ver 일치(package.json · compose · 릴리스 노트)"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+        run: scripts/release-check.sh "$TAG"
 
   ci:
     name: ci
     needs: meta
+    if: ${{ !inputs.skip_ci }}
     uses: ./.github/workflows/ci.yml
     with:
       ref: refs/tags/${{ needs.meta.outputs.tag }}
@@ -68,6 +69,8 @@ jobs:
   bundle:
     name: 번들 · 오프라인 설치 확인
     needs: [meta, ci]
+    # ci를 건너뛴 경우(skip_ci)에도 돈다 — 실패·취소면 돌지 않는다
+    if: ${{ !cancelled() && needs.meta.result == 'success' && (needs.ci.result == 'success' || needs.ci.result == 'skipped') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
@@ -124,6 +127,8 @@ jobs:
   publish:
     name: Release 초안
     needs: [meta, bundle]
+    # 건너뛴 ci(skip_ci)가 앞선 작업에 있어도 bundle 성공이면 돈다
+    if: ${{ !cancelled() && needs.bundle.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

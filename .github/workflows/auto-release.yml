@@ -1,0 +1,72 @@
+# TermFlow 자동 릴리스(CR-14 C11): 판 번호의 원천은 package.json "version" 하나다. 태그는 손으로 달지 않는다.
+#
+# main push의 ci가 통과하면 그 커밋의 판(v<version>) 태그가 원격에 있는지 본다.
+#   있음 — 판을 올리지 않은 평소 커밋. 아무것도 하지 않는다
+#   없음 — 판을 올린 커밋. scripts/release-check.sh(판 번호 일치) → 그 커밋에 태그 → release.yml 호출(skip_ci: 같은 커밋 ci 통과)
+#
+# GITHUB_TOKEN으로 만든 태그 push는 다른 워크플로(release.yml의 tags 트리거)를 깨우지 않으므로 여기서 직접 부른다.
+name: auto-release
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    name: 판 태그
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      created: ${{ steps.create.outputs.created }}
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: 판 번호
+        id: check
+        run: |
+          ver="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' package.json | head -n1)"
+          echo "tag=v$ver" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$ver" >/dev/null; then
+            echo "v$ver 태그가 이미 있습니다 — 판을 올린 커밋이 아니므로 릴리스하지 않습니다"
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 판 번호 일치 확인 · 태그
+        id: create
+        if: ${{ steps.check.outputs.new == 'true' }}
+        env:
+          TAG: ${{ steps.check.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/release-check.sh "$TAG"
+          gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/$TAG" -f sha="$SHA" --jq '.ref'
+          echo "$TAG → ${SHA:0:7}"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  release:
+    name: release
+    needs: tag
+    if: ${{ needs.tag.outputs.created == 'true' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+      skip_ci: true
