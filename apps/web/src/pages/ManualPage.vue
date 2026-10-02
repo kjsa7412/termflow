@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import books from 'virtual:termflow-manual';
+import { copyText } from '../composables/clipboard.js';
 import { useSessionStore } from '../stores/session.js';
 import { useToastStore } from '../stores/toast.js';
 import EmptyState from '../components/ui/EmptyState.vue';
@@ -128,12 +129,8 @@ async function onClick(e: MouseEvent): Promise<void> {
   const copy = t.closest<HTMLButtonElement>('button.doc-copy');
   if (copy) {
     const code = copy.parentElement?.querySelector('code')?.textContent ?? '';
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success('복사했습니다');
-    } catch {
-      toast.error('복사하지 못했습니다(브라우저 권한). 직접 선택해 복사하세요');
-    }
+    if (await copyText(code)) toast.success('복사했습니다');
+    else toast.error('복사하지 못했습니다. 직접 선택해 복사하세요');
     return;
   }
   const img = t.closest<HTMLImageElement>('img');

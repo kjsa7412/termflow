@@ -8,6 +8,7 @@ import {
 } from '@termflow/shared';
 import { ApiError, saveBlob } from '../../api/client.js';
 import { tablesApi, type TableCreateBody } from '../../api/tables.js';
+import { copyText } from '../../composables/clipboard.js';
 import { useToastStore } from '../../stores/toast.js';
 import DdlCode from '../ddl/DdlCode.vue';
 import TfBadge from '../ui/TfBadge.vue';
@@ -126,10 +127,8 @@ const canUse = computed(() => sql.value !== '' && errors.value.length === 0);
 
 async function copy(): Promise<void> {
   if (!canUse.value) return;
-  try {
-    await navigator.clipboard.writeText(sql.value);
-  } catch {
-    toast.error('클립보드에 복사하지 못했습니다(브라우저 권한 확인)');
+  if (!(await copyText(sql.value))) {
+    toast.error('클립보드에 복사하지 못했습니다 — 미리보기에서 직접 선택해 복사하세요');
     return;
   }
   toast.success('DDL을 클립보드에 복사했습니다');

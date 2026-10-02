@@ -20,6 +20,7 @@ import TfCheckbox from '../components/ui/TfCheckbox.vue';
 import TfIcon from '../components/ui/TfIcon.vue';
 import TfPopover from '../components/ui/TfPopover.vue';
 import TfToggle from '../components/ui/TfToggle.vue';
+import { copyText } from '../composables/clipboard.js';
 import { useSessionStore } from '../stores/session.js';
 import { useToastStore } from '../stores/toast.js';
 
@@ -99,12 +100,8 @@ const issued = ref<{
 } | null>(null);
 async function copyIssued(): Promise<void> {
   if (!issued.value) return;
-  try {
-    await navigator.clipboard.writeText(issued.value.password);
-    toast.success('초기 비밀번호를 복사했습니다');
-  } catch {
-    toast.error('복사하지 못했습니다. 직접 선택해 복사하세요');
-  }
+  if (await copyText(issued.value.password)) toast.success('초기 비밀번호를 복사했습니다');
+  else toast.error('복사하지 못했습니다. 직접 선택해 복사하세요');
 }
 
 // ── 계정 생성(인라인 행) ───────────────────────────────────────

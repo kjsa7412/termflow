@@ -24,6 +24,7 @@ import TfButton from '../components/ui/TfButton.vue';
 import TfIcon from '../components/ui/TfIcon.vue';
 import TfPopover from '../components/ui/TfPopover.vue';
 import TfSkeleton from '../components/ui/TfSkeleton.vue';
+import { copyText } from '../composables/clipboard.js';
 import { errIssues, errMsg, fmtTs, useProject } from '../composables/useProject.js';
 import { useToastStore } from '../stores/toast.js';
 
@@ -231,10 +232,8 @@ const canExport = computed(
 );
 
 async function copy(text: string, tableIds: number[], kind: 'COPY' | 'EXTRACT', warnCnt: number) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    toast.error('클립보드에 복사하지 못했습니다(브라우저 권한 확인)');
+  if (!(await copyText(text))) {
+    toast.error('클립보드에 복사하지 못했습니다 — 미리보기에서 직접 선택해 복사하세요');
     return;
   }
   try {
