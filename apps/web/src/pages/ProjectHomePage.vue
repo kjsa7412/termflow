@@ -44,7 +44,19 @@ const tablesLink = computed(() => link(`/projects/${key.value}/tables`));
 const exportLink = computed(() => link(`/projects/${key.value}/export`));
 const isAdmin = computed(() => home.value?.myRole === 'ADMIN');
 const usedBiz = computed(() => home.value?.bizAreas.filter((b) => b.useYn).length ?? 0);
-const firstBiz = computed(() => home.value?.bizAreas.find((b) => b.useYn)?.bizCd ?? null);
+const firstBizArea = computed(() => home.value?.bizAreas.find((b) => b.useYn) ?? null);
+const firstBiz = computed(() => firstBizArea.value?.bizCd ?? null);
+/** [새 테이블]: 편집자 이상 · 활성 프로젝트, 첫 사용 업무구분으로 시작(테이블 목록 [새 테이블]과 같은 경로, CR-15 C2). */
+const newTableLink = computed(() => {
+  const h = home.value;
+  if (!h || h.myRole === 'VIEWER' || h.project.status === 'ARCHIVED') return null;
+  const path = link(`/projects/${key.value}/tables/new`);
+  if (!path) return null;
+  return {
+    path,
+    query: firstBizArea.value ? { bizAreaId: String(firstBizArea.value.bizAreaId) } : {},
+  };
+});
 const ACTION_LABEL: Record<string, string> = {
   CREATE: '생성',
   UPDATE: '저장',
@@ -94,9 +106,13 @@ const ACTION_LABEL: Record<string, string> = {
         >
           <TfIcon name="export" />DDL 내보내기
         </button>
-        <button class="btn btn-primary" type="button" disabled title="테이블 편집기(준비 중)">
-          <TfIcon name="plus" />새 테이블{{ firstBiz ? ` · ${firstBiz}` : '' }}
-        </button>
+        <RouterLink
+          v-if="newTableLink"
+          class="btn btn-primary"
+          :to="newTableLink"
+          data-testid="home-new-table"
+          ><TfIcon name="plus" />새 테이블{{ firstBiz ? ` · ${firstBiz}` : '' }}</RouterLink
+        >
       </div>
     </div>
 

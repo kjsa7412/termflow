@@ -19,6 +19,7 @@ import {
 import AdminProjectsPage from './AdminProjectsPage.vue';
 import AdminTemplatesPage from './AdminTemplatesPage.vue';
 import BizAreasPage from './BizAreasPage.vue';
+import ProjectHomePage from './ProjectHomePage.vue';
 import ProjectNewPage from './ProjectNewPage.vue';
 import ProjectSettingsPage from './ProjectSettingsPage.vue';
 import ProjectsPage from './ProjectsPage.vue';
@@ -144,6 +145,74 @@ describe('ProjectsPage(02)', () => {
     await flushPromises();
     expect(w.find('a[href="/projects/new"]').exists()).toBe(false);
     expect(w.text()).toContain('시스템 관리자에게 프로젝트 멤버 추가를 요청하세요');
+  });
+});
+
+describe('ProjectHomePage(03) — [새 테이블](CR-15 C2)', () => {
+  const home = (
+    myRole: 'ADMIN' | 'EDITOR' | 'VIEWER',
+    status: 'ACTIVE' | 'ARCHIVED' = 'ACTIVE',
+  ) => ({
+    project: {
+      key: 'RMS',
+      nm: '연구관리시스템(이관)',
+      description: null,
+      kind: 'PROJECT',
+      status,
+      defaultDialect: 'POSTGRESQL',
+      includeDefaultCols: true,
+      defaultColSetNm: '기본',
+      copiedFrom: null,
+      createdAt: '2026-10-02T09:00:00',
+      createdBy: 'admin',
+    },
+    myRole,
+    memberCnt: 2,
+    bizAreas: [
+      { bizCd: 'AC', useYn: false, bizAreaId: 6 },
+      { bizCd: 'RP', useYn: true, bizAreaId: 7 },
+    ].map((b) => ({
+      ...b,
+      bizNm: b.bizCd,
+      tablePrefix: `${b.bizCd}_`,
+      sortNo: b.bizAreaId,
+      tableCnt: 0,
+      draftCnt: 0,
+      finalCnt: 0,
+      reviewCnt: 0,
+      lastChangedAt: null,
+      lastChangedBy: null,
+    })),
+    tables: { total: 0, draft: 0, final: 0, review: 0 },
+    recentChanges: [],
+    reviewDomainCnt: 0,
+    pendingTermCnt: 0,
+  });
+  it('편집자: 첫 사용 업무구분으로 새 테이블 편집기 링크(비활성 버튼 아님)', async () => {
+    const { pinia, router } = await setup('/projects/RMS', PA, [proj('RMS', 'EDITOR')], {
+      'GET /api/v1/projects/RMS': () => json(200, home('EDITOR')),
+    });
+    const w = mount(ProjectHomePage, { global: { plugins: [pinia, router] } });
+    await flushPromises();
+    const a = w.get('[data-testid="home-new-table"]');
+    expect(a.element.tagName).toBe('A');
+    expect(a.attributes('href')).toBe('/projects/RMS/tables/new?bizAreaId=7');
+    expect(a.text()).toContain('새 테이블 · RP');
+    expect(w.text()).not.toContain('준비 중');
+  });
+  it('조회자·보관 프로젝트에는 [새 테이블]이 없다', async () => {
+    for (const [role, status] of [
+      ['VIEWER', 'ACTIVE'],
+      ['ADMIN', 'ARCHIVED'],
+    ] as const) {
+      const { pinia, router } = await setup('/projects/RMS', PA, [proj('RMS', role)], {
+        'GET /api/v1/projects/RMS': () => json(200, home(role, status)),
+      });
+      const w = mount(ProjectHomePage, { global: { plugins: [pinia, router] } });
+      await flushPromises();
+      expect(w.find('[data-testid="home-new-table"]').exists()).toBe(false);
+      w.unmount();
+    }
   });
 });
 
