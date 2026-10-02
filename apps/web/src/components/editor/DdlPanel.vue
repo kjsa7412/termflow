@@ -275,8 +275,11 @@ defineExpose({ refresh });
       <DdlCode v-else :sql="sql" :warn-columns="warnColumns" label="편집 중 DDL 미리보기" />
 
       <template v-if="!idle">
-        <div class="section-title">
-          경고 <span class="count-pill warning">{{ warnings.length }}</span>
+        <div
+          class="section-title"
+          title="DDL을 만들 때 나는 경고 — 편집기 검증 바의 경고(검토대기 용어 등)와 따로 셉니다"
+        >
+          DDL 생성 경고 <span class="count-pill warning">{{ warnings.length }}</span>
         </div>
         <ul
           v-if="warnings.length > 0"

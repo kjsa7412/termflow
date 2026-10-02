@@ -6,7 +6,7 @@ import type {
   TableDetail,
 } from '@termflow/shared';
 import { alignColumns, diffCount } from '../editor/compare.js';
-import { createEditorCore, parseTypeCell, stateOf } from './editor.js';
+import { createEditorCore, isPendingRow, parseTypeCell, stateOf } from './editor.js';
 
 // T8.7 편집기 스토어: 행 상태 머신(idle·manual·invalid·default), dirty 추적, 서버 응답 병합
 const DEF: DefaultColItem[] = ['FIRS_REG_DTS', 'FINA_REG_DTS'].map((nm, i) => ({
@@ -184,6 +184,29 @@ describe('행 상태 머신(§10.4)', () => {
     s.setCell(r.uid, 'typeText', 'varchar(20)');
     expect(s.errors.value).toEqual([]);
     expect(s.find(r.uid)!).toMatchObject({ dataType: 'VARCHAR', dataLength: 20 });
+  });
+
+  it('자동완성 중인 행은 물리명 비어 있음·타입 없음 오류를 잠시 숨긴다(CR-15 C15)', () => {
+    const s = createEditorCore();
+    s.load(detail(), DEF);
+    const r = s.rows.value[1]!;
+    const empty = [
+      {
+        code: 'E_PHYS_EMPTY',
+        target: 'column',
+        rowIndex: 1,
+        field: 'physicalNm',
+        message: '빈 값',
+      },
+      { code: 'E_TYPE_MISSING', target: 'column', rowIndex: 1, field: 'dataType', message: '타입' },
+    ] as const;
+    s.setServerIssues([...empty], []);
+    expect(s.errors.value).toHaveLength(2);
+    s.find(r.uid)!.state = 'loading';
+    expect(s.errors.value).toEqual([]);
+    expect(isPendingRow(s.find(r.uid)!)).toBe(true);
+    s.find(r.uid)!.state = 'composed';
+    expect(s.errors.value.map((e) => e.code)).toEqual(['E_PHYS_EMPTY', 'E_TYPE_MISSING']);
   });
 
   it('PK 체크 시 NOT NULL 자동, PK면 NULL 허용으로 되돌릴 수 없음', () => {

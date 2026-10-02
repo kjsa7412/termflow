@@ -43,7 +43,12 @@ import {
   saveDraft,
   type EditorDraft,
 } from '../editor/draft-storage.js';
-import { needsAutocomplete, useEditorStore, type EditorRow } from '../stores/editor.js';
+import {
+  isPendingRow,
+  needsAutocomplete,
+  useEditorStore,
+  type EditorRow,
+} from '../stores/editor.js';
 import { useToastStore } from '../stores/toast.js';
 import SegmentPieces from '../components/editor/SegmentPieces.vue';
 
@@ -469,6 +474,13 @@ watch(
 );
 async function save(overwriteVersion?: number): Promise<void> {
   if (readOnly.value || saving.value) return;
+  // 후보를 고르는 중(또는 자동완성 중)인 행은 물리명·타입이 아직 비어 있다 — 먼저 고르게 한다(CR-15 C15)
+  const pendingRow = overwriteVersion === undefined ? ed.rows.find(isPendingRow) : undefined;
+  if (pendingRow) {
+    toast.info('자동완성 후보를 고르는 중인 행이 있습니다 — 고르거나 Esc로 닫은 뒤 저장하세요');
+    void grid.value?.focusCell(pendingRow.uid, 'logicalNm');
+    return;
+  }
   if (ed.errors.length > 0 && overwriteVersion === undefined) {
     clearBlockToast();
     blockToast = toast.error(`오류 ${ed.errors.length}건을 해결하면 저장할 수 있습니다`);

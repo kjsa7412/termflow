@@ -152,6 +152,16 @@ async function onPaste(e: ClipboardEvent, r: EditorRow): Promise<void> {
 
 function input(r: EditorRow, field: CellField, e: Event): void {
   const t = e.target as HTMLInputElement;
+  // 물리명은 입력하는 대로 대문자(저장 때만 바뀌어 소문자가 그대로 보였다, CR-15 C15). IME 조합 중에는 건드리지 않는다
+  if (
+    field === 'physicalNm' &&
+    !(e as InputEvent).isComposing &&
+    t.value !== t.value.toUpperCase()
+  ) {
+    const [s, en] = [t.selectionStart, t.selectionEnd];
+    t.value = t.value.toUpperCase();
+    if (s !== null && en !== null) t.setSelectionRange(s, en);
+  }
   ed.setCell(r.uid, field, t.type === 'checkbox' ? t.checked : t.value);
 }
 
@@ -409,16 +419,48 @@ const suffixNote = (r: EditorRow) =>
                 >
                   재적용
                 </button>
-                <button
+                <!-- 표준 사전에 바로 쓰이므로 한 번 확인(CR-15 C15) -->
+                <TfPopover
                   v-if="canRegisterDomain && !readOnly && r.state === 'composed'"
-                  class="btn-link"
-                  type="button"
-                  title="조합 결과를 이 프로젝트의 표준 도메인으로 등록"
-                  data-testid="register-domain"
-                  @click="emit('registerDomain', r.uid)"
+                  popover
+                  align="right"
                 >
-                  도메인으로 등록
-                </button>
+                  <template #trigger="{ toggle, open, menuId }">
+                    <button
+                      class="btn-link"
+                      type="button"
+                      title="조합 결과를 이 프로젝트의 표준 도메인으로 등록"
+                      aria-haspopup="dialog"
+                      :aria-expanded="open"
+                      :aria-controls="menuId"
+                      data-testid="register-domain"
+                      @click="toggle"
+                    >
+                      도메인으로 등록
+                    </button>
+                  </template>
+                  <template #default="{ close }">
+                    <div class="popover-title">표준 도메인으로 등록할까요?</div>
+                    <p class="text-sm text-2">
+                      {{ r.logicalNm }} → <span class="mono">{{ r.physicalNm }}</span>
+                      {{ r.typeText }}<br />이 프로젝트의 표준 사전(도메인)에 추가되고 이 행은
+                      '표준'이 됩니다.
+                    </p>
+                    <div class="row mt-3">
+                      <button
+                        class="btn btn-primary btn-sm"
+                        type="button"
+                        data-testid="register-domain-confirm"
+                        @click="(close(), emit('registerDomain', r.uid))"
+                      >
+                        등록
+                      </button>
+                      <button class="btn btn-ghost btn-sm" type="button" @click="close()">
+                        취소
+                      </button>
+                    </div>
+                  </template>
+                </TfPopover>
               </span>
             </td>
             <td class="c-menu sticky-r">

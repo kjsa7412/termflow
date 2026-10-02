@@ -207,6 +207,11 @@ export function needsAutocomplete(r: EditorRow): boolean {
   return s !== '' && s !== r.acFor;
 }
 
+/** 자동완성 결과를 기다리거나 후보 목록이 열려 있는 행(물리명·타입이 아직 비어 있어도 정상, CR-15 C15). */
+export function isPendingRow(r: EditorRow): boolean {
+  return r.state === 'loading' || r.ac?.open === 'list';
+}
+
 type ColumnLike = Omit<ColumnInput, 'columnId'> & {
   columnId: number | null;
   codeCls?: TableColumnItem['codeCls'];
@@ -371,6 +376,8 @@ export function createEditorCore() {
     const local = localErrors.value;
     const localUids = new Set(local.map((l) => l.uid));
     const known = new Set([...rows.value, ...defaultRows.value].map((r) => r.uid));
+    // 자동완성 중이거나 후보를 고르는 중인 행은 물리명·타입이 아직 비어 있는 게 정상 — 그 두 오류는 잠시 숨긴다(CR-15 C15)
+    const pending = new Set(rows.value.filter(isPendingRow).map((r) => r.uid));
     const server = [
       ...serverErrors.value.map((e) => mapIssue(e, 'E')),
       ...serverWarnings.value.map((w) => mapIssue(w, 'W')),
@@ -378,7 +385,12 @@ export function createEditorCore() {
       (i) =>
         (i.uid === null || known.has(i.uid)) &&
         // 타입 셀 파싱 오류가 있으면 서버의 E_TYPE_MISSING(같은 셀)은 겹쳐 보이지 않게
-        !(i.uid !== null && localUids.has(i.uid) && i.code === 'E_TYPE_MISSING'),
+        !(i.uid !== null && localUids.has(i.uid) && i.code === 'E_TYPE_MISSING') &&
+        !(
+          i.uid !== null &&
+          pending.has(i.uid) &&
+          (i.code === 'E_PHYS_EMPTY' || i.code === 'E_TYPE_MISSING')
+        ),
     );
     return [...local, ...server];
   });
