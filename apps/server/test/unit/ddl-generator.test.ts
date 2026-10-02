@@ -142,6 +142,51 @@ describe('generator — 옵션 조합(T7.5)', () => {
     expect(gen(empty, { includeHeader: false, codeColumnStyle: 'CHECK' })).not.toContain('CHECK');
   });
 
+  it('편집기가 코멘트 끝에 넣은 (키)·(키 코드구분명)은 요약과 겹치지 않는다(CR-15 C3)', () => {
+    const ref = {
+      codeClsId: 1,
+      bizCd: 'RP',
+      codeCls: '040',
+      codeClsNm: '과제진행상태',
+      codes: [
+        { code: '010', codeNm: '과제임시등록' },
+        { code: '020', codeNm: '과제등록' },
+      ],
+    };
+    const withComment = (colComment: string, codes = ref.codes) =>
+      table({
+        tableNm: 'RP_T',
+        columns: [
+          col({
+            physicalNm: 'PRJ_PRGRS_STAT_CD',
+            logicalNm: '과제진행상태코드',
+            colComment,
+            codeClsId: 1,
+            codeClsRef: { ...ref, codes },
+          }),
+        ],
+      });
+    const want = "IS '과제진행상태코드(RP/040: 010 과제임시등록, 020 과제등록)';";
+    expect(gen(withComment('과제진행상태코드(RP/040)'), { includeHeader: false })).toContain(want);
+    expect(
+      gen(withComment('과제진행상태코드(RP/040 과제진행상태)'), { includeHeader: false }),
+    ).toContain(want);
+    // 코드가 없을 때도 키는 한 번만
+    expect(gen(withComment('과제진행상태코드(RP/040)', []), { includeHeader: false })).toContain(
+      "IS '과제진행상태코드(RP/040)';",
+    );
+    // 다른 키·중간의 괄호는 건드리지 않는다, CHECK·NONE은 코멘트 그대로
+    expect(gen(withComment('상태(구)코드(PS/023)'), { includeHeader: false })).toContain(
+      "IS '상태(구)코드(PS/023)(RP/040: 010 과제임시등록, 020 과제등록)';",
+    );
+    expect(
+      gen(withComment('과제진행상태코드(RP/040)'), {
+        includeHeader: false,
+        codeColumnStyle: 'NONE',
+      }),
+    ).toContain("IS '과제진행상태코드(RP/040)';");
+  });
+
   it('lineEnding=CRLF는 모든 줄 끝을 CRLF로', () => {
     const s = gen(small, { lineEnding: 'CRLF' });
     expect(s.endsWith("';\r\n")).toBe(true);

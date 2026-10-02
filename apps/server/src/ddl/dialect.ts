@@ -103,7 +103,11 @@ export function constraintName(
   return { name: `${prefix}_${base.slice(0, 24)}${hash}`, shortened: true };
 }
 
-/** 코멘트 본문(§6.5·§6.7): 컬럼 코멘트 → 없으면 논리명, COMMENT_SUMMARY면 `(biz/cls: 01 계획, 02 진행 …)`(활성 최대 10, 초과 `…`). */
+/**
+ * 코멘트 본문(§6.5·§6.7): 컬럼 코멘트 → 없으면 논리명, COMMENT_SUMMARY면 `(biz/cls: 01 계획, 02 진행 …)`(활성 최대 10, 초과 `…`).
+ * 편집기 자동완성·코드구분 선택은 코멘트 끝에 `(RP/040)`·`(RP/040 과제진행상태)`를 넣는다 — 요약을 붙일 때는 그 꼬리를 떼어
+ * 같은 키가 두 번 나오지 않게 한다(CR-15 C3).
+ */
 export function columnCommentText(col: ColumnModel, style: DdlOptions['codeColumnStyle']): string {
   const base = col.colComment?.trim() || col.logicalNm;
   const ref = col.codeClsRef;
@@ -111,5 +115,15 @@ export function columnCommentText(col: ColumnModel, style: DdlOptions['codeColum
   const list = ref.codes.slice(0, DDL_CODE_SUMMARY_MAX).map((c) => `${c.code} ${c.codeNm}`);
   if (ref.codes.length > DDL_CODE_SUMMARY_MAX) list.push('…');
   const key = `${ref.bizCd}/${ref.codeCls}`;
-  return list.length > 0 ? `${base}(${key}: ${list.join(', ')})` : `${base}(${key})`;
+  const head = stripCodeKeySuffix(base, key);
+  return list.length > 0 ? `${head}(${key}: ${list.join(', ')})` : `${head}(${key})`;
+}
+
+/** 끝의 `(키)`·`(키 코드구분명)` 꼬리를 뗀다. 남는 글자가 없으면 그대로 둔다. */
+function stripCodeKeySuffix(text: string, key: string): string {
+  const tail = new RegExp(
+    `\\s*\\(${key.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}(?:\\s[^()]*)?\\)$`,
+  );
+  const head = text.replace(tail, '');
+  return head === '' ? text : head;
 }
