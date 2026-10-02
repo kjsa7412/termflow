@@ -34,6 +34,8 @@ const error = ref<{ kind: 'invalid' | 'locked' | 'other'; title: string; body: s
   null,
 );
 const form = ref<HTMLFormElement | null>(null);
+/** 로그인해 있다가 세션이 끊겨 온 경우(직접 로그아웃 제외) — 왜 로그인 화면인지 알린다(CR-15 C16). */
+const expired = ref(session.takeExpired());
 
 function focus(name: 'loginId' | 'password'): void {
   void nextTick(() => form.value?.querySelector<HTMLInputElement>(`[name="${name}"]`)?.focus());
@@ -95,6 +97,19 @@ async function submit(): Promise<void> {
       <div class="tag">용어에서 DDL까지, 끊김 없는 한 흐름.</div>
     </div>
     <form ref="form" class="stack" novalidate @submit.prevent="submit">
+      <div
+        v-if="expired && !error"
+        class="alert alert-info"
+        role="status"
+        data-testid="session-expired"
+      >
+        <TfIcon name="clock" />
+        <div class="alert-body">
+          <div class="alert-title">로그인 시간이 끝났습니다</div>
+          한동안 작업이 없어 자동으로 로그아웃되었습니다. 다시 로그인하면 보던 화면으로 돌아갑니다.
+          편집 중이던 테이블은 브라우저에 임시저장되어 있습니다.
+        </div>
+      </div>
       <div v-if="error && error.kind !== 'locked'" class="alert alert-danger" role="alert">
         <TfIcon name="alert-circle" />
         <div class="alert-body">

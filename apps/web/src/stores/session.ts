@@ -8,6 +8,8 @@ import { ApiError, api, type ApiClient } from '../api/client.js';
  * 세션 스토어(§2.5.6 `session`, T4.10). 서버 세션이 진실이고 여기는 `/me` 결과의 캐시다.
  * 새로고침 후 첫 라우팅에서 `ensureLoaded()`가 `/me`를 1회 부른다(401이면 비로그인).
  */
+const SESSION_MARK = 'tf.session';
+
 export const useSessionStore = defineStore('session', () => {
   const user = ref<SessionUser | null>(null);
   const mustChangePassword = ref(false);
@@ -17,6 +19,25 @@ export const useSessionStore = defineStore('session', () => {
   let pending: Promise<void> | null = null;
 
   const isLoggedIn = computed(() => user.value !== null);
+  /** 이 탭에서 로그인해 있었는지(sessionStorage) — 세션 만료로 로그인 화면에 왔을 때 이유를 보여 주려고(CR-15 C16). */
+  function markSession(on: boolean): void {
+    try {
+      if (on) sessionStorage.setItem(SESSION_MARK, '1');
+      else sessionStorage.removeItem(SESSION_MARK);
+    } catch {
+      /* 저장소를 못 쓰는 환경은 안내만 생략 */
+    }
+  }
+  /** 로그인해 있다가(직접 로그아웃하지 않고) 세션이 끊겼으면 true. 한 번 읽으면 지운다. */
+  function takeExpired(): boolean {
+    try {
+      const was = sessionStorage.getItem(SESSION_MARK) === '1';
+      if (was && !isLoggedIn.value) sessionStorage.removeItem(SESSION_MARK);
+      return was && !isLoggedIn.value;
+    } catch {
+      return false;
+    }
+  }
   const isSysAdmin = computed(() => user.value?.isSysAdmin === true);
 
   function useClient(c: ApiClient): void {
@@ -29,6 +50,7 @@ export const useSessionStore = defineStore('session', () => {
       user.value = me.user;
       mustChangePassword.value = me.mustChangePassword;
       projects.value = me.projects;
+      markSession(true);
     } catch (e) {
       if (!(e instanceof ApiError) || e.status !== 401) throw e;
       clear();
@@ -54,6 +76,7 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function logout(): Promise<void> {
+    markSession(false); // 직접 로그아웃은 "세션 만료" 안내를 띄우지 않는다
     try {
       await authApi(client).logout();
     } finally {
@@ -89,5 +112,6 @@ export const useSessionStore = defineStore('session', () => {
     logout,
     changePassword,
     clear,
+    takeExpired,
   };
 });

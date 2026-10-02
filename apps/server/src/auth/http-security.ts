@@ -102,7 +102,10 @@ export function helmetMiddleware(
 ): RequestHandler {
   const isProd = env.NODE_ENV === 'production';
   const mode = secureCookieMode(env);
-  return helmet({
+  // COOP는 신뢰할 수 있는 출처(HTTPS·localhost)에서만 쓰인다. 사내 http://PC이름:7340에서는 브라우저가 무시하며 매 페이지
+  // 콘솔에 오류를 남겼다 → HTTP가 아닐 때만 보낸다(CR-15 C17). 개발·테스트(localhost)는 그대로.
+  const h = helmet({
+    crossOriginOpenerPolicy: false,
     contentSecurityPolicy: {
       useDefaults: false,
       directives: {
@@ -124,6 +127,11 @@ export function helmetMiddleware(
     // 사내 HTTP(프록시 뒤) 운영이 기본이라 HSTS는 prod에서만(프록시가 TLS 종단, HTTP 응답의 HSTS는 브라우저가 무시)
     strictTransportSecurity: isProd && mode !== false,
   });
+  return (req, res, next) => {
+    const trusted = req.secure || req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+    if (!isProd || trusted) res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    h(req, res, next);
+  };
 }
 
 export function sessionMiddleware(env: SecurityEnv, store: session.Store): RequestHandler {

@@ -49,6 +49,7 @@ import {
   useEditorStore,
   type EditorRow,
 } from '../stores/editor.js';
+import { usePendingStore } from '../stores/pending.js';
 import { useToastStore } from '../stores/toast.js';
 import SegmentPieces from '../components/editor/SegmentPieces.vue';
 
@@ -68,6 +69,7 @@ const papi = projectsApi();
 const sapi = standardsApi();
 const acapi = autocompleteApi();
 const toast = useToastStore();
+const pending = usePendingStore();
 
 const loading = ref(true);
 const notFound = ref(false);
@@ -342,6 +344,7 @@ async function registerTerm(row: EditorRow): Promise<boolean> {
         ? `'${res.termKor}'은(는) 이미 있는 용어입니다(${res.termPhysical ?? '물리약어 없음'})`
         : `'${res.termKor}' ${res.termPhysical}을(를) 검토대기로 등록했습니다`,
     );
+    if (res.outcome !== 'EXISTING') pending.changed();
     if (res.conflicts.length > 0) {
       toast.info(
         `${res.termPhysical}은(는) ${res.conflicts.map((c) => `'${c.termKor}'`).join(', ')}와(과) 같은 물리약어입니다 — 동의어 후보로 표시됩니다`,

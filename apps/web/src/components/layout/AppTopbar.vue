@@ -59,7 +59,7 @@ const hits = computed<Hit[]>(() => {
       id: `tb${t.tableId}`,
       label: t.tableNm,
       sub: `${t.logicalNm} · ${t.bizCd}`,
-      to: `/projects/${projectKey.value}/tables?q=${encodeURIComponent(t.tableNm)}`,
+      to: `/projects/${projectKey.value}/tables/${t.tableId}`, // 바로 편집기(CR-15 C16)
       group: '테이블',
     })),
   ];
@@ -154,9 +154,7 @@ async function logout(close: () => void): Promise<void> {
         aria-autocomplete="list"
         :disabled="!inProject"
         :placeholder="
-          inProject
-            ? '이 프로젝트에서 용어 · 도메인 검색'
-            : '프로젝트를 선택하면 검색할 수 있습니다'
+          inProject ? '이 프로젝트에서 용어 · 도메인 검색' : '프로젝트를 고르면 검색 가능'
         "
         aria-label="전역 검색(현재 프로젝트 범위)"
         @keydown="onKey"

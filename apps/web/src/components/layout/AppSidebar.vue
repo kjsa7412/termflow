@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { APP_NAME, MEMBER_ROLE_RANK, type MyProject } from '@termflow/shared';
 import { standardsApi } from '../../api/standards.js';
+import { usePendingStore } from '../../stores/pending.js';
 import { useSessionStore } from '../../stores/session.js';
 import TfIcon from '../ui/TfIcon.vue';
 import TfPopover from '../ui/TfPopover.vue';
@@ -99,6 +100,12 @@ watch(
     timer = canApprove.value ? setInterval(() => void pollPending(), PENDING_POLL_MS) : null;
   },
   { immediate: true },
+);
+// 승인·반려·인라인 등록 직후 바로 다시 센다(30초 기다리지 않게, CR-15 C16)
+const pendingSignal = usePendingStore();
+watch(
+  () => pendingSignal.tick,
+  () => void pollPending(),
 );
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer);

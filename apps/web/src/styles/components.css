@@ -554,8 +554,10 @@
 .d-block { display: block; }
 .nav-item .nav-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-full); background: var(--info-bg); color: var(--info); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
 .topbar-search { position: relative; }
-.search-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40; background: var(--bg-1); border: 1px solid var(--bd); border-radius: var(--r-md); box-shadow: var(--sh-2); padding: 6px 0; max-height: 420px; overflow: auto; }
+/* 검색창보다 넓게 펼쳐 가로 스크롤 없이(CR-15 C16), 긴 이름은 말줄임 */
+.search-pop { position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: min(560px, calc(100vw - 32px)); z-index: 40; background: var(--bg-1); border: 1px solid var(--bd); border-radius: var(--r-md); box-shadow: var(--sh-2); padding: 6px 0; max-height: 420px; overflow-x: hidden; overflow-y: auto; }
 .search-pop .dropdown-item { width: 100%; }
+.search-pop .dropdown-item > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-12); }
 .history-list li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 /* 테이블 편집기(단계 8): 비교 범례 · 드래그 순서 변경 표시 · 읽기 전용 셀 */

@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryHistory, type RouteLocationNormalized } from 'vue-router';
 import { createApiClient } from './api/client.js';
 import { installAuth } from './auth-wiring.js';
-import { authGuard, createAppRouter, safeNext, type GuardSession } from './router.js';
+import {
+  authGuard,
+  createAppRouter,
+  safeNext,
+  scrollBehavior,
+  type GuardSession,
+} from './router.js';
 import { useSessionStore } from './stores/session.js';
 import { fakeFetch, json, problem } from './test-utils.js';
 
@@ -111,5 +117,22 @@ describe('세션 만료 → 로그인 → 원래 경로 복귀(installAuth)', ()
     await session.login('sa', 'pw');
     await router.replace(safeNext(router.currentRoute.value.query['next']));
     expect(router.currentRoute.value.fullPath).toBe('/admin/users');
+  });
+});
+
+// CR-15 C16: 화면을 옮기면 맨 위에서(이전 화면 스크롤이 남지 않게)
+describe('scrollBehavior', () => {
+  it('다른 화면 = 맨 위, 뒤로·앞으로 = 이전 위치, 같은 화면 쿼리·해시 = 그대로', () => {
+    expect(scrollBehavior({ path: '/b', hash: '' }, { path: '/a' }, null)).toEqual({ top: 0 });
+    expect(scrollBehavior({ path: '/b', hash: '' }, { path: '/a' }, { left: 0, top: 480 })).toEqual(
+      {
+        left: 0,
+        top: 480,
+      },
+    );
+    expect(scrollBehavior({ path: '/a', hash: '' }, { path: '/a' }, null)).toBe(false);
+    expect(scrollBehavior({ path: '/manual/x', hash: '#s2' }, { path: '/manual/y' }, null)).toBe(
+      false,
+    );
   });
 });

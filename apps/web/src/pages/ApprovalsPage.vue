@@ -11,6 +11,7 @@ import TfIcon from '../components/ui/TfIcon.vue';
 import TfSkeleton from '../components/ui/TfSkeleton.vue';
 import { errMsg, fmtNum, fmtTs, useProject } from '../composables/useProject.js';
 import { useServerList } from '../composables/useServerList.js';
+import { usePendingStore } from '../stores/pending.js';
 import { useToastStore } from '../stores/toast.js';
 
 /**
@@ -21,6 +22,7 @@ import { useToastStore } from '../stores/toast.js';
 const { key, project, canWrite } = useProject();
 const api = standardsApi();
 const toast = useToastStore();
+const pending = usePendingStore();
 const list = useServerList<ApprovalItem, ApprovalPage>({
   filters: ['state'],
   enabled: () => key.value !== '',
@@ -99,6 +101,7 @@ async function approve(t: ApprovalItem): Promise<void> {
     );
     selected.value = selected.value.filter((x) => x !== t.termId);
     await list.reload();
+    pending.changed();
   } catch (err) {
     toast.error(errMsg(err, '승인하지 못했습니다'));
   } finally {
@@ -113,6 +116,7 @@ async function reject(t: ApprovalItem): Promise<void> {
     await api.reject(key.value, t.termId, e.note.trim());
     toast.info(`'${t.termKor}' 반려했습니다 · 이 용어를 쓴 컬럼에 경고가 표시됩니다`);
     await list.reload();
+    pending.changed();
   } catch (err) {
     toast.error(errMsg(err, '반려하지 못했습니다'));
   } finally {
@@ -127,6 +131,7 @@ async function approveSelected(ids: number[]): Promise<void> {
     toast.success(`${r.approved}건을 승인했습니다`);
     selected.value = [];
     await list.reload();
+    pending.changed();
   } catch (err) {
     toast.error(errMsg(err, '일괄 승인하지 못했습니다'));
   } finally {

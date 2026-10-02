@@ -17,6 +17,7 @@ import BulkImportFlow from '../components/std/BulkImportFlow.vue';
 import FilterSeg from '../components/std/FilterSeg.vue';
 import ListPager from '../components/std/ListPager.vue';
 import { createAppRouter, hasScreen } from '../router.js';
+import { usePendingStore } from '../stores/pending.js';
 import { useSessionStore } from '../stores/session.js';
 import { fakeFetch, json, problem, type FakeRequest, type Handler } from '../test-utils.js';
 import ApprovalsPage from './ApprovalsPage.vue';
@@ -788,6 +789,20 @@ describe('앱 셸: 사이드바 표준 사전 메뉴·PENDING 배지·전역 검
     );
     expect(w.get('[data-testid="pending-badge"]').text()).toBe('3');
     expect(w.find('a[href="/projects/RMS/standards/approvals"]').exists()).toBe(true);
+  });
+  it('승인·반려·인라인 등록 신호가 오면 30초를 기다리지 않고 배지를 다시 센다(CR-15 C16)', async () => {
+    let pending = 3;
+    const { pinia, router } = await setup('/projects/RMS/standards/terms', 'ADMIN', {
+      [`GET ${S}/terms`]: () => json(200, termPage([])),
+      [`GET ${S}/approvals/count`]: () => json(200, { pending }),
+    });
+    const w = mount(AppShell, { global: { plugins: [pinia, router] } });
+    await flushPromises();
+    expect(w.get('[data-testid="pending-badge"]').text()).toBe('3');
+    pending = 0;
+    usePendingStore().changed();
+    await flushPromises();
+    expect(w.find('[data-testid="pending-badge"]').exists()).toBe(false);
   });
   it('전역 검색: 현재 프로젝트 P/search → 용어·도메인 결과 → Enter로 이동', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });

@@ -78,6 +78,29 @@ describe('LoginPage', () => {
     expect(w.get('.alert-warning').text()).toContain('15분 후 다시 시도');
   });
 
+  it('로그인해 있다가 세션이 끊겨 오면 이유를 알리고, 직접 로그아웃하거나 처음 오면 알리지 않는다(CR-15 C16)', async () => {
+    sessionStorage.setItem('tf.session', '1'); // 이 탭에서 로그인해 있었다
+    const a = await setup('/login?next=/projects/RMS/tables/7', {
+      'GET /api/v1/me': () => problem(401, 'unauthorized', 'E_UNAUTHORIZED'),
+    });
+    await useSessionStore().ensureLoaded();
+    const w1 = mount(LoginPage, { global: { plugins: [a.pinia, a.router] } });
+    expect(w1.find('[data-testid="session-expired"]').text()).toContain('자동으로 로그아웃');
+    w1.unmount();
+    // 한 번 보이면 지운다 — 다시 열면(처음 오는 것과 같음) 안내 없음
+    const b = await setup('/login', {});
+    const w2 = mount(LoginPage, { global: { plugins: [b.pinia, b.router] } });
+    expect(w2.find('[data-testid="session-expired"]').exists()).toBe(false);
+    // 직접 로그아웃은 표시를 먼저 지운다
+    sessionStorage.setItem('tf.session', '1');
+    const c = await setup('/login', {
+      'POST /api/v1/auth/logout': () => new Response(null, { status: 204 }),
+    });
+    await useSessionStore().logout();
+    const w3 = mount(LoginPage, { global: { plugins: [c.pinia, c.router] } });
+    expect(w3.find('[data-testid="session-expired"]').exists()).toBe(false);
+  });
+
   it('빈 입력은 서버를 부르지 않는다', async () => {
     const { pinia, router, calls } = await setup('/login', {});
     const w = mount(LoginPage, { global: { plugins: [pinia, router] } });

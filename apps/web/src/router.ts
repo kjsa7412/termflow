@@ -218,6 +218,25 @@ export function hasScreen(path: string): boolean {
   return probe.resolve(path).name !== 'not-found';
 }
 
-export function createAppRouter(history: RouterHistory = createWebHistory()) {
-  return createRouter({ history, routes });
+/**
+ * 화면을 옮기면 맨 위에서 시작(CR-15 C16 — 전에는 이전 화면의 스크롤 위치가 남아 DDL 내보내기가 중간부터 보였다).
+ * 뒤로·앞으로는 이전 위치, 같은 화면의 쿼리(필터·탭)만 바뀌면 그대로, 해시는 설명서가 직접 맞춘다.
+ */
+export function scrollBehavior(
+  to: Pick<RouteLocationNormalized, 'path' | 'hash'>,
+  from: Pick<RouteLocationNormalized, 'path'>,
+  saved: { left: number; top: number } | null,
+): { left?: number; top: number } | false {
+  if (saved) return saved;
+  if (to.hash || to.path === from.path) return false;
+  return { top: 0 };
+}
+
+/** 인자 없이 부르면(앱) 브라우저 history + 스크롤 규칙, 테스트는 메모리 history를 넘긴다. */
+export function createAppRouter(history?: RouterHistory) {
+  return createRouter({
+    history: history ?? createWebHistory(),
+    routes,
+    ...(history ? {} : { scrollBehavior }),
+  });
 }
