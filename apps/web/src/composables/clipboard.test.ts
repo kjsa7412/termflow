@@ -5,7 +5,6 @@ import { copyText } from './clipboard.js';
 describe('copyText', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   });
 
   it('Clipboard API가 있으면 그것으로 복사한다', async () => {
