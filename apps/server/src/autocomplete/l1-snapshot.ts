@@ -9,7 +9,7 @@ export type SelectExecutor = Pick<Db, 'select'>;
 
 /**
  * 프로젝트 1개의 L1 입력 스냅샷(용어 → 물리약어, 접미어 → 타입)을 메모리에 적재한다(설계서 §5.2).
- * 승계 러너 DOMAIN step(§11.1 "L1은 STDV1 캐시로 재계산")과 복사 엔진 C3 재검증(§4.4 단계 9)이 같이 쓴다.
+ * 승계 러너 DOMAIN step(§11.1 "L1은 STDV1 캐시로 재계산" — CR-16 이후 승계 템플릿 RETAILV1)과 복사 엔진 C3 재검증(§4.4 단계 9)이 같이 쓴다.
  * 단계 9 TermCache도 같은 인터페이스(L1Snapshot)를 제공한다.
  */
 export async function loadL1Snapshot(q: SelectExecutor, projectId: number): Promise<L1Snapshot> {

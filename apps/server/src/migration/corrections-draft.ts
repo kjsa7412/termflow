@@ -1,7 +1,7 @@
 /**
- * 정정 준비 초안(T6.14, 설계서 §11.5 정정 창·RK1). 대상 프로젝트(기본 STDV1)의 검토필요 도메인에서 정정 xlsx 초안을 만든다.
+ * 정정 준비 초안(T6.14, 설계서 §11.5 정정 창·RK1). 대상 프로젝트(기본 RETAILV1)의 검토필요 도메인에서 정정 xlsx 초안을 만든다.
  *
- *   pnpm --filter @termflow/server corrections:draft [-- --project=STDV1 --out=migration/corrections]
+ *   pnpm --filter @termflow/server corrections:draft [-- --project=RETAILV1 --out=migration/corrections]
  *
  *  - terms.xlsx          미등록 조각(한글용어) — 물리약어 칸을 정정 담당자가 채운다(비어 있으면 적용 시 오류 행으로 제외)
  *  - domain-classes.xlsx 미등록 접미어 — 명칭·타입·길이를 채운다
@@ -46,7 +46,7 @@ async function write(
 
 async function main(): Promise<void> {
   const env = loadEnvOrExit();
-  const projectKey = arg('project', 'STDV1');
+  const projectKey = arg('project', 'RETAILV1');
   const out = path.resolve(arg('out', path.join(process.cwd(), '../../migration/corrections')));
   mkdirSync(out, { recursive: true });
   const pool = createPool({ ...env, DB_POOL_MAX: 2 });

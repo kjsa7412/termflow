@@ -6,7 +6,7 @@ import type { Db } from '../db/client.js';
 import { tfProject } from '../db/schema.js';
 import {
   RMS,
-  STDV1,
+  SEED_TEMPLATE,
   STEP_ORDER,
   StepFailure,
   type RunOptions,
@@ -23,7 +23,7 @@ import { ReportWriter, SUMMARY_HEADER } from './report-writer.js';
  *  - step 단위 트랜잭션, 대상이 비어 있지 않으면 SKIPPED(선행 검사)
  *  - 실행 결과를 `migration_log`(step 1행 + 규칙별 행)와 `summary.csv`에 남긴다
  *  - 실패한 step에서 멈추고 `ok=false`(CLI 종료 코드 1)
- *  - `--reset`(dev 전용): STDV1·RMS 삭제(CASCADE). 요청 범위에 LOAD_LEGACY가 있으면 legacy 스키마도 지운다(CR-03 C4)
+ *  - `--reset`(dev 전용): 승계 템플릿 RETAILV1·RMS 삭제(CASCADE, 범용 STDV1은 지우지 않는다). 요청 범위에 LOAD_LEGACY가 있으면 legacy 스키마도 지운다(CR-03 C4)
  * 웹 서버를 띄우지 않는다(Nest 비의존).
  */
 export interface StepLog {
@@ -78,7 +78,7 @@ export async function resetTargets(
   }
   const deleted = await db
     .delete(tfProject)
-    .where(inArray(tfProject.projectKey, [STDV1.key, RMS.key]))
+    .where(inArray(tfProject.projectKey, [SEED_TEMPLATE.key, RMS.key]))
     .returning({ id: tfProject.projectId });
   const legacyDropped = opts.steps.includes('LOAD_LEGACY');
   if (legacyDropped) await dropLegacy(pool);

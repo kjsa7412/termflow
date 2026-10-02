@@ -39,7 +39,7 @@ function parseCsvLine(line: string): string[] {
   return out;
 }
 
-describe('승계 2차(STDV1 → RMS 복사 · 33 테이블 · 전체 대사)', () => {
+describe('승계 2차(RETAILV1 → RMS 복사 · 33 테이블 · 전체 대사)', () => {
   let pool: pg.Pool;
   let db: Db;
   let url: string;
@@ -80,7 +80,7 @@ describe('승계 2차(STDV1 → RMS 복사 · 33 테이블 · 전체 대사)', (
     });
   });
 
-  it('COPY_TO_RMS(T5.9): RMS 표준 건수 = STDV1, project_copy_log 8행(합 5초 이내), 관리자 = admin', async () => {
+  it('COPY_TO_RMS(T5.9): RMS 표준 건수 = RETAILV1, project_copy_log 8행(합 5초 이내), 관리자 = admin', async () => {
     const { rows } = await pool.query(`
       select (select count(*) from prj_biz_area b where b.project_id = p.project_id)::int biz,
              (select count(*) from std_term t where t.project_id = p.project_id)::int term,
@@ -91,7 +91,7 @@ describe('승계 2차(STDV1 → RMS 복사 · 33 테이블 · 전체 대사)', (
              (select count(*) from std_code t where t.project_id = p.project_id)::int code,
              (select count(*) from std_default_col t where t.project_id = p.project_id)::int dcol,
              p.default_col_set_id is not null has_set
-        from tf_project p where p.project_key in ('STDV1', 'RMS') order by p.project_key`);
+        from tf_project p where p.project_key in ('RETAILV1', 'RMS') order by p.project_key`);
     const [rms, stdv1] = rows;
     expect(rms).toEqual(stdv1);
     expect(rms).toMatchObject({
@@ -123,7 +123,7 @@ describe('승계 2차(STDV1 → RMS 복사 · 33 테이블 · 전체 대사)', (
     expect(m.rows).toEqual([{ login_id: 'admin', member_role: 'ADMIN' }]);
     const origin =
       await pool.query(`select count(*)::int n from std_domain d join tf_project p on p.project_id = d.project_id
-       where p.project_key = 'RMS' and d.origin_project_id = (select project_id from tf_project where project_key = 'STDV1')`);
+       where p.project_key = 'RMS' and d.origin_project_id = (select project_id from tf_project where project_key = 'RETAILV1')`);
     expect(origin.rows[0]).toEqual({ n: 4587 });
   });
 

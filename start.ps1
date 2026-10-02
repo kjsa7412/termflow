@@ -10,7 +10,7 @@
 .PARAMETER Migrate
   ask(기본) = 승계가 아직이면 묻는다 · yes = 묻지 않고 실행 · no = 건너뛴다.
 .PARAMETER MigrateAll
-  승계를 1~12 한 번에 실행한다(설계서 §11.5 대안, CR-11: 정정은 실행 후 STDV1·RMS 두 곳에서).
+  승계를 1~12 한 번에 실행한다(설계서 §11.5 대안, CR-11: 정정은 실행 후 RETAILV1·RMS 두 곳에서).
   기본(생략)은 2단계 실행: 1차(1~8) → 정정 → 다시 실행하면 2차(9~12).
   RMS 생성에는 초기 관리자가 필요하므로, 아직 없으면 app을 먼저 기동해 만든 뒤 승계를 실행한다.
 .PARAMETER Build
@@ -231,32 +231,32 @@ Write-Ok 'db healthy'
 
 # ---------- ④ 승계(최초 1회) ----------
 Write-Step '④ 데이터 승계 확인'
-# 승계 상태: STDV1(1차 결과)·RMS(2차 결과) 프로젝트 존재 여부. 스키마가 아직 없으면(최초) 빈 값.
-$sql = "select coalesce(string_agg(project_key, ',' order by project_key), '') from tf_project where project_key in ('STDV1','RMS')"
+# 승계 상태: 승계 템플릿 RETAILV1(1차 결과, 1.2.0 이전 설치는 승계로 만든 STDV1)·RMS(2차 결과) 존재 여부. 범용 STDV1(CR-16)은 승계와 무관하다. 스키마가 아직 없으면(최초) 빈 값.
+$sql = "select coalesce(string_agg(k, ',' order by k), '') from (select case when project_key = 'STDV1' then 'RETAILV1' else project_key end k from tf_project where project_key in ('RETAILV1','RMS') or (project_key = 'STDV1' and kind = 'TEMPLATE' and created_by = 'MIGRATION')) x"
 $found = & docker @ComposeArgs exec -T db psql -U termflow -d termflow -tAc $sql 2>$null
 $keys = if ($LASTEXITCODE -eq 0 -and $found) { (($found | Out-String).Trim() -split ',') } else { @() }
 $plan = $null
-if ($keys -notcontains 'STDV1' -and $MigrateAll) {
+if ($keys -notcontains 'RETAILV1' -and $MigrateAll) {
   $plan = @{
-    Label     = '승계 한 번에 실행(LOAD_LEGACY..DDL_REGRESSION, §11.5 대안) — STDV1·RMS·33 테이블·대사·DDL 회귀. 정정은 실행 후 두 곳에서'
+    Label     = '승계 한 번에 실행(LOAD_LEGACY..DDL_REGRESSION, §11.5 대안) — RETAILV1·RMS·33 테이블·대사·DDL 회귀. 정정은 실행 후 두 곳에서'
     Args      = @('--steps=LOAD_LEGACY..DDL_REGRESSION')
     NeedAdmin = $true
   }
-} elseif ($keys -notcontains 'STDV1') {
+} elseif ($keys -notcontains 'RETAILV1') {
   $plan = @{
-    Label     = '1차 승계(LOAD_LEGACY..DEFAULT_COL + 대사) — 원본 dump → STDV1 표준 사전'
+    Label     = '1차 승계(LOAD_LEGACY..DEFAULT_COL + 대사) — 원본 dump → 패션·유통 템플릿 RETAILV1'
     Args      = @()
     NeedAdmin = $false
   }
 } elseif ($keys -notcontains 'RMS') {
   $plan = @{
-    Label     = '2차 승계(COPY_TO_RMS..DDL_REGRESSION) — STDV1 정정 반영 후 RMS 생성·33 테이블·DDL 회귀'
+    Label     = '2차 승계(COPY_TO_RMS..DDL_REGRESSION) — RETAILV1 정정 반영 후 RMS 생성·33 테이블·DDL 회귀'
     Args      = @('--steps=COPY_TO_RMS..DDL_REGRESSION')
     NeedAdmin = $true
   }
 }
 if (-not $plan) {
-  Write-Ok '승계 완료 상태(STDV1·RMS 존재) — 건너뜀'
+  Write-Ok '승계 완료 상태(RETAILV1·RMS 존재) — 건너뜀'
 } else {
   Write-Info "미실행: $($plan.Label)"
   $run = $false

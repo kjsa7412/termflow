@@ -15,14 +15,14 @@ import { createMigratedDatabase, FIXTURE_PASSWORD } from './setup/databases.js';
 import { insertUsers, PHASE1, runSteps, tempReportRoot } from './setup/stdv1.js';
 import { perfLimit } from './setup/perf.js';
 
-// T5.2 복사 엔진(STDV1 전 항목·5초·롤백) · T5.3 C3 재검증 · T5.4 미리보기 = 실제 · CR-01-1 시나리오(§13.2)
+// T5.2 복사 엔진(RETAILV1 전 항목·5초·롤백) · T5.3 C3 재검증 · T5.4 미리보기 = 실제 · CR-01-1 시나리오(§13.2)
 const A = audit('sysadmin', '127.0.0.1');
 let pool: pg.Pool;
 let db: Db;
 let url: string;
 let app: INestApplication;
 let users: Record<string, number>;
-let stdv1Id: number;
+let tplId: number;
 const rep = tempReportRoot('tf-copy-');
 
 const pid = async (key: string) =>
@@ -34,7 +34,7 @@ function plan(
   sources: Partial<CopyPlan['sources']>,
   extra: Partial<CopyPlan> = {},
 ): CopyPlan {
-  const s: CopySource = { kind: 'TEMPLATE', projectId: stdv1Id, key: 'STDV1' };
+  const s: CopySource = { kind: 'TEMPLATE', projectId: tplId, key: 'RETAILV1' };
   return {
     operation: 'CREATE',
     target: {
@@ -69,7 +69,7 @@ beforeAll(async () => {
   const r = await runSteps({ pool, db, url }, rep.dir, 'copy-p1', PHASE1);
   expect(r.ok).toBe(true);
   users = await insertUsers(pool);
-  stdv1Id = (await pid('STDV1'))!;
+  tplId = (await pid('RETAILV1'))!;
   setTestEnv(url);
   app = await createTestApp();
 });
@@ -79,8 +79,8 @@ afterAll(async () => {
   rep.cleanup();
 });
 
-describe('복사 엔진(T5.2) — STDV1 전 항목', () => {
-  it('항목별 건수 = STDV1, project_copy_log 8행, elapsed_ms 합 5초 이내, 출처·기본 세트·감사 COPY', async () => {
+describe('복사 엔진(T5.2) — RETAILV1 전 항목', () => {
+  it('항목별 건수 = RETAILV1, project_copy_log 8행, elapsed_ms 합 5초 이내, 출처·기본 세트·감사 COPY', async () => {
     const out = await executeCopy(db, plan('FULL1', {}), A);
     const byItem = Object.fromEntries(out.items.map((i) => [i.item, i.copied]));
     expect(byItem).toEqual({
@@ -101,7 +101,7 @@ describe('복사 엔진(T5.2) — STDV1 전 항목', () => {
     expect(log.rows).toHaveLength(8);
     const sum = log.rows.reduce((s, r) => s + Number(r.elapsed_ms), 0);
     console.log(
-      `[test:db copy] STDV1 전 항목 복사: 전체 ${out.elapsedMs}ms, elapsed_ms 합 ${sum}ms — ${log.rows
+      `[test:db copy] RETAILV1 전 항목 복사: 전체 ${out.elapsedMs}ms, elapsed_ms 합 ${sum}ms — ${log.rows
         .map((r) => `${r.item} ${r.elapsed_ms}`)
         .join(' · ')}`,
     );
@@ -116,15 +116,15 @@ describe('복사 엔진(T5.2) — STDV1 전 항목', () => {
     const origin = await pool.query(
       `select count(*) filter (where origin_project_id = $2)::int o, count(*) filter (where origin_id is null)::int n
          from std_domain where project_id = $1`,
-      [out.projectId, stdv1Id],
+      [out.projectId, tplId],
     );
     expect(origin.rows[0]).toEqual({ o: 4587, n: 0 });
     const p = await pool.query(
       `select p.copied_from_project_id, s.origin_id = (select default_col_set_id from tf_project where project_id = $2) ok
          from tf_project p join std_default_col_set s on s.set_id = p.default_col_set_id where p.project_id = $1`,
-      [out.projectId, stdv1Id],
+      [out.projectId, tplId],
     );
-    expect(p.rows[0]).toEqual({ copied_from_project_id: stdv1Id, ok: true });
+    expect(p.rows[0]).toEqual({ copied_from_project_id: tplId, ok: true });
     const au = await pool.query(
       "select count(*)::int n from std_audit_log where project_id = $1 and action = 'COPY' and batch_id = $2",
       [out.projectId, out.batchId],
@@ -175,7 +175,7 @@ describe('복사 엔진(T5.2) — STDV1 전 항목', () => {
   });
 
   it('키 중복 → 409 E_PROJECT_KEY_DUP(부분 생성 없음)', async () => {
-    const e = await executeCopy(db, plan('STDV1', {}), A).catch((x: unknown) => x);
+    const e = await executeCopy(db, plan('RETAILV1', {}), A).catch((x: unknown) => x);
     expect(e).toMatchObject({ code: 'E_PROJECT_KEY_DUP' });
   });
 });
@@ -184,7 +184,7 @@ describe('C3 재검증(T5.3)', () => {
   let prjx: number;
   let expected: number;
   beforeAll(async () => {
-    // PRJX: STDV1 사본에서 용어 '매장' 물리약어를 바꾸고, 새 용어 '신규조각' + 그것을 쓰는 도메인을 추가
+    // PRJX: RETAILV1 사본에서 용어 '매장' 물리약어를 바꾸고, 새 용어 '신규조각' + 그것을 쓰는 도메인을 추가
     const x = await executeCopy(db, plan('PRJX', {}), A);
     prjx = x.projectId;
     await pool.query(
@@ -245,7 +245,7 @@ describe('C3 재검증(T5.3)', () => {
     expect(log.rows[0].warnings[0].code).toBe('W_COPY_SOURCE_MIXED');
   });
 
-  it('원본이 달라도 내용이 같으면(FULL1 = STDV1 사본) 수행하되 표시 0건', async () => {
+  it('원본이 달라도 내용이 같으면(FULL1 = RETAILV1 사본) 수행하되 표시 0건', async () => {
     const full1 = (await pid('FULL1'))!;
     const out = await executeCopy(
       db,
@@ -287,31 +287,31 @@ describe('C3 재검증(T5.3)', () => {
     const term = pv.items.find((i) => i.item === 'TERM')!;
     expect(term).toMatchObject({ sourceCnt: 1706, toCopy: 1704, toSkip: 2 });
     expect(pv.items.find((i) => i.item === 'BIZ_AREA')).toMatchObject({ sourceCnt: 6, toCopy: 2 });
-    // 코드 원본(PRJX)이 업무구분 원본(STDV1)과 달라 미선택 업무구분의 코드구분은 "없는 업무구분" 경고
+    // 코드 원본(PRJX)이 업무구분 원본(RETAILV1)과 달라 미선택 업무구분의 코드구분은 "없는 업무구분" 경고
     expect(pv.warnings.map((w) => w.code)).toContain('W_COPY_BIZ_AREA_MISSING');
   });
 });
 
-describe('CR-01-1 시나리오(§13.2): 마법사 API로 STDV1 기반 생성 — 업무구분 3개, 도메인만 다른 프로젝트 원본', () => {
+describe('CR-01-1 시나리오(§13.2): 마법사 API로 RETAILV1 기반 생성 — 업무구분 3개, 도메인만 다른 프로젝트 원본', () => {
   let sa: Client;
   beforeAll(async () => {
     sa = new Client(app.getHttpServer());
     expect((await sa.login('sysadmin', FIXTURE_PASSWORD)).status).toBe(200);
   });
   const imports = (domainsKey = 'PRJX') => ({
-    bizAreas: { source: 'TEMPLATE', sourceKey: 'STDV1', bizCds: ['RP', 'PS', 'AC'] },
-    terms: { source: 'TEMPLATE', sourceKey: 'STDV1', approvedOnly: true },
-    domainClasses: { source: 'TEMPLATE', sourceKey: 'STDV1' },
+    bizAreas: { source: 'TEMPLATE', sourceKey: 'RETAILV1', bizCds: ['RP', 'PS', 'AC'] },
+    terms: { source: 'TEMPLATE', sourceKey: 'RETAILV1', approvedOnly: true },
+    domainClasses: { source: 'TEMPLATE', sourceKey: 'RETAILV1' },
     domains: { source: 'PROJECT', sourceKey: domainsKey },
-    codes: { source: 'TEMPLATE', sourceKey: 'STDV1' },
-    defaultColSets: { source: 'TEMPLATE', sourceKey: 'STDV1' },
+    codes: { source: 'TEMPLATE', sourceKey: 'RETAILV1' },
+    defaultColSets: { source: 'TEMPLATE', sourceKey: 'RETAILV1' },
   });
 
   it('원본 후보 → 키 검사 → 미리보기 → 생성: 한 트랜잭션, 항목별 건수 = 미리보기, C3 응답·홈 배너 건수, 5초 이내', async () => {
     const src = await sa.get('/api/v1/projects/copy-sources');
     expect(src.status).toBe(200);
-    const stdv1 = src.body.templates.find((t: { key: string }) => t.key === 'STDV1');
-    expect(stdv1.counts).toMatchObject({
+    const tpl = src.body.templates.find((t: { key: string }) => t.key === 'RETAILV1');
+    expect(tpl.counts).toMatchObject({
       bizArea: 6,
       term: 1705,
       domainCls: 84,
@@ -320,7 +320,7 @@ describe('CR-01-1 시나리오(§13.2): 마법사 API로 STDV1 기반 생성 —
       code: 991,
       defaultCol: 9,
     });
-    expect(stdv1.bizAreas.map((b: { bizCd: string }) => b.bizCd)).toEqual([
+    expect(tpl.bizAreas.map((b: { bizCd: string }) => b.bizCd)).toEqual([
       'AC',
       'BD',
       'CT',
@@ -333,7 +333,7 @@ describe('CR-01-1 시나리오(§13.2): 마법사 API로 STDV1 기반 생성 —
     expect((await sa.get('/api/v1/projects/check-key?key=CR011')).body).toEqual({
       available: true,
     });
-    expect((await sa.get('/api/v1/projects/check-key?key=STDV1')).body.available).toBe(false);
+    expect((await sa.get('/api/v1/projects/check-key?key=RETAILV1')).body.available).toBe(false);
     expect((await sa.get('/api/v1/projects/check-key?key=cr1')).body.available).toBe(false);
 
     const pv = await sa.post('/api/v1/projects/copy-preview', { imports: imports() });
@@ -371,7 +371,7 @@ describe('CR-01-1 시나리오(§13.2): 마법사 API로 STDV1 기반 생성 —
     expect(h.reviewDomainCnt).toBe(out.c3Revalidation.reviewDomainCnt);
     expect(h.bizAreas.map((b) => b.bizCd)).toEqual(['AC', 'PS', 'RP']);
     expect(h.memberCnt).toBe(2);
-    expect(h.project.copiedFrom).toEqual({ key: 'STDV1', nm: 'TermFlow 기본 표준 v1' });
+    expect(h.project.copiedFrom).toEqual({ key: 'RETAILV1', nm: '패션·유통 표준 v1' });
     // 선택한 업무구분의 코드만(C4)
     const codes = await pool.query(
       `select distinct b.biz_cd from std_code_cls c join prj_biz_area b on b.biz_area_id = c.biz_area_id
@@ -399,7 +399,7 @@ describe('CR-01-1 시나리오(§13.2): 마법사 API로 STDV1 기반 생성 —
     // 템플릿을 PROJECT 원본으로 지정하는 것도 거부
     const wrongKind = await sa.post(
       '/api/v1/projects',
-      body('CR013', { ...imports(), domains: { source: 'PROJECT', sourceKey: 'STDV1' } }),
+      body('CR013', { ...imports(), domains: { source: 'PROJECT', sourceKey: 'RETAILV1' } }),
     );
     expect(wrongKind.status).toBe(422);
     expect((await sa.post('/api/v1/projects', body('cr', imports()))).status).toBe(400);
@@ -412,10 +412,10 @@ describe('CR-01-1 시나리오(§13.2): 마법사 API로 STDV1 기반 생성 —
       projectNm: '빈 프로젝트',
       imports: {
         bizAreas: { source: 'EMPTY' },
-        terms: { source: 'TEMPLATE', sourceKey: 'STDV1' },
+        terms: { source: 'TEMPLATE', sourceKey: 'RETAILV1' },
         domainClasses: { source: 'EMPTY' },
         domains: { source: 'EMPTY' },
-        codes: { source: 'TEMPLATE', sourceKey: 'STDV1' },
+        codes: { source: 'TEMPLATE', sourceKey: 'RETAILV1' },
         defaultColSets: { source: 'EMPTY' },
       },
     });

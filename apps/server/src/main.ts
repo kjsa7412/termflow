@@ -18,6 +18,9 @@ async function main(): Promise<void> {
   try {
     const r = await runMigrations(pool);
     console.log(`[${APP_NAME}] 마이그레이션 적용 ${r.applied}건, 전체 ${r.total}건`);
+    // 동봉 기본 표준 템플릿(CR-16 C4): 옛 승계 STDV1 → RETAILV1, 범용 STDV1 1회 적재. 실패해도 기동은 계속한다.
+    const { prepareTemplatesSafely } = await import('./project/builtin/prepare.js');
+    await prepareTemplatesSafely(pool, (m) => console.log(`[${APP_NAME}] ${m}`));
   } finally {
     await pool.end();
   }

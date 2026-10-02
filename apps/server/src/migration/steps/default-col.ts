@@ -3,7 +3,7 @@ import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertAudited, insertMigrated, updateAudited } from '../../db/audit.js';
 import { stdDefaultCol, stdDefaultColSet, tfProject } from '../../db/schema.js';
 import { parseStdType } from '../../standard/std-type-parser.js';
-import { STDV1, StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
+import { SEED_TEMPLATE, StepFailure, templateHas, templateId, type StepDef } from '../context.js';
 import { readDefaultCols } from '../legacy-reader.js';
 import { normalizePhysicalName } from '../rules/r09-physical-name.js';
 import { migratedTimes } from '../rules/r13-audit.js';
@@ -12,13 +12,13 @@ import { r19ColumnName, R19_REPORT, R19_RULE } from '../rules/r19-term-unify.js'
 export const DEFAULT_SET_NM = '기본';
 
 /**
- * step 8 DEFAULT_COL(T3.12, R14·R16): STDV1 세트 '기본'(is_default) + 9행
+ * step 8 DEFAULT_COL(T3.12, R14·R16): RETAILV1 세트 '기본'(is_default) + 9행
  * (R16 3분할, 기본값 `CURRENT_TIMESTAMP` 보존), `tf_project.default_col_set_id` 지정.
  */
 export const defaultColStep: StepDef = {
   name: 'DEFAULT_COL',
   isDone: ({ db }) =>
-    stdv1Has(db, async (id) => {
+    templateHas(db, async (id) => {
       const [r] = await db
         .select({ n: count() })
         .from(stdDefaultColSet)
@@ -26,7 +26,7 @@ export const defaultColStep: StepDef = {
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
-    const projectId = await stdv1Id(tx);
+    const projectId = await templateId(tx);
     const legacy = await readDefaultCols(tx);
     report.declare('r14_default_cols');
     report.declare('r16_type_parse');
@@ -80,7 +80,7 @@ export const defaultColStep: StepDef = {
           before: phys.value,
           after: physicalNm,
           action: 'NORMALIZED',
-          note: `${STDV1.key} 세트 ${DEFAULT_SET_NM}: ${c.logical_col_nm.trim()}`,
+          note: `${SEED_TEMPLATE.key} 세트 ${DEFAULT_SET_NM}: ${c.logical_col_nm.trim()}`,
         });
       }
       const isPk = (c.is_key ?? 'N').trim().toUpperCase() === 'Y';
@@ -135,7 +135,7 @@ export const defaultColStep: StepDef = {
         { rule: 'R16', source: legacy.length, loaded: legacy.length, excluded: 0, flagged: 0 },
         { rule: R19_RULE, source: legacy.length, loaded: r19, excluded: 0, flagged: 0 },
       ],
-      message: `세트 '${DEFAULT_SET_NM}'(set_id ${setId}) + ${inserted.length}행, STDV1 default_col_set_id 지정 · R19 물리명 정정 ${r19}`,
+      message: `세트 '${DEFAULT_SET_NM}'(set_id ${setId}) + ${inserted.length}행, RETAILV1 default_col_set_id 지정 · R19 물리명 정정 ${r19}`,
     };
   },
 };

@@ -33,7 +33,7 @@ export const RECONCILE_HEADER = [
   'item',
   'legacy_cnt',
   'excluded_cnt',
-  'stdv1_cnt',
+  'template_cnt',
   'rms_cnt',
   'flagged_cnt',
   'check',

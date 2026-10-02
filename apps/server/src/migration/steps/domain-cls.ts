@@ -2,7 +2,7 @@ import { count, eq } from 'drizzle-orm';
 import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertMigrated } from '../../db/audit.js';
 import { stdDomainCls } from '../../db/schema.js';
-import { StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
+import { StepFailure, templateHas, templateId, type StepDef } from '../context.js';
 import { readDomainCls } from '../legacy-reader.js';
 import type { ReportRow } from '../report-writer.js';
 import { convertDomainClsType } from '../rules/r03-domain-cls-length.js';
@@ -16,7 +16,7 @@ import { migratedTimes } from '../rules/r13-audit.js';
 export const domainClsStep: StepDef = {
   name: 'DOMAIN_CLS',
   isDone: ({ db }) =>
-    stdv1Has(db, async (id) => {
+    templateHas(db, async (id) => {
       const [r] = await db
         .select({ n: count() })
         .from(stdDomainCls)
@@ -24,7 +24,7 @@ export const domainClsStep: StepDef = {
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
-    const projectId = await stdv1Id(tx);
+    const projectId = await templateId(tx);
     const legacy = await readDomainCls(tx);
     report.declare('r03_domain_cls_length');
     const pending: { suffix: string; row: Omit<ReportRow, 'targetId'> }[] = [];

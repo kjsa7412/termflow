@@ -341,7 +341,7 @@ async function remove(): Promise<void> {
               in-table
               icon="layers"
               title="템플릿이 없습니다"
-              desc="승계 러너가 기본 표준 템플릿(STDV1)을 만듭니다."
+              desc="기본 표준 템플릿(STDV1)은 서버를 처음 기동할 때 만들어집니다. 지웠다면 프로젝트를 템플릿으로 게시하십시오."
             />
           </td>
         </tr>

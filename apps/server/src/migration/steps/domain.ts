@@ -3,18 +3,18 @@ import { loadL1Snapshot } from '../../autocomplete/l1-snapshot.js';
 import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertMigrated } from '../../db/audit.js';
 import { stdDomain } from '../../db/schema.js';
-import { StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
+import { StepFailure, templateHas, templateId, type StepDef } from '../context.js';
 import { readDomains } from '../legacy-reader.js';
 import { decideDomain, type DomainReport } from '../rules/r05-r15-domain.js';
 import { migratedTimes } from '../rules/r13-audit.js';
 
 export { loadL1Snapshot };
 
-/** step 6 DOMAIN(T3.10): R1·R5(+R5-b)·R9·R12·R13·R15 → STDV1 `std_domain`. */
+/** step 6 DOMAIN(T3.10): R1·R5(+R5-b)·R9·R12·R13·R15 → RETAILV1 `std_domain`. */
 export const domainStep: StepDef = {
   name: 'DOMAIN',
   isDone: ({ db }) =>
-    stdv1Has(db, async (id) => {
+    templateHas(db, async (id) => {
       const [r] = await db
         .select({ n: count() })
         .from(stdDomain)
@@ -22,11 +22,11 @@ export const domainStep: StepDef = {
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
-    const projectId = await stdv1Id(tx);
+    const projectId = await templateId(tx);
     const snap = await loadL1Snapshot(tx, projectId);
     if (snap.termByKor.size === 0 || snap.clsBySuffix.size === 0) {
       throw new StepFailure(
-        'STDV1 용어·도메인분류가 비어 있습니다 — TERM·DOMAIN_CLS step을 먼저 실행하십시오',
+        'RETAILV1 용어·도메인분류가 비어 있습니다 — TERM·DOMAIN_CLS step을 먼저 실행하십시오',
       );
     }
     const legacy = await readDomains(tx);

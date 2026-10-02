@@ -233,26 +233,26 @@ ok 'db healthy'
 
 # ---------- ④ 승계(최초 1회) ----------
 step '④ 데이터 승계 확인'
-# 승계 상태: STDV1(1차 결과)·RMS(2차 결과) 프로젝트 존재 여부. 스키마가 아직 없으면(최초) 빈 값.
+# 승계 상태: 승계 템플릿 RETAILV1(1차 결과, 1.2.0 이전 설치는 승계로 만든 STDV1)·RMS(2차 결과) 존재 여부. 범용 STDV1(CR-16)은 승계와 무관하다. 스키마가 아직 없으면(최초) 빈 값.
 FOUND="$("${COMPOSE[@]}" exec -T db psql -U termflow -d termflow -tAc \
-  "select coalesce(string_agg(project_key, ',' order by project_key), '') from tf_project where project_key in ('STDV1','RMS')" 2>/dev/null | tr -d '[:space:]')"
+  "select coalesce(string_agg(k, ',' order by k), '') from (select case when project_key = 'STDV1' then 'RETAILV1' else project_key end k from tf_project where project_key in ('RETAILV1','RMS') or (project_key = 'STDV1' and kind = 'TEMPLATE' and created_by = 'MIGRATION')) x" 2>/dev/null | tr -d '[:space:]')"
 has_key() { case ",$FOUND," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 PLAN_LABEL=''
 PLAN_ARGS=()
 PLAN_NEED_ADMIN=0
-if ! has_key STDV1 && [ "$MIGRATE_ALL" = 1 ]; then
-  PLAN_LABEL='승계 한 번에 실행(LOAD_LEGACY..DDL_REGRESSION, §11.5 대안) — STDV1·RMS·33 테이블·대사·DDL 회귀. 정정은 실행 후 두 곳에서'
+if ! has_key RETAILV1 && [ "$MIGRATE_ALL" = 1 ]; then
+  PLAN_LABEL='승계 한 번에 실행(LOAD_LEGACY..DDL_REGRESSION, §11.5 대안) — RETAILV1·RMS·33 테이블·대사·DDL 회귀. 정정은 실행 후 두 곳에서'
   PLAN_ARGS=(--steps=LOAD_LEGACY..DDL_REGRESSION)
   PLAN_NEED_ADMIN=1
-elif ! has_key STDV1; then
-  PLAN_LABEL='1차 승계(LOAD_LEGACY..DEFAULT_COL + 대사) — 원본 dump → STDV1 표준 사전'
+elif ! has_key RETAILV1; then
+  PLAN_LABEL='1차 승계(LOAD_LEGACY..DEFAULT_COL + 대사) — 원본 dump → 패션·유통 템플릿 RETAILV1'
 elif ! has_key RMS; then
-  PLAN_LABEL='2차 승계(COPY_TO_RMS..DDL_REGRESSION) — STDV1 정정 반영 후 RMS 생성·33 테이블·DDL 회귀'
+  PLAN_LABEL='2차 승계(COPY_TO_RMS..DDL_REGRESSION) — RETAILV1 정정 반영 후 RMS 생성·33 테이블·DDL 회귀'
   PLAN_ARGS=(--steps=COPY_TO_RMS..DDL_REGRESSION)
   PLAN_NEED_ADMIN=1
 fi
 if [ -z "$PLAN_LABEL" ]; then
-  ok '승계 완료 상태(STDV1·RMS 존재) — 건너뜀'
+  ok '승계 완료 상태(RETAILV1·RMS 존재) — 건너뜀'
 else
   info "미실행: $PLAN_LABEL"
   RUN=0

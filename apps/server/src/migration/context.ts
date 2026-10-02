@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import type pg from 'pg';
 import type { Db } from '../db/client.js';
 import { tfProject } from '../db/schema.js';
+import { RETAIL_TEMPLATE } from '../project/builtin/builtin-template.js';
 import type { ReportWriter } from './report-writer.js';
 
 /**
@@ -26,8 +27,11 @@ export const STEP_ORDER = [
 ] as const;
 export type StepName = (typeof STEP_ORDER)[number];
 
-/** 템플릿 "TermFlow 기본 표준 v1"(§11.1 step 2). */
-export const STDV1 = { key: 'STDV1', nm: 'TermFlow 기본 표준 v1' } as const;
+/**
+ * 승계 템플릿 "패션·유통 표준 v1"(§11.1 step 2). CR-16 C1: 키 `STDV1`은 동봉 범용 기본 표준이 쓰고,
+ * 승계 결과는 `RETAILV1`이다(옛 설치의 승계 STDV1은 기동 시 RETAILV1로 바뀐다 — `project/builtin`).
+ */
+export const SEED_TEMPLATE = RETAIL_TEMPLATE;
 /** 승계 첫 프로젝트(§11.1 step 9, CR-01 A5). `--reset`은 두 키를 모두 지운다. */
 export const RMS = { key: 'RMS', nm: '연구관리시스템(이관)' } as const;
 
@@ -96,11 +100,11 @@ export class StepFailure extends Error {
   }
 }
 
-/** STDV1 project_id. 없으면 선행 step(TEMPLATE) 누락으로 실패. */
-export async function stdv1Id(db: Db | Tx): Promise<number> {
-  const id = await findProjectId(db, STDV1.key);
+/** 승계 템플릿(RETAILV1) project_id. 없으면 선행 step(TEMPLATE) 누락으로 실패. */
+export async function templateId(db: Db | Tx): Promise<number> {
+  const id = await findProjectId(db, SEED_TEMPLATE.key);
   if (id === null)
-    throw new StepFailure('템플릿 STDV1이 없습니다 — 먼저 TEMPLATE step을 실행하십시오');
+    throw new StepFailure('승계 템플릿 RETAILV1이 없습니다 — 먼저 TEMPLATE step을 실행하십시오');
   return id;
 }
 
@@ -112,12 +116,12 @@ export async function findProjectId(db: Db | Tx, key: string): Promise<number | 
   return rows[0]?.id ?? null;
 }
 
-/** "STDV1에 이 테이블 행이 있는가"(선행 검사 공용). STDV1이 없으면 false(→ 실행 시 실패). */
-export async function stdv1Has(
+/** "승계 템플릿에 이 테이블 행이 있는가"(선행 검사 공용). 템플릿이 없으면 false(→ 실행 시 실패). */
+export async function templateHas(
   db: Db,
   count: (projectId: number) => Promise<number>,
 ): Promise<boolean> {
-  const id = await findProjectId(db, STDV1.key);
+  const id = await findProjectId(db, SEED_TEMPLATE.key);
   if (id === null) return false;
   return (await count(id)) > 0;
 }

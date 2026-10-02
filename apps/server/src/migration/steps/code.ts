@@ -2,7 +2,7 @@ import { and, count, eq } from 'drizzle-orm';
 import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertMigrated } from '../../db/audit.js';
 import { prjBizArea, stdCode, stdCodeCls } from '../../db/schema.js';
-import { StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
+import { StepFailure, templateHas, templateId, type StepDef } from '../context.js';
 import { readCodes, type LegacyCode } from '../legacy-reader.js';
 import { migratedTimes } from '../rules/r13-audit.js';
 
@@ -13,7 +13,7 @@ import { migratedTimes } from '../rules/r13-audit.js';
 export const codeStep: StepDef = {
   name: 'CODE',
   isDone: ({ db }) =>
-    stdv1Has(db, async (id) => {
+    templateHas(db, async (id) => {
       const [r] = await db
         .select({ n: count() })
         .from(stdCodeCls)
@@ -21,14 +21,14 @@ export const codeStep: StepDef = {
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
-    const projectId = await stdv1Id(tx);
+    const projectId = await templateId(tx);
     const biz = await tx
       .select({ id: prjBizArea.bizAreaId, cd: prjBizArea.bizCd })
       .from(prjBizArea)
       .where(eq(prjBizArea.projectId, projectId));
     const bizId = new Map(biz.map((b) => [b.cd, b.id]));
     if (bizId.size === 0) {
-      throw new StepFailure('STDV1 업무구분이 없습니다 — BIZ_AREA step을 먼저 실행하십시오');
+      throw new StepFailure('RETAILV1 업무구분이 없습니다 — BIZ_AREA step을 먼저 실행하십시오');
     }
 
     const legacy = await readCodes(tx);
@@ -59,7 +59,7 @@ export const codeStep: StepDef = {
     }
     const clsValues = [...classes.values()].map((e) => {
       const b = bizId.get(e.biz);
-      if (b === undefined) throw new StepFailure(`업무구분 ${e.biz}가 STDV1에 없습니다`);
+      if (b === undefined) throw new StepFailure(`업무구분 ${e.biz}가 RETAILV1에 없습니다`);
       return {
         projectId,
         bizAreaId: b,
@@ -105,7 +105,7 @@ export const codeStep: StepDef = {
     const insertedCodes = await insertMigrated(tx, stdCode, codeValues, MIGRATION_AUDIT, (q) =>
       q.returning({ id: stdCode.codeId }),
     );
-    // DoD: 코드구분의 업무구분이 전부 STDV1 소속(복합 FK가 보장하지만 건수로도 확인)
+    // DoD: 코드구분의 업무구분이 전부 RETAILV1 소속(복합 FK가 보장하지만 건수로도 확인)
     const [own] = await tx
       .select({ n: count() })
       .from(stdCodeCls)
@@ -115,7 +115,7 @@ export const codeStep: StepDef = {
       )
       .where(eq(stdCodeCls.projectId, projectId));
     if ((own?.n ?? 0) !== insertedCls.length) {
-      throw new StepFailure('STDV1 밖 업무구분을 참조하는 코드구분이 있습니다');
+      throw new StepFailure('RETAILV1 밖 업무구분을 참조하는 코드구분이 있습니다');
     }
     return {
       source: legacy.length,

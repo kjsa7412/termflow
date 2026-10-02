@@ -6,7 +6,7 @@
  *
  * - `--steps`: `A..B` 범위, `A,B` 목록. 기본 `LOAD_LEGACY..DEFAULT_COL`(1차, §11.5)
  * - DEFAULT_COL을 포함하면 RECONCILE(1차 대사)을 자동으로 이어 실행한다(`--no-reconcile`로 끔, CR-03 C4)
- * - `--reset`(dev 전용): STDV1·RMS 삭제 후 실행. 범위에 LOAD_LEGACY가 있으면 legacy 스키마도 다시 적재
+ * - `--reset`(dev 전용): 승계 템플릿 RETAILV1·RMS 삭제 후 실행(범용 STDV1은 그대로). 범위에 LOAD_LEGACY가 있으면 legacy 스키마도 다시 적재
  * - 2차(§11.5): `--steps=COPY_TO_RMS..RECONCILE` — RMS 생성(복사 엔진)·33 테이블 적재·전체 대사.
  *   `--rms-admin`: RMS 프로젝트 관리자(기본 TERMFLOW_ADMIN_LOGIN = 부트스트랩 관리자)
  */
@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { loadEnvOrExit } from '../config/load-env.js';
 import { createDb, createPool, poolConfig } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
+import { prepareTemplatesSafely } from '../project/builtin/prepare.js';
 import type { RunOptions, StepName } from './context.js';
 import { parseSteps, runSeed } from './runner.js';
 import { SEED_STEPS } from './steps/index.js';
@@ -123,6 +124,8 @@ async function main(): Promise<number> {
   const pool = createPool(env);
   try {
     await runMigrations(pool); // 스키마 전진(서버 기동과 같은 규칙)
+    // 서버 기동과 같은 템플릿 준비(CR-16 C4): 옛 승계 STDV1을 RETAILV1로 바꾼 뒤 러너가 RETAILV1을 찾는다
+    await prepareTemplatesSafely(pool, (m) => console.log(`[migrate:seed] ${m}`));
     const db = createDb(pool);
     console.log(
       `[migrate:seed] run_id=${opts.runId} steps=${opts.steps.join(',')}${opts.reset ? ' --reset' : ''}`,

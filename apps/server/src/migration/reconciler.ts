@@ -1,12 +1,12 @@
 import { sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
-import { findProjectId, RMS, STDV1, type Tx } from './context.js';
+import { findProjectId, RMS, SEED_TEMPLATE, type Tx } from './context.js';
 import { NEW_SUFFIXES } from './rules/new-suffixes.js';
 import { R19_COLUMN_RENAMES } from './rules/r19-term-unify.js';
 
 /**
- * 대사(설계서 §11.4, G7: 원본 = 적재 + 제외). 1차 범위(단계 3)는 legacy ↔ STDV1.
- * RMS가 있으면 전체 범위(단계 5, T5.11): STDV1 ↔ RMS(`project_copy_log` source_cnt = copied_cnt, origin_id 역조인 0건,
+ * 대사(설계서 §11.4, G7: 원본 = 적재 + 제외). 1차 범위(단계 3)는 legacy ↔ RETAILV1.
+ * RMS가 있으면 전체 범위(단계 5, T5.11): RETAILV1 ↔ RMS(`project_copy_log` source_cnt = copied_cnt, origin_id 역조인 0건,
  * 건수 동일) + 테이블·컬럼(legacy 33/649 = RMS, legacy_table_id 매핑, 테이블별 컬럼 수, 참조가 모두 RMS 행).
  * RMS가 없으면 RMS 열·테이블/컬럼 행은 N/A로 기록한다.
  * 집합 비교는 정규화 키(R1 정수 표기·trim)로 한다 — 개수만 맞고 내용이 다른 경우를 잡는다.
@@ -15,7 +15,7 @@ export interface ReconcileRow {
   item: string;
   legacyCnt: number;
   excludedCnt: number;
-  stdv1Cnt: number;
+  templateCnt: number;
   rmsCnt: number | null;
   flaggedCnt: number;
   check: string;
@@ -51,9 +51,9 @@ const norm = (col: string) =>
   sql`case when trim(${sql.identifier(col)}) ~ '^\\d+\\.0$' then split_part(trim(${sql.identifier(col)}), '.', 1) else trim(${sql.identifier(col)}) end`;
 
 export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
-  const pid = await findProjectId(q, STDV1.key);
+  const pid = await findProjectId(q, SEED_TEMPLATE.key);
   const rmsId = await findProjectId(q, RMS.key);
-  if (pid === null) throw new Error('STDV1이 없어 대사할 수 없습니다');
+  if (pid === null) throw new Error('승계 템플릿 RETAILV1이 없어 대사할 수 없습니다');
   const rows: ReconcileRow[] = [];
   const rmsNa = rmsId === null;
   const push = (r: Omit<ReconcileRow, 'rmsCnt' | 'result'> & { ok: boolean }) =>
@@ -61,7 +61,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: r.item,
       legacyCnt: r.legacyCnt,
       excludedCnt: r.excludedCnt,
-      stdv1Cnt: r.stdv1Cnt,
+      templateCnt: r.templateCnt,
       rmsCnt: null,
       flaggedCnt: r.flaggedCnt,
       check: r.check,
@@ -89,14 +89,14 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: '업무구분',
       legacyCnt: l.n,
       excludedCnt: 0,
-      stdv1Cnt: t.n,
+      templateCnt: t.n,
       flaggedCnt: 0,
-      check: 'distinct biz_cls = STDV1 biz_cd 집합',
+      check: 'distinct biz_cls = RETAILV1 biz_cd 집합',
       ok,
       note: d.sample && `차이: ${d.sample}`,
     });
   }
-  // 도메인분류: legacy 54 ⊂ STDV1, STDV1 = legacy + 신규 30
+  // 도메인분류: legacy 54 ⊂ RETAILV1, RETAILV1 = legacy + 신규 30
   {
     const l = await one<{ n: number }>(q, sql`select count(*)::int n from legacy.tb_domain_cls`);
     const t = await one<{ n: number; f: number }>(
@@ -116,9 +116,9 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: '도메인분류',
       legacyCnt: l.n,
       excludedCnt: 0,
-      stdv1Cnt: t.n,
+      templateCnt: t.n,
       flaggedCnt: t.f,
-      check: `legacy ⊂ STDV1, STDV1 = legacy + 신규 ${NEW_SUFFIXES.length}`,
+      check: `legacy ⊂ RETAILV1, RETAILV1 = legacy + 신규 ${NEW_SUFFIXES.length}`,
       ok,
       note: `신규 접미어 ${d.onlyTarget}(검토 표시 ${t.f})${d.onlyLegacy ? `, 누락 ${d.onlyLegacy}` : ''}`,
     });
@@ -140,7 +140,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: '용어',
       legacyCnt: l.n,
       excludedCnt: 0,
-      stdv1Cnt: t.n,
+      templateCnt: t.n,
       flaggedCnt: t.f,
       check: 'term_kor 집합 동일',
       ok,
@@ -164,7 +164,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: '도메인',
       legacyCnt: l.n,
       excludedCnt: 0,
-      stdv1Cnt: t.n,
+      templateCnt: t.n,
       flaggedCnt: t.f,
       check: 'logical_nm 집합 동일',
       ok,
@@ -194,7 +194,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: '코드구분',
       legacyCnt: l.c,
       excludedCnt: 0,
-      stdv1Cnt: t.c,
+      templateCnt: t.c,
       flaggedCnt: 0,
       check: 'count(distinct biz_cls, code_cls)',
       ok: l.c === t.c,
@@ -204,7 +204,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: '코드',
       legacyCnt: l.n,
       excludedCnt: 0,
-      stdv1Cnt: tc.n,
+      templateCnt: tc.n,
       flaggedCnt: 0,
       check: '(biz_cls, code_cls, code) 집합 동일',
       ok: l.n === tc.n && d.onlyLegacy === 0 && d.onlyTarget === 0,
@@ -233,7 +233,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
       item: '기본컬럼',
       legacyCnt: l.n,
       excludedCnt: 0,
-      stdv1Cnt: t.n,
+      templateCnt: t.n,
       flaggedCnt: 0,
       check: '물리명 집합 동일',
       ok: l.n === t.n && d.onlyLegacy === 0 && d.onlyTarget === 0,
@@ -258,7 +258,7 @@ export async function reconcileStdv1(q: Q): Promise<ReconcileRow[]> {
         item,
         legacyCnt: n,
         excludedCnt: 0,
-        stdv1Cnt: 0,
+        templateCnt: 0,
         rmsCnt: null,
         flaggedCnt: 0,
         check: 'RMS 적재 건수(step 10)',
@@ -282,10 +282,10 @@ const STD_ITEMS: Record<string, { table: string; pk: string; item: string }> = {
 };
 
 /**
- * STDV1 ↔ RMS(§11.4 "RMS(복사)" 열) + 테이블·컬럼 행. 표준 7항목: ① RMS 건수 = STDV1 ② 복사 로그 source_cnt = copied_cnt
+ * RETAILV1 ↔ RMS(§11.4 "RMS(복사)" 열) + 테이블·컬럼 행. 표준 7항목: ① RMS 건수 = RETAILV1 ② 복사 로그 source_cnt = copied_cnt
  * ③ origin_id 역조인(원본 없는 RMS 행) 0건 ④ 도메인은 review 건수 동일(C3 생략: 원본 동일).
  */
-async function reconcileRms(q: Q, stdv1: number, rms: number, rows: ReconcileRow[]): Promise<void> {
+async function reconcileRms(q: Q, tpl: number, rms: number, rows: ReconcileRow[]): Promise<void> {
   for (const row of rows) {
     const m = STD_ITEMS[row.item];
     if (!m) continue;
@@ -296,7 +296,7 @@ async function reconcileRms(q: Q, stdv1: number, rms: number, rows: ReconcileRow
       q,
       sql`select count(*)::int n,
                  count(*) filter (where not exists (select 1 from ${t} s
-                                   where s.project_id = ${stdv1} and s.${pk} = r.origin_id))::int orphan,
+                                   where s.project_id = ${tpl} and s.${pk} = r.origin_id))::int orphan,
                  ${flag} f
             from ${t} r where r.project_id = ${rms}`,
     );
@@ -307,14 +307,14 @@ async function reconcileRms(q: Q, stdv1: number, rms: number, rows: ReconcileRow
            order by l.copy_id desc limit 1`,
     );
     const problems: string[] = [];
-    if (r.n !== row.stdv1Cnt) problems.push(`RMS ${r.n} ≠ STDV1 ${row.stdv1Cnt}`);
+    if (r.n !== row.templateCnt) problems.push(`RMS ${r.n} ≠ RETAILV1 ${row.templateCnt}`);
     if (!log) problems.push('복사 로그 없음');
     else if (log.s !== log.c) problems.push(`복사 로그 source ${log.s} ≠ copied ${log.c}`);
     if (r.orphan > 0) problems.push(`원본 없는 RMS 행 ${r.orphan}`);
     if (m.table === 'std_domain' && r.f !== row.flaggedCnt)
-      problems.push(`review RMS ${r.f} ≠ STDV1 ${row.flaggedCnt}`);
+      problems.push(`review RMS ${r.f} ≠ RETAILV1 ${row.flaggedCnt}`);
     row.rmsCnt = r.n;
-    row.check += ' / STDV1 = RMS(복사 로그·origin 역조인)';
+    row.check += ' / RETAILV1 = RMS(복사 로그·origin 역조인)';
     if (problems.length > 0) row.result = 'MISMATCH';
     row.note = [row.note, problems.length ? `RMS: ${problems.join(', ')}` : 'RMS 일치']
       .filter(Boolean)
@@ -372,7 +372,7 @@ async function reconcileRms(q: Q, stdv1: number, rms: number, rows: ReconcileRow
     item: '테이블',
     legacyCnt: l.t,
     excludedCnt: 0,
-    stdv1Cnt: 0,
+    templateCnt: 0,
     rmsCnt: tt.n,
     flaggedCnt: tt.f,
     check: 'legacy_table_id 집합 동일, 업무구분 RP·FINAL',
@@ -387,7 +387,7 @@ async function reconcileRms(q: Q, stdv1: number, rms: number, rows: ReconcileRow
     item: '컬럼',
     legacyCnt: l.c,
     excludedCnt: 0,
-    stdv1Cnt: 0,
+    templateCnt: 0,
     rmsCnt: cc.n,
     flaggedCnt: cc.typ,
     check: '건수·테이블별 컬럼 수 동일, 참조(도메인·코드구분·기본컬럼)가 모두 RMS 행',

@@ -126,16 +126,16 @@ describe('새 적재 — R19 인라인(DEFAULT_COL·TABLE)', () => {
     expect(rec.every((r) => r[7] === 'OK' || r[7] === 'N/A')).toBe(true);
   });
 
-  it('STDV1·RMS 기본컬럼 = RGSRT, RMS 테이블 끝 조각 MAST 18 · MST 0, 등록자 컬럼 66이 기본컬럼에 연결', async () => {
+  it('RETAILV1·RMS 기본컬럼 = RGSRT, RMS 테이블 끝 조각 MAST 18 · MST 0, 등록자 컬럼 66이 기본컬럼에 연결', async () => {
     const d = await pool.query<{ project_key: string; physical_nm: string }>(
       `select p.project_key, c.physical_nm from std_default_col c join tf_project p on p.project_id = c.project_id
         where c.logical_nm like '%등록자ID' order by 1, 2`,
     );
     expect(d.rows).toEqual([
+      { project_key: 'RETAILV1', physical_nm: 'FINA_RGSRT_ID' },
+      { project_key: 'RETAILV1', physical_nm: 'FIRS_RGSRT_ID' },
       { project_key: 'RMS', physical_nm: 'FINA_RGSRT_ID' },
       { project_key: 'RMS', physical_nm: 'FIRS_RGSRT_ID' },
-      { project_key: 'STDV1', physical_nm: 'FINA_RGSRT_ID' },
-      { project_key: 'STDV1', physical_nm: 'FIRS_RGSRT_ID' },
     ]);
     const t = await q1<{ n: number; mast: number; mst: number; v1: number; fin: number }>(
       `select count(*)::int n, count(*) filter (where table_nm like '%\\_MAST')::int mast,
@@ -225,7 +225,7 @@ describe('CR-09 이전 DB(이전 이름으로 적재됨) → TERM_UNIFY 정정',
   let userTableId: number;
 
   beforeAll(async () => {
-    // 이전 이름 재현: 기본컬럼(STDV1·RMS) · RMS 컬럼 · 테이블명 · 이력 스냅샷 + 사용자 테이블 1(legacy 아님)
+    // 이전 이름 재현: 기본컬럼(RETAILV1·RMS) · RMS 컬럼 · 테이블명 · 이력 스냅샷 + 사용자 테이블 1(legacy 아님)
     await pool.query(
       `update std_default_col set physical_nm = case physical_nm when 'FIRS_RGSRT_ID' then 'FIRS_REG_USER_ID'
           else 'FINA_REG_USER_ID' end where physical_nm = any($1)`,
@@ -267,7 +267,7 @@ describe('CR-09 이전 DB(이전 이름으로 적재됨) → TERM_UNIFY 정정',
     fix = await runSteps({ pool, db, url }, rep.dir, 'fix', parseSteps('TERM_UNIFY'));
   });
 
-  it('TERM_UNIFY: 기본컬럼 4(STDV1 2 · RMS 2) · 테이블 33 저장(테이블명 18 · 컬럼명 66) · 사용자 테이블 REVIEW 1', () => {
+  it('TERM_UNIFY: 기본컬럼 4(RETAILV1 2 · RMS 2) · 테이블 33 저장(테이블명 18 · 컬럼명 66) · 사용자 테이블 REVIEW 1', () => {
     expect(fix.ok).toBe(true);
     const u = fix.steps[0]!;
     expect(u).toMatchObject({ step: 'TERM_UNIFY', status: 'SUCCESS' });

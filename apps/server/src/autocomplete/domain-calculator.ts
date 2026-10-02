@@ -21,7 +21,7 @@ export interface DomainClsEntry {
   readonly colScale: number | null;
 }
 
-/** L1 입력 스냅샷(프로젝트 1개 분량). 러너는 STDV1 메모리 스냅샷, 서버는 TermCache가 제공한다. */
+/** L1 입력 스냅샷(프로젝트 1개 분량). 러너는 승계 템플릿 메모리 스냅샷, 서버는 TermCache가 제공한다. */
 export interface L1Snapshot {
   readonly termByKor: ReadonlyMap<string, TermEntry>;
   readonly clsBySuffix: ReadonlyMap<string, DomainClsEntry>;

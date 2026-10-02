@@ -2,7 +2,7 @@ import { count, eq } from 'drizzle-orm';
 import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertMigrated } from '../../db/audit.js';
 import { stdTerm } from '../../db/schema.js';
-import { StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
+import { StepFailure, templateHas, templateId, type StepDef } from '../context.js';
 import { readTerms } from '../legacy-reader.js';
 import type { ReportRow } from '../report-writer.js';
 import { isNumericDotZero, normalizeNumericText } from '../rules/r01-numeric-terms.js';
@@ -17,16 +17,16 @@ type Pending = {
   row: Omit<ReportRow, 'targetId' | 'step' | 'targetTable'>;
 };
 
-/** step 5 TERM(T3.9): R1·R2·R4·R8·R13 → STDV1 `std_term`(전부 APPROVED). */
+/** step 5 TERM(T3.9): R1·R2·R4·R8·R13 → RETAILV1 `std_term`(전부 APPROVED). */
 export const termStep: StepDef = {
   name: 'TERM',
   isDone: ({ db }) =>
-    stdv1Has(db, async (id) => {
+    templateHas(db, async (id) => {
       const [r] = await db.select({ n: count() }).from(stdTerm).where(eq(stdTerm.projectId, id));
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
-    const projectId = await stdv1Id(tx);
+    const projectId = await templateId(tx);
     const legacy = await readTerms(tx);
     for (const f of [
       'r01_numeric_terms',

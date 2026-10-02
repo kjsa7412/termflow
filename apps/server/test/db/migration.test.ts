@@ -179,7 +179,7 @@ describe('러너 골격(T3.2)', () => {
   });
 });
 
-describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
+describe('승계 1차 전체(dump → RETAILV1, 게이트 3)', () => {
   let pool: pg.Pool;
   let db: Db;
   let url: string;
@@ -222,7 +222,7 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
     });
   });
 
-  it('STDV1 건수: 업무구분 6·분류 84·용어 1,705(APPROVED)·도메인 4,587·코드구분 159·코드 991·기본컬럼 9', async () => {
+  it('RETAILV1 건수: 업무구분 6·분류 84·용어 1,705(APPROVED)·도메인 4,587·코드구분 159·코드 991·기본컬럼 9', async () => {
     expect(await counts(pool)).toMatchObject({
       biz: 6,
       cls: 84,
@@ -235,7 +235,7 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
       dcol: 9,
     });
     const p = await pool.query(
-      "select kind, default_dialect, default_col_set_id is not null has_set, created_by from tf_project where project_key = 'STDV1'",
+      "select kind, default_dialect, default_col_set_id is not null has_set, created_by from tf_project where project_key = 'RETAILV1'",
     );
     expect(p.rows[0]).toEqual({
       kind: 'TEMPLATE',
@@ -306,7 +306,7 @@ describe('승계 1차 전체(dump → STDV1, 게이트 3)', () => {
     expect(t.rows[0].created_by).toBe('MIGRATION');
   });
 
-  it('CODE(T3.11): 코드구분 159·코드 991, 업무구분 전부 STDV1 소속, sort_order 원본 순', async () => {
+  it('CODE(T3.11): 코드구분 159·코드 991, 업무구분 전부 RETAILV1 소속, sort_order 원본 순', async () => {
     const { rows } = await pool.query(
       `select count(*)::int n from std_code_cls c join prj_biz_area b on b.biz_area_id = c.biz_area_id and b.project_id = c.project_id`,
     );

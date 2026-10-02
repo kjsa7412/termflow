@@ -3,7 +3,7 @@ import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { tfUser } from '../../db/schema.js';
 import type { CopyPlan, CopySource } from '../../project/copy/copy-plan.js';
 import { executeCopy } from '../../project/copy/project-copy.service.js';
-import { findProjectId, RMS, StepFailure, stdv1Id, type StepDef } from '../context.js';
+import { findProjectId, RMS, SEED_TEMPLATE, StepFailure, templateId, type StepDef } from '../context.js';
 
 export const COPY_TO_RMS_HEADER = [
   'item',
@@ -18,7 +18,7 @@ export const COPY_TO_RMS_HEADER = [
 
 /**
  * step 9 COPY_TO_RMS(T5.9, 설계서 §11.1): 복사 엔진(§4.4)을 그대로 호출해 "연구관리시스템(이관)"(키 RMS)을 만든다.
- * 원본 = STDV1 전 항목, 업무구분 6개 전부, approvedOnly=false(검토 도메인 293 등 review 값 그대로 복사).
+ * 원본 = RETAILV1 전 항목, 업무구분 6개 전부, approvedOnly=false(검토 도메인 293 등 review 값 그대로 복사).
  * 프로젝트 관리자 = `--rms-admin`(기본 부트스트랩 관리자). 사용자가 없으면 명확한 오류로 중단한다.
  * 엔진이 자체 repeatable read 트랜잭션을 여므로 러너 트랜잭션을 쓰지 않는다(transactional: false).
  */
@@ -27,7 +27,7 @@ export const copyToRmsStep: StepDef = {
   transactional: false,
   isDone: async ({ db }) => (await findProjectId(db, RMS.key)) !== null,
   async run({ db, opts, report, log }) {
-    const stdv1 = await stdv1Id(db);
+    const tpl = await templateId(db);
     const adminLogin = opts.rmsAdmin ?? 'admin';
     const [admin] = await db
       .select({ id: tfUser.userId, active: tfUser.isActive })
@@ -39,7 +39,7 @@ export const copyToRmsStep: StepDef = {
           '서버를 한 번 기동해 초기 관리자를 만들거나(§7.5 부트스트랩) --rms-admin=<로그인ID>로 활성 사용자를 지정하십시오',
       );
     }
-    const src: CopySource = { kind: 'TEMPLATE', projectId: stdv1, key: 'STDV1' };
+    const src: CopySource = { kind: 'TEMPLATE', projectId: tpl, key: SEED_TEMPLATE.key };
     const plan: CopyPlan = {
       operation: 'CREATE',
       target: {
@@ -69,7 +69,7 @@ export const copyToRmsStep: StepDef = {
         const short = o.items.filter((i) => i.copied !== i.sourceCnt);
         if (short.length > 0) {
           throw new StepFailure(
-            `STDV1 전 항목이 복사되지 않았습니다: ${short.map((i) => `${i.item} ${i.copied}/${i.sourceCnt}`).join(', ')}`,
+            `RETAILV1 전 항목이 복사되지 않았습니다: ${short.map((i) => `${i.item} ${i.copied}/${i.sourceCnt}`).join(', ')}`,
           );
         }
       },

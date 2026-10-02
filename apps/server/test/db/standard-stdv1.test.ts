@@ -8,7 +8,7 @@ import { createMigratedDatabase, FIXTURE_PASSWORD } from './setup/databases.js';
 import { ISOLATED, perfLimit } from './setup/perf.js';
 import { insertUsers, PHASE1, PHASE2, runSteps, tempReportRoot } from './setup/stdv1.js';
 
-// 단계 6 실데이터(STDV1·RMS: 용어 1,705·도메인 4,587): 목록·검색 성능(§12.1 목록 20행 200ms), T6.4 DoD(STDV1 recalculate REVIEW_ONLY)
+// 단계 6 실데이터(RETAILV1·RMS: 용어 1,705·도메인 4,587): 목록·검색 성능(§12.1 목록 20행 200ms), T6.4 DoD(RETAILV1 recalculate REVIEW_ONLY)
 let pool: pg.Pool;
 let db: Db;
 let app: INestApplication;
@@ -82,10 +82,10 @@ describe('목록·검색 성능(§12.1 목록 20행 200ms) — RMS 실데이터'
   });
 });
 
-describe('T6.4 DoD: STDV1에서 recalculate REVIEW_ONLY', () => {
+describe('T6.4 DoD: RETAILV1에서 recalculate REVIEW_ONLY', () => {
   it('{updated, stillReview} 반환 — 정정 전 변경 0, 미등록 조각 용어 + 접미어 분류 등록 후 검토필요 감소', async () => {
     const c = await sa();
-    const P = '/api/v1/projects/STDV1/standards';
+    const P = '/api/v1/projects/RETAILV1/standards';
     const r0 = await c.post(`${P}/domains/recalculate`, { scope: 'REVIEW_ONLY' });
     expect(r0.status, JSON.stringify(r0.body).slice(0, 300)).toBe(200);
     const first = r0.body as DomainRecalcResponse;
@@ -97,7 +97,7 @@ describe('T6.4 DoD: STDV1에서 recalculate REVIEW_ONLY', () => {
       `select part, count(*)::int n from (
          select unnest(regexp_split_to_array(substring(review_note from '미등록 조각: ([^;]+)'), ', ')) part
            from std_domain d join tf_project p using (project_id)
-          where p.project_key = 'STDV1' and d.review_yn and review_note like '%미등록 조각%') x
+          where p.project_key = 'RETAILV1' and d.review_yn and review_note like '%미등록 조각%') x
         group by part order by n desc limit 1`,
     );
     const part = top.rows[0]!.part;
@@ -116,7 +116,7 @@ describe('T6.4 DoD: STDV1에서 recalculate REVIEW_ONLY', () => {
     expect(r1.resolved).toBeGreaterThan(0);
     expect(r1.stillReview).toBe(first.stillReview - r1.resolved);
     console.log(
-      `[recalc] STDV1 REVIEW_ONLY: 1회차 대상 ${first.target} · 변경 ${first.updated} · 해제 ${first.resolved} · 잔여 ${first.stillReview} (${first.elapsedMs}ms) → '${part}'(${top.rows[0]!.n}회) 등록 후 변경 ${r1.updated} · 해제 ${r1.resolved} · 잔여 ${r1.stillReview}`,
+      `[recalc] RETAILV1 REVIEW_ONLY: 1회차 대상 ${first.target} · 변경 ${first.updated} · 해제 ${first.resolved} · 잔여 ${first.stillReview} (${first.elapsedMs}ms) → '${part}'(${top.rows[0]!.n}회) 등록 후 변경 ${r1.updated} · 해제 ${r1.resolved} · 잔여 ${r1.stillReview}`,
     );
     // RMS(복사본)는 영향 없음(CR-01-2)
     const rms = (await c.get('/api/v1/projects/RMS/standards/domains?review=true&size=1'))

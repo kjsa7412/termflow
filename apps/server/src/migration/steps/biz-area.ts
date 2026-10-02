@@ -2,16 +2,16 @@ import { count, eq, sql } from 'drizzle-orm';
 import { MIGRATION_AUDIT } from '../../common/audit/audit.js';
 import { insertAudited } from '../../db/audit.js';
 import { prjBizArea } from '../../db/schema.js';
-import { StepFailure, stdv1Has, stdv1Id, type StepDef } from '../context.js';
+import { StepFailure, templateHas, templateId, type StepDef } from '../context.js';
 
 /**
- * step 3 BIZ_AREA(T3.7, R7 ①): legacy.tb_code_info의 distinct (biz_cls, biz_cls_nm) → STDV1 `prj_biz_area`.
+ * step 3 BIZ_AREA(T3.7, R7 ①): legacy.tb_code_info의 distinct (biz_cls, biz_cls_nm) → RETAILV1 `prj_biz_area`.
  * 접두어 = biz_cd || '_', 정렬 = 코드 순. 같은 biz_cls에 이름이 2개 이상이면 실패.
  */
 export const bizAreaStep: StepDef = {
   name: 'BIZ_AREA',
   isDone: ({ db }) =>
-    stdv1Has(db, async (id) => {
+    templateHas(db, async (id) => {
       const [r] = await db
         .select({ n: count() })
         .from(prjBizArea)
@@ -19,7 +19,7 @@ export const bizAreaStep: StepDef = {
       return r?.n ?? 0;
     }),
   async run({ tx, report }) {
-    const projectId = await stdv1Id(tx);
+    const projectId = await templateId(tx);
     const r = await tx.execute(
       sql`select biz_cls, biz_cls_nm, count(*)::int as n from legacy.tb_code_info group by 1, 2 order by 1, 2`,
     );

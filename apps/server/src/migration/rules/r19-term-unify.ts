@@ -1,7 +1,7 @@
 /**
  * R19 용어 기준 물리명 정정(CR-09, 설계서 §11.2): 승계 데이터가 용어사전과 다른 물리약어를 쓰던 두 쌍을 용어사전 기준으로 맞춘다.
  *  - 등록자 = RGSRT: 기본컬럼 `FIRS_REG_USER_ID` → `FIRS_RGSRT_ID`, `FINA_REG_USER_ID` → `FINA_RGSRT_ID`
- *    (STDV1 기본컬럼 세트 적재 시 · RMS 테이블 컬럼 적재 시 — 이름이 정확히 같은 컬럼만)
+ *    (RETAILV1 기본컬럼 세트 적재 시 · RMS 테이블 컬럼 적재 시 — 이름이 정확히 같은 컬럼만)
  *  - 마스터 = MAST: 테이블 물리명의 **끝 조각** `MST` → `MAST`(예 `RP_RSCH_PRJ_MST` → `RP_RSCH_PRJ_MAST`). 중간 조각·컬럼명은 바꾸지 않는다
  * 적용 지점: DEFAULT_COL(세트), TABLE(테이블·컬럼) — 새 적재는 처음부터 새 이름. 이미 적재된 DB는 TERM_UNIFY step이
  * 편집기 저장과 같은 서비스 경로로 정정한다. 대응표는 리포트 `cr09-rename-map.csv`(표준 헤더, rule R19).
