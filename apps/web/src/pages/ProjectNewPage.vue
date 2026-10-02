@@ -405,7 +405,12 @@ function goHome(): void {
           <th class="num">원본 건수</th>
           <th class="num">복사</th>
           <th class="num">제외</th>
-          <th class="num">검토 표시</th>
+          <th
+            class="num"
+            title="복사 후 재검증에서 새로 검토필요로 표시한 행(원본에서 이미 검토필요였던 행은 제외)"
+          >
+            재검증 표시
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -596,7 +601,7 @@ function goHome(): void {
                     <span class="text-sm text-muted"> ({{ pickLabel('bizAreas') }})</span>
                   </td>
                   <td class="text-sm text-muted">선택한 업무구분에 속한 코드구분·코드</td>
-                  <td class="num">{{ count('CODE_CLS') }} / {{ count('CODE') }}</td>
+                  <td class="num nowrap">{{ count('CODE_CLS') }} / {{ count('CODE') }}</td>
                 </tr>
               </template>
             </tbody>

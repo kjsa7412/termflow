@@ -365,8 +365,8 @@ async function removeMember(): Promise<void> {
               }}{{ settings.createdAt.slice(0, 10) }} 생성(스냅샷) · {{ settings.createdBy }}</span
             >
             <span v-if="copySummary" class="field-help" data-testid="copy-summary"
-              >복사 로그: {{ copySummary.text }} · {{ copySummary.seconds }}초. 원본 변경은 자동
-              반영되지 않습니다.</span
+              >복사 로그: {{ copySummary.text }} · 항목 복사 합계 {{ copySummary.seconds }}초(생성
+              전체 시간과 조금 다를 수 있음). 원본 변경은 자동 반영되지 않습니다.</span
             >
           </div>
         </div>

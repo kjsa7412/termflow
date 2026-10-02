@@ -53,6 +53,13 @@ const tab = ref<'ddl' | 'extract'>('ddl');
 const view = ref<'all' | 'table'>('all');
 const cursor = ref(0);
 const extract = ref<DdlExtractResponse | null>(null);
+/** 정보 추출 미리보기 표(첫 줄 = 머리글). 테이블 사이 빈 줄은 뺀다. */
+const extractRows = computed(() =>
+  (extract.value?.text ?? '')
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== '')
+    .map((l) => l.split('\t')),
+);
 const logs = ref<ExportLogItem[]>([]);
 const busy = ref<string | null>(null);
 
@@ -549,9 +556,27 @@ const KIND_LABEL: Record<string, string> = {
                 >
               </div>
               <TfSkeleton v-if="!extract" :lines="6" />
-              <pre v-else class="code code-tab" data-testid="extract-text" tabindex="0">{{
-                extract.text
-              }}</pre>
+              <!-- 탭 구분 원문은 한글 폭 때문에 열이 어긋나 보였다 → 표로(복사·다운로드는 원문 그대로, CR-15 C18) -->
+              <div
+                v-else
+                class="table-wrap is-scroll extract-table"
+                data-testid="extract-text"
+                tabindex="0"
+                aria-label="정보 추출 미리보기"
+              >
+                <table class="table table-compact">
+                  <thead>
+                    <tr>
+                      <th v-for="(h, i) in extractRows[0] ?? []" :key="i">{{ h }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(r, n) in extractRows.slice(1)" :key="n">
+                      <td v-for="(c, i) in r" :key="i">{{ c }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 

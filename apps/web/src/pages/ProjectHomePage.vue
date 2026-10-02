@@ -171,13 +171,16 @@ const ACTION_LABEL: Record<string, string> = {
         <span class="stat-value">{{ home.tables.review }}</span>
         <span class="stat-sub"><span>PK 없음·타입 확인 등</span></span>
       </div>
-      <div class="card stat-card">
+      <component
+        :is="reviewLink ? RouterLink : 'div'"
+        class="card stat-card"
+        v-bind="reviewLink ? { to: reviewLink } : {}"
+        data-testid="kpi-review-domains"
+      >
         <span class="stat-label">검토필요 도메인</span>
         <span class="stat-value">{{ home.reviewDomainCnt.toLocaleString('ko-KR') }}</span>
-        <span class="stat-sub"
-          ><span>멤버 {{ home.memberCnt }}명</span></span
-        >
-      </div>
+        <span class="stat-sub"><span>표준 사전 › 도메인에서 정정</span></span>
+      </component>
     </div>
 
     <div class="card card-flush mb-6">

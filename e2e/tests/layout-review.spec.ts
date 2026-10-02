@@ -169,6 +169,34 @@ for (const size of SIZES) {
   });
 }
 
+test.describe('1366px 표준 사전 화면(CR-15 C18)', () => {
+  test.use({ viewport: { width: 1366, height: 768 } });
+  for (const [name, sub] of [
+    ['terms', 'standards/terms'],
+    ['domain-classes', 'standards/domain-classes'],
+    ['default-columns', 'standards/default-columns'],
+  ] as const) {
+    test(`${name}: 폭 보조 클래스(w-*)가 적용되고 페이지 가로 넘침 없음`, async ({ page }) => {
+      await page.goto(`${P}/${sub}`);
+      await expect(page.locator('main table tbody tr').first()).toBeVisible();
+      await page.screenshot({ path: path.join(OUT, `std_${name}_1366.png`), fullPage: true });
+      expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+      // w-80·w-120·w-160 select/input은 그 폭(전에는 100%로 늘어 필터가 한 줄 전체 폭이었다)
+      const wrong = await page.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLElement>('main :is(.input, .select)'))
+          .map((el) => {
+            const m = /\bw-(80|100|120|160|200|240)\b/.exec(el.className);
+            return m
+              ? { want: Number(m[1]), got: Math.round(el.getBoundingClientRect().width) }
+              : null;
+          })
+          .filter((x) => x && x.got > 0 && Math.abs(x.got - x.want) > 2),
+      );
+      expect(wrong).toEqual([]);
+    });
+  }
+});
+
 test.describe('1366px 처음 열기', () => {
   test.use({ viewport: { width: 1366, height: 768 } });
   test('저장된 선택이 없으면 DDL 패널은 닫힌 채로 시작(CR-15 C9)', async ({ page }) => {

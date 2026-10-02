@@ -6,7 +6,7 @@ import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
  * 내용은 기본 슬롯(close 전달). 바깥 클릭·Esc로 닫고 Esc는 트리거로 포커스를 돌려준다.
  * CR-15 C8: 메뉴는 트리거 위치를 재서 화면 기준(position: fixed)으로 띄운다 — 가로 스크롤 표(`.table-wrap`·`.grid-wrap`)
  * 안의 행 메뉴가 표 상자에 잘리지 않게. 아래 공간이 모자라면 위로, 화면 밖으로 나가지 않게 좌우를 맞춘다.
- * 바깥 스크롤·창 크기 변경 때는 닫는다(트리거와 어긋나지 않게).
+ * 바깥 스크롤 때는 트리거를 따라 다시 맞추고(트리거가 화면 밖이면 닫음), 창 크기 변경 때는 닫는다.
  */
 const props = withDefaults(
   defineProps<{ align?: 'left' | 'right'; up?: boolean; popover?: boolean }>(),
@@ -33,9 +33,20 @@ function onDocClick(e: MouseEvent): void {
 function onKey(e: KeyboardEvent): void {
   if (e.key === 'Escape') close(true);
 }
+/**
+ * 바깥이 스크롤되면 트리거를 따라 다시 맞추고, 트리거가 화면 밖으로 나가면 닫는다. 반쯤 가려진 단추를 누르면 브라우저가 포커스를
+ * 맞추려 표 상자를 스크롤하는데, 그때 바로 닫으면 메뉴가 열리자마자 사라졌다.
+ */
 function onScroll(e: Event): void {
   if (menu.value && e.target instanceof Node && menu.value.contains(e.target)) return;
-  close();
+  const t = triggerEl()?.getBoundingClientRect();
+  const vh = document.documentElement.clientHeight || window.innerHeight;
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  if (!t || t.bottom < 0 || t.top > vh || t.right < 0 || t.left > vw) close();
+  else void place(false);
+}
+function triggerEl(): HTMLElement | null {
+  return root.value?.querySelector<HTMLElement>('[aria-haspopup]') ?? root.value;
 }
 function onResize(): void {
   close();
@@ -46,7 +57,7 @@ async function place(first = true): Promise<void> {
   if (first) placed.value = { position: 'fixed', visibility: 'hidden' };
   await nextTick();
   const m = menu.value;
-  const trigger = root.value?.querySelector<HTMLElement>('[aria-haspopup]') ?? root.value;
+  const trigger = triggerEl();
   if (!m || !trigger || !open.value) return;
   const t = trigger.getBoundingClientRect();
   const minWidth = Number.parseFloat(getComputedStyle(m).minWidth) || 0;

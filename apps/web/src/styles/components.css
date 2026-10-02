@@ -55,6 +55,10 @@
   border: 1px solid var(--bd-strong); border-radius: var(--r-sm); font-size: var(--fs-13);
   transition: border-color .12s, box-shadow .12s;
 }
+/* 폭 보조 클래스(w-80 등)가 입력칸 기본 폭 100%보다 우선 — 전에는 뒤에 오는 이 규칙에 덮여 필터 select가 한 줄 전체 폭이었다(CR-15 C18) */
+:is(.input, .select, .textarea).w-80 { width: 80px; } :is(.input, .select, .textarea).w-100 { width: 100px; } :is(.input, .select, .textarea).w-120 { width: 120px; }
+:is(.input, .select, .textarea).w-160 { width: 160px; } :is(.input, .select, .textarea).w-200 { width: 200px; } :is(.input, .select, .textarea).w-240 { width: 240px; }
+:is(.input, .select, .textarea).w-320 { width: 320px; max-width: 100%; }
 .input:hover, .select:hover, .textarea:hover { border-color: var(--tx-3); }
 .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
 .input:disabled, .select:disabled, .textarea:disabled, .input[readonly] { background: var(--bg-0); color: var(--tx-3); cursor: not-allowed; }
@@ -155,12 +159,14 @@
 .table .col-check { width: 40px; padding-right: 0; }
 .table .col-menu { width: 44px; text-align: right; padding-left: 0; }
 .table .col-status { width: 110px; }
+.table .shrink { width: 1%; white-space: nowrap; } /* 숫자·체크 열은 내용 폭만 — 남는 폭은 글자 열로(CR-15 C18) */
 .table .col-text { min-width: 200px; } /* 긴 글 열: 좁은 창에서도 몇 글자씩 꺾이지 않게(표 상자가 가로로 스크롤) */
 .table .th-sort { cursor: pointer; user-select: none; }
 .table .th-sort::after { content: "↕"; margin-left: 4px; color: var(--tx-3); font-size: 11px; }
 .table .th-sort.asc::after { content: "↑"; color: var(--accent); }
 .table .th-sort.desc::after { content: "↓"; color: var(--accent); }
 .table-compact td { height: 34px; }
+.table-dense th, .table-dense td { padding: 0 6px; } /* 열이 많은 편집 표(기본컬럼): 글자 칸 폭을 넓힌다(CR-15 C18) */
 .table td .input, .table td .select, .table td .textarea { height: 28px; font-size: var(--fs-13); }
 .table td .input, .table td .select { min-width: 80px; } /* 좁은 열에서 입력칸이 글자 한두 개 폭으로 줄지 않게 */
 .table td .input-sm { height: 26px; }
@@ -510,6 +516,8 @@
 .code .id { color: var(--code-tx); }
 .code-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: var(--fs-12); color: var(--tx-3); }
 .code-tab { font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre; overflow: auto; }
+.table-wrap.extract-table { max-height: 520px; }
+.extract-table th, .extract-table td { white-space: nowrap; font-size: var(--fs-12); }
 
 /* ---------- 16. 트리(코드 화면) ---------- */
 .tree { font-size: var(--fs-13); }

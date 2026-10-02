@@ -174,6 +174,7 @@ async function logout(): Promise<void> {
               <span v-for="p in session.projects" :key="p.key" class="row">
                 <span class="project-key">{{ p.key }}</span
                 >{{ p.nm }}
+                <TfBadge v-if="p.kind === 'TEMPLATE'" kind="outline">템플릿</TfBadge>
                 <span class="text-muted">· {{ ROLE_LABEL[p.role] }}</span>
               </span>
             </span>

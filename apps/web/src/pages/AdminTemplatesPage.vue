@@ -11,6 +11,7 @@ import TfButton from '../components/ui/TfButton.vue';
 import TfCheckbox from '../components/ui/TfCheckbox.vue';
 import TfIcon from '../components/ui/TfIcon.vue';
 import TfPopover from '../components/ui/TfPopover.vue';
+import TfSkeleton from '../components/ui/TfSkeleton.vue';
 import { useSessionStore } from '../stores/session.js';
 import { useToastStore } from '../stores/toast.js';
 
@@ -147,7 +148,7 @@ async function remove(): Promise<void> {
     <div>
       <div class="breadcrumb"><span>시스템</span><span>›</span><span>템플릿</span></div>
       <h1 class="page-title">
-        표준 템플릿 <span class="count-pill">{{ items.length }}</span>
+        표준 템플릿 <span v-if="!loading" class="count-pill">{{ items.length }}</span>
       </h1>
       <p class="page-desc">
         새 프로젝트에 업무구분·표준 사전을 공급하는 읽기 전용 원본입니다. 가져오기는 생성 시점의
@@ -334,6 +335,10 @@ async function remove(): Promise<void> {
               </template>
             </TfPopover>
           </td>
+        </tr>
+        <!-- 불러오는 동안 "0건"으로 보이지 않게(CR-15 C18) -->
+        <tr v-if="loading && items.length === 0">
+          <td colspan="11"><TfSkeleton :lines="2" /></td>
         </tr>
         <tr v-if="!loading && items.length === 0">
           <td colspan="11">

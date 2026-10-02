@@ -148,7 +148,7 @@ describe('DataTable', () => {
 });
 
 describe('TfPopover — 화면 기준 위치(CR-15 C8)', () => {
-  it('아래가 모자라면 위로, 오른쪽 정렬은 트리거 오른쪽 끝에 맞추고, 바깥 스크롤이면 닫힌다', async () => {
+  it('아래가 모자라면 위로, 오른쪽 정렬은 트리거 오른쪽 끝에 맞추고, 바깥 스크롤은 따라가다 트리거가 화면 밖이면 닫힌다', async () => {
     const spies = [
       vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200),
       vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(120),
@@ -173,6 +173,12 @@ describe('TfPopover — 화면 기준 위치(CR-15 C8)', () => {
     expect(menu.element.style.position).toBe('fixed');
     expect(menu.element.style.top).toBe('576px');
     expect(menu.element.style.left).toBe('526px');
+    // 바깥 스크롤: 트리거가 화면 안이면 열린 채 다시 맞추고(포커스 스크롤로 바로 닫히던 결함), 화면 밖이면 닫는다
+    window.dispatchEvent(new Event('scroll'));
+    await flushPromises();
+    expect(menu.classes()).toContain('is-open');
+    trigger.element.getBoundingClientRect = () =>
+      ({ left: 700, right: 726, top: -80, bottom: -54, width: 26, height: 26 }) as DOMRect;
     window.dispatchEvent(new Event('scroll'));
     await flushPromises();
     expect(menu.classes()).not.toContain('is-open');

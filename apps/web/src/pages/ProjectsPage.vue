@@ -168,12 +168,17 @@ const dialectLabel = (d: string) => (d === 'POSTGRESQL' ? 'PostgreSQL' : d);
     icon="folder"
     :title="filter === 'archived' ? '보관된 프로젝트가 없습니다' : '참여 중인 프로젝트가 없습니다'"
     :desc="
-      session.isSysAdmin
-        ? '새 프로젝트를 만들어 기본 표준을 가져올 수 있습니다.'
-        : '시스템 관리자에게 프로젝트 멤버 추가를 요청하세요.'
+      filter === 'archived'
+        ? '보관한 프로젝트는 읽기 전용으로 여기에 모입니다. 보관·복원은 시스템 › 프로젝트에서 합니다.'
+        : session.isSysAdmin
+          ? '새 프로젝트를 만들어 기본 표준을 가져올 수 있습니다.'
+          : '시스템 관리자에게 프로젝트 멤버 추가를 요청하세요.'
     "
   >
-    <RouterLink v-if="session.isSysAdmin" class="btn btn-primary btn-sm" to="/projects/new"
+    <RouterLink
+      v-if="session.isSysAdmin && filter !== 'archived'"
+      class="btn btn-primary btn-sm"
+      to="/projects/new"
       ><TfIcon name="plus" />새 프로젝트</RouterLink
     >
   </EmptyState>

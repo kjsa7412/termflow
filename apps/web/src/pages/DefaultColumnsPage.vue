@@ -291,20 +291,20 @@ const typeOf = (r: Row) => typeText(r.dataType, num(r.dataLength), num(r.dataSca
       />
       <template v-else>
         <div class="table-wrap">
-          <table class="table table-compact">
+          <table class="table table-compact table-dense">
             <caption class="sr-only">
               기본컬럼 구성
             </caption>
             <thead>
               <tr>
-                <th class="num">순서</th>
-                <th>PK</th>
+                <th class="num shrink">순서</th>
+                <th class="shrink">PK</th>
                 <th>논리명</th>
                 <th>물리명</th>
-                <th>타입</th>
-                <th class="num">길이</th>
-                <th class="num">스케일</th>
-                <th>NULL</th>
+                <th class="shrink">타입</th>
+                <th class="num shrink">길이</th>
+                <th class="num shrink">스케일</th>
+                <th class="shrink">NULL</th>
                 <th>기본값</th>
                 <th>코멘트</th>
                 <th class="col-menu" />
@@ -366,7 +366,7 @@ const typeOf = (r: Row) => typeText(r.dataType, num(r.dataLength), num(r.dataSca
                   <td>
                     <select
                       v-model="r.dataType"
-                      class="select select-sm"
+                      class="select select-sm w-120"
                       :disabled="!canWrite"
                       :aria-label="`${i + 1}행 타입`"
                     >

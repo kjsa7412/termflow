@@ -356,7 +356,11 @@ describe('DdlExportPage(10)', () => {
 
     await w.findAll('[role="tab"]')[1]!.trigger('click');
     await flushPromises();
-    expect(w.get('[data-testid="extract-text"]').text()).toContain('RP\tRP_B');
+    // 표로 보인다(원문 탭 구분 그대로는 한글 폭 때문에 열이 어긋났다, CR-15 C18)
+    const cells = w
+      .findAll('[data-testid="extract-text"] tbody tr')
+      .map((r) => r.findAll('td').map((c) => c.text()));
+    expect(cells.some((r) => r[0] === 'RP' && r[1] === 'RP_B')).toBe(true);
     w.unmount();
   });
 
