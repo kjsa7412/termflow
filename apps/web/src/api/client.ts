@@ -2,7 +2,8 @@ import { API_PREFIX, isProblemDetail, type ProblemDetail } from '@termflow/share
 
 /**
  * API 클라이언트(설계서 §2.5.6·§7.4, T4.10). fetch 래퍼:
- *  - 비-GET 요청에 `X-XSRF-TOKEN` 자동 첨부(토큰이 없으면 `GET /auth/csrf`로 먼저 받는다)
+ *  - 비-GET 요청에 `X-XSRF-TOKEN` 자동 첨부(토큰이 없으면 `GET /auth/csrf` 본문으로 먼저 받는다). CSRF 쿠키는 읽지 않는다 —
+ *    서버가 인스턴스마다 쿠키 이름을 바꿀 수 있고(CR-15 C4), 같은 호스트 다른 포트 인스턴스의 쿠키를 집으면 403이 난다
  *  - 403 `type=…/csrf`면 토큰을 다시 받아 **1회만** 재시도
  *  - 오류 본문(ProblemDetail, RFC 9457)을 `ApiError.problem`으로 파싱
  *  - 401(로그인 요청 제외) → `onUnauthorized`, 403 password-change-required → `onPasswordChangeRequired`
@@ -41,18 +42,9 @@ export interface ApiClientOptions {
   base?: string;
   onUnauthorized?: (e: ApiError) => void;
   onPasswordChangeRequired?: (e: ApiError) => void;
-  /** 쿠키 읽기(테스트 주입용). 기본 document.cookie. */
-  readCookie?: (name: string) => string | undefined;
 }
 
 export const CSRF_HEADER = 'X-XSRF-TOKEN';
-const CSRF_COOKIE = 'XSRF-TOKEN';
-
-function documentCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const hit = document.cookie.split('; ').find((c) => c.startsWith(`${name}=`));
-  return hit ? decodeURIComponent(hit.slice(name.length + 1)) : undefined;
-}
 
 export interface ApiClient {
   request<T>(method: string, path: string, opts?: RequestOptions): Promise<T>;
@@ -78,7 +70,6 @@ export interface ApiClient {
 export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   const doFetch = options.fetch ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
   const base = options.base ?? API_PREFIX;
-  const readCookie = options.readCookie ?? documentCookie;
   const handlers = { ...options };
   let csrfToken: string | null = null;
   let csrfPending: Promise<string> | null = null;
@@ -90,7 +81,7 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         headers: { Accept: 'application/json' },
       });
       const body = (await res.json().catch(() => null)) as { token?: string } | null;
-      const token = body?.token ?? readCookie(CSRF_COOKIE);
+      const token = body?.token;
       if (!res.ok || !token) throw new ApiError(res.status, isProblemDetail(body) ? body : null);
       csrfToken = token;
       return token;
@@ -129,7 +120,7 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       body = JSON.stringify(opts.body);
     }
     if (method !== 'GET' && method !== 'HEAD') {
-      headers[CSRF_HEADER] = csrfToken ?? readCookie(CSRF_COOKIE) ?? (await fetchCsrf());
+      headers[CSRF_HEADER] = csrfToken ?? (await fetchCsrf());
     }
     const res = await doFetch(url(path, opts.query), {
       method,

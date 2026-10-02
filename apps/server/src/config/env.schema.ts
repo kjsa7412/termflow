@@ -41,6 +41,16 @@ const envObject = z.object({
    * upgrade-insecure-requests(TLS 종단 프록시 뒤 전용). `false`: Secure·HSTS 없음. development·test는 항상 false.
    */
   TERMFLOW_SECURE_COOKIE: z.enum(['auto', 'true', 'false']).default('auto'),
+  /**
+   * 쿠키 이름 접미어(CR-15 C4). 브라우저 쿠키는 포트를 가리지 않아, 한 서버에 TermFlow를 두 개(다른 포트) 두면 한쪽 로그인이
+   * 다른 쪽 세션·CSRF 쿠키를 덮어쓴다. 비우면 TERMFLOW_APP_PORT(설치 .env의 호스트 포트, 기본 7340이면 설치 스크립트가 쓰지 않음),
+   * 그것도 없으면 접미어 없이 `tf.sid`·`XSRF-TOKEN`.
+   */
+  TERMFLOW_COOKIE_SUFFIX: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{1,32}$/, '영문·숫자·_·- 1~32자여야 합니다')
+    .optional(),
+  TERMFLOW_APP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
   LOCKOUT_MAX: z.coerce.number().int().min(1).max(100).default(PASSWORD_POLICY.lockoutMaxFailures),
   LOCKOUT_MINUTES: z.coerce.number().int().min(1).max(1440).default(PASSWORD_POLICY.lockoutMinutes),
 

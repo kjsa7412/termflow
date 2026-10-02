@@ -10,7 +10,7 @@ describe('api/client', () => {
       'GET /api/v1/me': () => json(200, { ok: 1 }),
       'PUT /api/v1/me/password': () => new Response(null, { status: 204 }),
     });
-    const c = createApiClient({ fetch: f.fetch, readCookie: () => undefined });
+    const c = createApiClient({ fetch: f.fetch });
     expect(await c.get('/me')).toEqual({ ok: 1 });
     expect(f.calls[0]!.headers['x-xsrf-token']).toBeUndefined();
     expect(await c.put('/me/password', { a: 1 })).toBeUndefined();
@@ -20,6 +20,18 @@ describe('api/client', () => {
     expect(f.calls.filter((r) => r.path === '/api/v1/auth/csrf')).toHaveLength(1);
     expect(puts[0]!.headers['content-type']).toBe('application/json');
     expect(puts[0]!.body).toBe('{"a":1}');
+  });
+
+  it('XSRF-TOKEN 쿠키(같은 호스트 다른 포트 인스턴스 것일 수 있음)는 읽지 않고 /auth/csrf 본문 토큰을 쓴다(CR-15 C4)', async () => {
+    document.cookie = 'XSRF-TOKEN=other-instance';
+    const f = fakeFetch({
+      'GET /api/v1/auth/csrf': () => json(200, { token: 'MINE' }),
+      'POST /api/v1/auth/logout': () => new Response(null, { status: 204 }),
+    });
+    const c = createApiClient({ fetch: f.fetch });
+    await c.post('/auth/logout');
+    expect(f.calls.find((r) => r.method === 'POST')!.headers['x-xsrf-token']).toBe('MINE');
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   });
 
   it('403 csrf → 토큰 재발급 후 1회만 재시도(두 번째도 실패하면 오류)', async () => {
@@ -32,7 +44,7 @@ describe('api/client', () => {
           ? problem(403, 'csrf', 'E_CSRF')
           : new Response(null, { status: 204 }),
     });
-    const c = createApiClient({ fetch: f.fetch, readCookie: () => undefined });
+    const c = createApiClient({ fetch: f.fetch });
     c.setCsrfToken('stale');
     await expect(c.post('/auth/logout')).resolves.toBeUndefined();
     expect(
@@ -43,7 +55,7 @@ describe('api/client', () => {
       'GET /api/v1/auth/csrf': () => json(200, { token: 'bad' }),
       'POST /api/v1/x': () => problem(403, 'csrf', 'E_CSRF'),
     });
-    const c2 = createApiClient({ fetch: always.fetch, readCookie: () => undefined });
+    const c2 = createApiClient({ fetch: always.fetch });
     await expect(c2.post('/x')).rejects.toMatchObject({ status: 403, code: 'E_CSRF' });
     expect(always.calls.filter((r) => r.method === 'POST')).toHaveLength(2);
   });
@@ -57,7 +69,7 @@ describe('api/client', () => {
         return problem(423, 'locked', 'E_LOCKED', { detail: '15분 후', remainingMinutes: 15 });
       },
     });
-    const c = createApiClient({ fetch: f.fetch, readCookie: () => undefined });
+    const c = createApiClient({ fetch: f.fetch });
     const err = await c
       .request('POST', '/auth/login', { form: { loginId: 'kim', password: 'p&w' } })
       .catch((e: unknown) => e);
@@ -84,7 +96,6 @@ describe('api/client', () => {
     });
     const c = createApiClient({
       fetch: f.fetch,
-      readCookie: () => undefined,
       onUnauthorized,
       onPasswordChangeRequired,
     });

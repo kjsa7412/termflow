@@ -6,7 +6,7 @@ import { clientIp } from '../common/audit/audit.js';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
 import { AuthService } from './auth.service.js';
 import { AllowDuringPasswordChange, Public } from './decorators.js';
-import { CSRF_UTILS, SESSION_COOKIE, type CsrfUtils } from './http-security.js';
+import { COOKIE_NAMES, CSRF_UTILS, type CookieNames, type CsrfUtils } from './http-security.js';
 import { destroySession, regenerateSession, saveSession } from './session-util.js';
 
 /**
@@ -21,6 +21,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     @Inject(CSRF_UTILS) private readonly csrf: CsrfUtils,
+    @Inject(COOKIE_NAMES) private readonly cookies: CookieNames,
   ) {}
 
   @Public()
@@ -54,6 +55,6 @@ export class AuthController {
   @HttpCode(204)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     await destroySession(req);
-    res.clearCookie(SESSION_COOKIE, { path: '/' });
+    res.clearCookie(this.cookies.session, { path: '/' });
   }
 }

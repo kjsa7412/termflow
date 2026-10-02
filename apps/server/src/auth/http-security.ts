@@ -16,6 +16,7 @@ import { sessionTimeoutMs, type Env } from '../config/env.schema.js';
  *  - 쿠키 `tf.sid`: HttpOnly, SameSite=Lax, prod Secure(TERMFLOW_SECURE_COOKIE, 기본 auto = HTTPS 요청일 때), rolling, 만료 TERMFLOW_SESSION_TIMEOUT(기본 60분)
  *  - 저장소 connect-pg-simple → `tf_session`(부록 A, 재기동에도 유지)
  *  - CSRF csrf-csrf double-submit: 쿠키 `XSRF-TOKEN`(HttpOnly=false) + 헤더 `X-XSRF-TOKEN`, 세션 ID 바인딩
+ *  - 쿠키 이름 접미어(CR-15 C4): 같은 호스트 다른 포트 인스턴스와 겹치지 않게 `tf.sid.<접미어>`·`XSRF-TOKEN-<접미어>`
  *  - helmet: CSP `script-src 'self'`, nosniff, X-Frame-Options DENY
  *  - `trust proxy` 1(Q1 기본값: 사내 리버스 프록시 뒤 HTTP)
  */
@@ -23,10 +24,34 @@ export const SESSION_COOKIE = 'tf.sid';
 export const CSRF_COOKIE = 'XSRF-TOKEN';
 export const CSRF_HEADER = 'x-xsrf-token';
 
+type CookieEnv = Partial<Pick<Env, 'TERMFLOW_COOKIE_SUFFIX' | 'TERMFLOW_APP_PORT'>>;
 type SecurityEnv = Pick<Env, 'NODE_ENV' | 'TERMFLOW_SESSION_SECRET' | 'TERMFLOW_SESSION_TIMEOUT'> &
-  Partial<Pick<Env, 'TERMFLOW_SECURE_COOKIE'>>;
+  Partial<Pick<Env, 'TERMFLOW_SECURE_COOKIE'>> &
+  CookieEnv;
 
 export type CsrfUtils = DoubleCsrfUtilities;
+export interface CookieNames {
+  session: string;
+  csrf: string;
+}
+export const COOKIE_NAMES = Symbol('COOKIE_NAMES');
+
+/** 쿠키 이름(CR-15 C4): TERMFLOW_COOKIE_SUFFIX → 없으면 TERMFLOW_APP_PORT → 없으면 접미어 없음. */
+export function cookieNames(env: CookieEnv): CookieNames {
+  const suffix =
+    env.TERMFLOW_COOKIE_SUFFIX ?? (env.TERMFLOW_APP_PORT ? String(env.TERMFLOW_APP_PORT) : '');
+  return suffix
+    ? { session: `${SESSION_COOKIE}.${suffix}`, csrf: `${CSRF_COOKIE}-${suffix}` }
+    : { session: SESSION_COOKIE, csrf: CSRF_COOKIE };
+}
+
+/** ConfigService에서 쿠키 이름 계산용 값만 꺼낸다(모듈·main.ts 공용). */
+export function cookieEnvOf(config: ConfigService<Env, true>): CookieEnv {
+  return {
+    TERMFLOW_COOKIE_SUFFIX: config.get('TERMFLOW_COOKIE_SUFFIX', { infer: true }),
+    TERMFLOW_APP_PORT: config.get('TERMFLOW_APP_PORT', { infer: true }),
+  };
+}
 
 /**
  * 쿠키 Secure 결정(CR-11a C5). dev·test는 false. production은 TERMFLOW_SECURE_COOKIE(기본 auto):
@@ -47,7 +72,7 @@ export function createCsrf(env: SecurityEnv): CsrfUtils {
   return doubleCsrf({
     getSecret: () => env.TERMFLOW_SESSION_SECRET,
     getSessionIdentifier: (req) => req.sessionID,
-    cookieName: CSRF_COOKIE,
+    cookieName: cookieNames(env).csrf,
     cookieOptions: { httpOnly: false, sameSite: 'lax', secure, path: '/' },
     getCsrfTokenFromRequest: (req) => req.get(CSRF_HEADER),
   });
@@ -103,7 +128,7 @@ export function helmetMiddleware(
 
 export function sessionMiddleware(env: SecurityEnv, store: session.Store): RequestHandler {
   return session({
-    name: SESSION_COOKIE,
+    name: cookieNames(env).session,
     secret: env.TERMFLOW_SESSION_SECRET,
     store,
     resave: false,
@@ -133,6 +158,7 @@ export function applyHttpSecurity(app: INestApplication): void {
     TERMFLOW_SESSION_SECRET: config.get('TERMFLOW_SESSION_SECRET', { infer: true }),
     TERMFLOW_SESSION_TIMEOUT: config.get('TERMFLOW_SESSION_TIMEOUT', { infer: true }),
     TERMFLOW_SECURE_COOKIE: config.get('TERMFLOW_SECURE_COOKIE', { infer: true }),
+    ...cookieEnvOf(config),
   };
   const express = app.getHttpAdapter().getInstance() as { set(k: string, v: unknown): void };
   express.set('trust proxy', 1);

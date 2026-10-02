@@ -84,7 +84,7 @@ describe('세션 만료 → 로그인 → 원래 경로 복귀(installAuth)', ()
         });
       },
     });
-    const client = createApiClient({ fetch: f.fetch, readCookie: () => undefined });
+    const client = createApiClient({ fetch: f.fetch });
     const session = useSessionStore();
     session.useClient(client);
     const router = createAppRouter(createMemoryHistory());

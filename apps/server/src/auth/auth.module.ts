@@ -12,7 +12,15 @@ import { PasswordChangeGuard } from './guards/password-change.guard.js';
 import { ProjectRoleGuard } from './guards/project-role.guard.js';
 import { SessionAuthGuard } from './guards/session-auth.guard.js';
 import { SysAdminGuard } from './guards/sys-admin.guard.js';
-import { createCsrf, createSessionStore, CSRF_UTILS, SESSION_STORE } from './http-security.js';
+import {
+  cookieEnvOf,
+  cookieNames,
+  COOKIE_NAMES,
+  createCsrf,
+  createSessionStore,
+  CSRF_UTILS,
+  SESSION_STORE,
+} from './http-security.js';
 
 /**
  * 인증 모듈(T4.1~T4.4). 전역 가드 순서: SessionAuthGuard(인증) → PasswordChangeGuard(강제 변경).
@@ -38,7 +46,13 @@ import { createCsrf, createSessionStore, CSRF_UTILS, SESSION_STORE } from './htt
           TERMFLOW_SESSION_SECRET: config.get('TERMFLOW_SESSION_SECRET', { infer: true }),
           TERMFLOW_SESSION_TIMEOUT: config.get('TERMFLOW_SESSION_TIMEOUT', { infer: true }),
           TERMFLOW_SECURE_COOKIE: config.get('TERMFLOW_SECURE_COOKIE', { infer: true }),
+          ...cookieEnvOf(config),
         }),
+    },
+    {
+      provide: COOKIE_NAMES,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => cookieNames(cookieEnvOf(config)),
     },
     {
       provide: SESSION_STORE,
