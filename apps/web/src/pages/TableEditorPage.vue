@@ -449,13 +449,27 @@ function focusRowIndex(rowIndex: number): void {
   if (r) void grid.value?.focusCell(r.uid, 'logicalNm');
 }
 
+/** 저장을 막은 "오류 n건" 토스트 — 오류가 없어지거나 저장에 성공하면 닫는다(CR-15 C6, 성공 뒤에도 남던 결함). */
+let blockToast: number | null = null;
+function clearBlockToast(): void {
+  toast.dismiss(blockToast);
+  blockToast = null;
+}
+watch(
+  () => ed.errors.length,
+  (n) => {
+    if (n === 0) clearBlockToast();
+  },
+);
 async function save(overwriteVersion?: number): Promise<void> {
   if (readOnly.value || saving.value) return;
   if (ed.errors.length > 0 && overwriteVersion === undefined) {
-    toast.error(`오류 ${ed.errors.length}건을 해결하면 저장할 수 있습니다`);
+    clearBlockToast();
+    blockToast = toast.error(`오류 ${ed.errors.length}건을 해결하면 저장할 수 있습니다`);
     focusFirstError();
     return;
   }
+  clearBlockToast();
   const body = ed.payload;
   const uids = ed.payloadRows.map((r) => r.uid);
   const sent = ed.payloadJson;

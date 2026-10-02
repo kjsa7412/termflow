@@ -31,7 +31,7 @@ describe('TfBadge·TfButton', () => {
 });
 
 describe('ToastRegion', () => {
-  it('aria-live=polite, 성공은 3초 후 자동 닫힘, 오류는 [닫기]로만', async () => {
+  it('aria-live=polite, 성공은 3초 후 자동 닫힘, 오류는 [닫기] 또는 8초 뒤(CR-15 C6)', async () => {
     vi.useFakeTimers();
     setActivePinia(createPinia());
     const w = mount(ToastRegion);
@@ -46,6 +46,33 @@ describe('ToastRegion', () => {
     expect(w.findAll('.toast').map((x) => x.text())).toEqual(['저장 실패 닫기']);
     await w.get('.toast-action').trigger('click');
     expect(w.findAll('.toast')).toHaveLength(0);
+    t.error('복사 실패');
+    vi.advanceTimersByTime(7900);
+    await flushPromises();
+    expect(w.findAll('.toast')).toHaveLength(1);
+    vi.advanceTimersByTime(200);
+    await flushPromises();
+    expect(w.findAll('.toast')).toHaveLength(0);
+    vi.useRealTimers();
+  });
+
+  it('같은 문구는 쌓지 않고 시간만 다시 잰다, 최대 3개(오래된 것부터 닫힘)', async () => {
+    vi.useFakeTimers();
+    setActivePinia(createPinia());
+    const w = mount(ToastRegion);
+    const t = useToastStore();
+    const a = t.error('오류 1건을 해결하면 저장할 수 있습니다');
+    vi.advanceTimersByTime(5000);
+    expect(t.error('오류 1건을 해결하면 저장할 수 있습니다')).toBe(a);
+    vi.advanceTimersByTime(5000); // 첫 표시부터 10초 — 다시 쟀으므로 아직 떠 있다
+    await flushPromises();
+    expect(w.findAll('.toast')).toHaveLength(1);
+    t.info('하나');
+    t.info('둘');
+    t.info('셋');
+    await flushPromises();
+    expect(w.findAll('.toast').map((x) => x.text())).toEqual(['하나', '둘', '셋']);
+    t.dismiss(null);
     vi.useRealTimers();
   });
 });
