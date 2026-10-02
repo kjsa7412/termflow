@@ -235,7 +235,7 @@ async function remove(): Promise<void> {
         </h1>
         <p class="page-desc">
           이 프로젝트 안의 업무 영역입니다. 테이블 물리명 접두어와 코드정보 업무구분의 공통
-          마스터이며, 모든 테이블은 업무구분 하나에 속합니다(A6).
+          마스터이며, 모든 테이블은 업무구분 하나에 속합니다.
           {{ canWrite ? '' : '프로젝트 관리자만 편집할 수 있습니다.' }}
         </p>
       </div>
@@ -253,7 +253,7 @@ async function remove(): Promise<void> {
       <TfIcon name="info" />
       <div class="alert-body">
         프로젝트 키 <span class="mono">{{ key }}</span
-        >는 URL·식별용이고, 테이블 접두어는 업무구분이 정합니다(A4). 예: 업무구분 RP의 새 테이블
+        >는 URL·식별용이고, 테이블 접두어는 업무구분이 정합니다. 예: 업무구분 RP의 새 테이블
         '연구과제마스터' → <span class="mono">RP_RSCH_PRJ_MAST</span>. 공통 테이블은
         <span class="mono">CM 공통</span> 업무구분을 만들어 쓰세요.
       </div>
@@ -500,7 +500,7 @@ async function remove(): Promise<void> {
       </table>
       <div class="table-footer">
         사용 중지된 업무구분은 새 테이블·새 코드구분 선택지에 나오지 않습니다 · 테이블 0개인
-        업무구분만 삭제할 수 있고, 코드구분·코드도 함께 삭제됩니다(C4)
+        업무구분만 삭제할 수 있고, 코드구분·코드도 함께 삭제됩니다
       </div>
     </div>
 

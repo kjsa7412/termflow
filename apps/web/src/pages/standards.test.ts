@@ -249,9 +249,8 @@ describe('TermsPage(04) — S1 단건', () => {
     await w.get('[aria-label="연구 행 메뉴"]').trigger('click');
     await button(w, '변경이력').trigger('click');
     await flushPromises();
-    expect(w.get('[data-testid="audit-history"]').text()).toContain(
-      'description: Research → 연구(수정)',
-    );
+    // 필드는 화면 이름으로(내부 컬럼명 description 아님, CR-15 C5)
+    expect(w.get('[data-testid="audit-history"]').text()).toContain('설명: Research → 연구(수정)');
     w.unmount();
   });
 

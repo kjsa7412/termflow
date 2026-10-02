@@ -334,7 +334,7 @@ function goHome(): void {
       <h1 class="page-title">새 프로젝트</h1>
       <p class="page-desc">
         한 페이지 3단계 · 생성과 표준 복사는 한 트랜잭션으로 처리되며, 실패하면 아무것도 만들어지지
-        않습니다(C5). 생성자는 자동으로 프로젝트 관리자가 됩니다.
+        않습니다. 생성자는 자동으로 프로젝트 관리자가 됩니다.
       </p>
     </div>
     <nav v-if="!result" class="steps" aria-label="단계">
@@ -379,7 +379,7 @@ function goHome(): void {
         <div class="alert-title" data-testid="review-banner">
           검토필요 도메인 {{ result.c3Revalidation.reviewDomainCnt.toLocaleString('ko-KR') }}건
           <template v-if="result.c3Revalidation.performed">
-            (C3 재검증으로 새로 표시
+            (복사 후 재검증으로 새로 표시
             {{ result.c3Revalidation.flaggedCnt.toLocaleString('ko-KR') }}건)</template
           >
         </div>
@@ -486,7 +486,7 @@ function goHome(): void {
           <select id="n-dialect" v-model="basic.dialect" class="select">
             <option value="POSTGRESQL">PostgreSQL</option>
           </select>
-          <span class="field-help">MVP는 PostgreSQL만 지원</span>
+          <span class="field-help">현재는 PostgreSQL만 지원</span>
         </div>
         <div class="field">
           <label class="field-label" for="n-desc">설명</label>
@@ -495,7 +495,7 @@ function goHome(): void {
       </div>
       <p class="text-sm text-muted mt-3">
         <TfIcon name="info" size="sm" /> 키는 영문 대문자·숫자 2~10자로 URL·식별용이며 생성 후 바꿀
-        수 없습니다. 테이블 접두어(예 <span class="mono">PS_</span>)는 업무구분이 정합니다(A4).
+        수 없습니다. 테이블 접두어(예 <span class="mono">PS_</span>)는 업무구분이 정합니다.
       </p>
     </section>
 
@@ -572,16 +572,14 @@ function goHome(): void {
                           ><span class="mono">{{ b.bizCd }}</span> {{ b.bizNm }}</TfCheckbox
                         >
                       </div>
-                      <span class="field-help"
-                        >선택한 업무구분의 코드구분·코드만 복사됩니다(C4)</span
-                      >
+                      <span class="field-help">선택한 업무구분의 코드구분·코드만 복사됩니다</span>
                     </template>
                     <TfCheckbox v-else-if="it.key === 'terms'" v-model="approvedOnly"
                       >승인된 용어만
                       <span class="text-muted">(검토대기·반려 제외)</span></TfCheckbox
                     >
                     <span v-else-if="it.key === 'domains' && c3Mixed" class="text-sm text-2"
-                      >복사 후 L1 규칙으로 재검증, 불일치 행은 검토필요로 표시</span
+                      >복사 후 도메인 계산 규칙으로 재검증, 불일치 행은 검토필요로 표시</span
                     >
                     <span v-else-if="it.key === 'defaultColSets'" class="text-sm text-muted"
                       >프로젝트 기본 세트로 지정</span
@@ -606,11 +604,11 @@ function goHome(): void {
           <div v-if="c3Mixed" class="alert alert-warning card-inset" data-testid="c3-warning">
             <TfIcon name="alert-triangle" />
             <div class="alert-body">
-              <div class="alert-title">도메인과 용어·도메인분류의 원본이 다릅니다 (C3)</div>
+              <div class="alert-title">도메인과 용어·도메인분류의 원본이 다릅니다</div>
               도메인은 <strong>{{ pickLabel('domains') }}</strong
               >에서, 용어는 <strong>{{ pickLabel('terms') }}</strong
               >·도메인분류는 <strong>{{ pickLabel('domainClasses') }}</strong
-              >에서 가져옵니다. 복사 후 L1 규칙으로 다시 계산해 물리명·타입이 달라지는 행을
+              >에서 가져옵니다. 복사 후 도메인 계산 규칙으로 다시 계산해 물리명·타입이 달라지는 행을
               '검토필요'로 표시합니다.
             </div>
             <div class="alert-actions">
@@ -656,16 +654,14 @@ function goHome(): void {
           </div>
           <div class="divider" />
           <div class="stack-sm text-sm text-2">
-            <span><TfIcon name="clock" size="sm" /> 목표 5초 이내(C6)</span>
+            <span><TfIcon name="clock" size="sm" /> 보통 5초 안에 끝납니다</span>
             <span
-              ><TfIcon name="info" size="sm" /> 이후 원본이 바뀌어도 자동 반영되지
-              않습니다(C1)</span
+              ><TfIcon name="info" size="sm" /> 이후 원본이 바뀌어도 자동 반영되지 않습니다</span
             >
             <span
-              ><TfIcon name="history" size="sm" /> 행마다 출처(원본 프로젝트·ID)를
-              기록합니다(C2)</span
+              ><TfIcon name="history" size="sm" /> 행마다 출처(원본 프로젝트·ID)를 기록합니다</span
             >
-            <span><TfIcon name="x" size="sm" /> 테이블·컬럼·이력·멤버는 가져오지 않습니다(C7)</span>
+            <span><TfIcon name="x" size="sm" /> 테이블·컬럼·이력·멤버는 가져오지 않습니다</span>
           </div>
         </aside>
       </div>

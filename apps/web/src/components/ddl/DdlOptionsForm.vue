@@ -23,7 +23,7 @@ function onSchema(e: Event): void {
   <div class="card" data-testid="ddl-options">
     <div class="card-header">
       <div class="card-title"><TfIcon name="settings" />옵션</div>
-      <button class="btn btn-ghost btn-sm" type="button" @click="emit('reset')">D15 기본값</button>
+      <button class="btn btn-ghost btn-sm" type="button" @click="emit('reset')">기본값으로</button>
     </div>
     <div class="stack">
       <div class="field">
@@ -33,7 +33,7 @@ function onSchema(e: Event): void {
             PostgreSQL{{ defaultDialect === 'POSTGRESQL' ? ' (프로젝트 기본)' : '' }}
           </option>
         </select>
-        <span class="field-help">MVP는 PostgreSQL만 지원합니다(D2).</span>
+        <span class="field-help">현재는 PostgreSQL만 지원합니다.</span>
       </div>
       <div class="field">
         <label class="field-label" for="ex-schema">스키마명 접두</label>
@@ -126,9 +126,7 @@ function onSchema(e: Event): void {
         </div>
       </div>
       <div class="field">
-        <label class="field-label" for="ex-code"
-          >코드성 컬럼 표현 <span class="text-muted">(D14)</span></label
-        >
+        <label class="field-label" for="ex-code">코드성 컬럼 표현</label>
         <select
           id="ex-code"
           class="select"

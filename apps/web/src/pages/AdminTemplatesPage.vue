@@ -150,8 +150,8 @@ async function remove(): Promise<void> {
         표준 템플릿 <span class="count-pill">{{ items.length }}</span>
       </h1>
       <p class="page-desc">
-        새 프로젝트에 업무구분·표준 사전을 공급하는 읽기 전용 원본입니다(A1). 가져오기는 생성 시점의
-        스냅샷 복사이며, 템플릿을 바꿔도 이미 만든 프로젝트에는 반영되지 않습니다(C1). 시스템 관리자
+        새 프로젝트에 업무구분·표준 사전을 공급하는 읽기 전용 원본입니다. 가져오기는 생성 시점의
+        스냅샷 복사이며, 템플릿을 바꿔도 이미 만든 프로젝트에는 반영되지 않습니다. 시스템 관리자
         전용.
       </p>
     </div>
@@ -216,8 +216,8 @@ async function remove(): Promise<void> {
       <input id="tp-desc" v-model="form.description" class="input" maxlength="4000" />
     </div>
     <p class="text-sm text-muted mt-3">
-      업무구분·표준 사전 전체를 복사합니다 · 테이블·멤버·이력은 포함하지 않습니다(C7) · 원본은
-      바뀌지 않습니다.
+      업무구분·표준 사전 전체를 복사합니다 · 테이블·멤버·이력은 포함하지 않습니다 · 원본은 바뀌지
+      않습니다.
     </p>
     <div class="row mt-4">
       <TfButton variant="primary" :disabled="!canPublish" :loading="busy" @click="publish"
@@ -348,8 +348,7 @@ async function remove(): Promise<void> {
       </tbody>
     </table>
     <div class="table-footer">
-      템플릿은 프로젝트 목록에 나오지 않습니다 · 개정은 새 버전으로 다시 게시하는 것을
-      권장합니다(버전 비교·병합은 2차)
+      템플릿은 프로젝트 목록에 나오지 않습니다 · 개정은 새 버전으로 다시 게시하는 것을 권장합니다
     </div>
   </div>
 

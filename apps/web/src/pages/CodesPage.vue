@@ -286,8 +286,8 @@ async function removeCode(): Promise<void> {
         <p class="page-desc">
           업무구분 › 코드구분 › 코드 3계층. 업무구분은
           <RouterLink :to="`/projects/${key}/biz-areas`">프로젝트 › 업무구분</RouterLink> 마스터를
-          따르며, 코드구분은 업무구분에 속합니다(C4). 편집기에서 논리명이 '…코드'로 끝나면 코드구분
-          후보가 함께 나옵니다(S6).
+          따르며, 코드구분은 업무구분에 속합니다. 편집기에서 논리명이 '…코드'로 끝나면 코드구분
+          후보가 함께 나옵니다.
         </p>
       </div>
       <div v-if="canWrite" class="page-actions">
@@ -448,7 +448,7 @@ async function removeCode(): Promise<void> {
               </template>
             </div>
             <div class="text-sm text-muted mt-2">
-              DDL 코멘트 요약(D14): <span class="mono">{{ summary }}</span>
+              DDL 코멘트 요약: <span class="mono">{{ summary }}</span>
             </div>
           </div>
 

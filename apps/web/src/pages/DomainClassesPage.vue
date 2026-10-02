@@ -203,8 +203,8 @@ const COLS = 10;
           도메인분류 <span class="count-pill">{{ fmtNum(page?.counts.all) }}</span>
         </h1>
         <p class="page-desc">
-          접미어(AMT, CD, TP …) → 데이터타입·길이·스케일 규칙. 도메인 자동계산(L1)의 타입 결정
-          근거이며 이 프로젝트 전용 사본입니다. NUMERIC은 정밀도·스케일을 분리 저장합니다.
+          접미어(AMT, CD, TP …) → 데이터타입·길이·스케일 규칙. 도메인 자동계산의 타입 결정 근거이며
+          이 프로젝트 전용 사본입니다. NUMERIC은 정밀도·스케일을 분리 저장합니다.
           {{ canWrite ? '' : '프로젝트 관리자만 편집할 수 있습니다.' }}
         </p>
       </div>

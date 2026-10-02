@@ -374,7 +374,7 @@ const COLS = 7;
                     class="text-warning"
                     ><TfIcon name="alert-triangle" size="sm" /> 물리약어
                     <span class="mono">{{ draft.termPhysical }}</span
-                    >는 '{{ sharedWith(check.physicalUsedBy) }}'와 공유 중(허용, R8 경고)</span
+                    >는 '{{ sharedWith(check.physicalUsedBy) }}'와 공유 중(허용)</span
                   >
                   <span class="text-muted">· 대문자·숫자·_ 만 허용 · 최대 30자</span>
                 </div>

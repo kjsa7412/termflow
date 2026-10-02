@@ -345,7 +345,7 @@ async function removeMember(): Promise<void> {
             <span class="field-help"
               ><TfIcon name="lock" size="sm" /> 키는 URL(<span class="mono"
                 >/projects/{{ settings.projectKey }}</span
-              >)·식별용이라 생성 후 바꿀 수 없습니다. 테이블 접두어는 업무구분이 정합니다(A4).</span
+              >)·식별용이라 생성 후 바꿀 수 없습니다. 테이블 접두어는 업무구분이 정합니다.</span
             >
           </div>
           <label class="field-label" for="s-desc">설명</label>
@@ -366,7 +366,7 @@ async function removeMember(): Promise<void> {
             >
             <span v-if="copySummary" class="field-help" data-testid="copy-summary"
               >복사 로그: {{ copySummary.text }} · {{ copySummary.seconds }}초. 원본 변경은 자동
-              반영되지 않습니다(C1).</span
+              반영되지 않습니다.</span
             >
           </div>
         </div>
@@ -586,7 +586,8 @@ async function removeMember(): Promise<void> {
             </option>
           </select>
           <span class="text-sm text-muted"
-            >MVP는 단일 세트(D10). 세트 내용은 표준 사전 › 기본컬럼에서 관리합니다.</span
+            >프로젝트마다 기본컬럼 세트는 하나입니다. 세트 내용은 표준 사전 › 기본컬럼에서
+            관리합니다.</span
           >
         </div>
       </div>

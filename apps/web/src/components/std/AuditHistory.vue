@@ -22,7 +22,40 @@ const ACTION: Record<string, string> = {
   IMPORT: '일괄',
   COPY: '복사',
 };
-const HIDE = new Set(['projectId', 'originProjectId', 'originId', 'reviewedAt', 'reviewedBy']);
+const HIDE = new Set([
+  'projectId',
+  'originProjectId',
+  'originId',
+  'reviewedAt',
+  'reviewedBy',
+  'createdAt',
+  'createdBy',
+  'createdIp',
+  'updatedAt',
+  'updatedBy',
+  'updatedIp',
+]);
+/** 바뀐 필드 이름(용어·도메인 컬럼) — 내부 이름 대신 화면 이름(CR-15 C5). 모르는 필드는 그대로. */
+const FIELD: Record<string, string> = {
+  termKor: '한글 용어',
+  termPhysical: '물리약어',
+  description: '설명',
+  descr: '설명',
+  synonymRef: '동의어 참조',
+  status: '상태',
+  reviewYn: '검토필요',
+  reviewNote: '검토 메모',
+  logicalNm: '논리명',
+  physicalNm: '물리명',
+  suffix: '접미어',
+  domainClsId: '도메인분류',
+  colType: '타입',
+  colLength: '길이',
+  colScale: '스케일',
+  typeSource: '타입 출처',
+  ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((n) => [`nm${n}`, `명칭${n}`])),
+};
+const STATUS: Record<string, string> = { APPROVED: '승인', PENDING: '검토대기', REJECTED: '반려' };
 
 onMounted(async () => {
   try {
@@ -39,7 +72,14 @@ onMounted(async () => {
     loaded.value = true;
   }
 });
-const val = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
+const val = (v: unknown) =>
+  v === null || v === undefined || v === ''
+    ? '—'
+    : typeof v === 'boolean'
+      ? v
+        ? '예'
+        : '아니오'
+      : (STATUS[String(v)] ?? String(v));
 function diffs(it: AuditLogItem): string[] {
   const b = (it.before ?? {}) as Record<string, unknown>;
   const a = (it.after ?? {}) as Record<string, unknown>;
@@ -48,7 +88,7 @@ function diffs(it: AuditLogItem): string[] {
       (k) => !HIDE.has(k) && (k in b || k in a) && it.action !== 'INSERT' && it.action !== 'DELETE',
     )
     .slice(0, 6)
-    .map((k) => `${k}: ${val(b[k])} → ${val(a[k])}`);
+    .map((k) => `${FIELD[k] ?? k}: ${val(b[k])} → ${val(a[k])}`);
 }
 </script>
 

@@ -134,8 +134,8 @@ const ACTION_LABEL: Record<string, string> = {
         <div class="alert-title">
           검토필요 도메인 {{ home.reviewDomainCnt.toLocaleString('ko-KR') }}건
         </div>
-        타입·물리명을 정하지 못했거나 복사 후 재검증(C3)에서 달라진 도메인입니다. 표준 사전 ›
-        도메인에서 정정하세요.
+        타입·물리명을 정하지 못했거나 복사 후 재검증에서 달라진 도메인입니다. 표준 사전 › 도메인에서
+        정정하세요.
       </div>
       <div v-if="reviewLink" class="alert-actions">
         <RouterLink class="btn btn-secondary btn-sm" :to="reviewLink">확인</RouterLink>

@@ -338,8 +338,8 @@ const KIND_LABEL: Record<string, string> = {
         </div>
         <h1 class="page-title">DDL 내보내기</h1>
         <p class="page-desc">
-          서버가 방언별로 DDL을 생성합니다(P4). 각 테이블의 <strong>마지막 저장 버전</strong>을
-          기준으로 하며, 누가·언제·어느 테이블을 어느 방언으로 내보냈는지 기록됩니다(미리보기 제외).
+          서버가 방언별로 DDL을 생성합니다. 각 테이블의 <strong>마지막 저장 버전</strong>을 기준으로
+          하며, 누가·언제·어느 테이블을 어느 방언으로 내보냈는지 기록됩니다(미리보기 제외).
         </p>
       </div>
       <div class="page-actions">

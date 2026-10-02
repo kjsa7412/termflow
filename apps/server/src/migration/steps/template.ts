@@ -14,7 +14,7 @@ export const templateStep: StepDef = {
       {
         projectKey: STDV1.key,
         projectNm: STDV1.nm,
-        description: '승계 원본(dump-gen_table-new.sql)을 정제한 표준 템플릿(설계서 §11.1)',
+        description: '승계 원본(dump-gen_table-new.sql)을 정제한 표준 템플릿',
         kind: 'TEMPLATE',
         status: 'ACTIVE',
         defaultDialect: 'POSTGRESQL',

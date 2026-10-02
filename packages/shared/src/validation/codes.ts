@@ -281,7 +281,7 @@ export const API_ERROR_CODES = {
   E_IMPORT_HAS_ERRORS: '오류 행이 있어 적용하지 않았습니다',
   E_IMPORT_FILE_DUP: '파일 안에서 같은 키가 앞 행에 있습니다',
   // DDL(단계 7, CR-06)
-  E_DIALECT_UNSUPPORTED: '지원하지 않는 방언입니다(MVP는 PostgreSQL만, D2)',
+  E_DIALECT_UNSUPPORTED: '지원하지 않는 방언입니다(현재는 PostgreSQL만 지원)',
   E_DDL_TABLES_MAX: '한 번에 내보낼 수 있는 테이블 수(200)를 넘었습니다',
   E_DDL_NO_TABLES: '내보낼 테이블이 없습니다',
   // 테이블 편집기(단계 8, CR-07)
@@ -308,7 +308,7 @@ export type CopyWarningCode = keyof typeof COPY_WARNING_CODES;
  * 표준 사전 쓰기·일괄 등록 경고(단계 6, 설계서 §4.5 R8·§5.2 10단계). 저장은 되고 응답 `warnings[]`·미리보기 행에 실린다.
  */
 export const STD_WARNING_CODES = {
-  W_TERM_PHYSICAL_SHARED: '같은 물리약어를 쓰는 다른 용어가 있습니다(R8)',
+  W_TERM_PHYSICAL_SHARED: '같은 물리약어를 쓰는 다른 용어가 있습니다',
   W_TERM_UNREGISTERED: '미등록 조각이 있어 물리명을 만들지 않았습니다(검토필요)',
   W_SUFFIX_UNREGISTERED: '접미어가 도메인분류에 없어 타입을 정하지 못했습니다(검토필요)',
   W_PHYS_LEN: '물리명이 63자를 넘어 저장하지 않았습니다(검토필요)',

@@ -27,7 +27,7 @@ const INFO: Record<ImportKind, { title: string; back: string; header: string }> 
   domains: {
     title: '도메인',
     back: 'standards/domains',
-    header: '명칭1~7 · 수기타입 · 수기길이 · 수기스케일 (논리명·물리명·타입은 L1 계산)',
+    header: '명칭1~7 · 수기타입 · 수기길이 · 수기스케일 (논리명·물리명·타입은 자동 계산)',
   },
   'code-classes': {
     title: '코드',
