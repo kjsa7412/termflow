@@ -1,0 +1,13 @@
+﻿세트명,세트설명,기본세트,순번,논리명,물리명,PK,타입,길이,스케일,NULL허용,기본값,코멘트
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,1,최초등록자ID,FIRS_RGSRT_ID,N,VARCHAR,50,,N,,최초등록자ID
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,2,최초등록일시,FIRS_REG_DTS,N,TIMESTAMP,0,,N,CURRENT_TIMESTAMP,최초등록일시
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,3,최초등록프로그램ID,FIRS_REG_PGM_ID,N,VARCHAR,50,,Y,,최초등록프로그램ID
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,4,최초등록IP,FIRS_REG_IP,N,VARCHAR,45,,Y,,최초등록IP
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,5,최종변경자ID,FINA_CHGR_ID,N,VARCHAR,50,,N,,최종변경자ID
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,6,최종변경일시,FINA_CHG_DTS,N,TIMESTAMP,0,,N,CURRENT_TIMESTAMP,최종변경일시
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,7,최종변경프로그램ID,FINA_CHG_PGM_ID,N,VARCHAR,50,,Y,,최종변경프로그램ID
+표준 감사,등록·변경 사용자·일시·프로그램·IP 8컬럼(사용자·일시는 필수),Y,8,최종변경IP,FINA_CHG_IP,N,VARCHAR,45,,Y,,최종변경IP
+간단 감사,등록·변경 사용자·일시 4컬럼,N,1,등록자ID,RGSRT_ID,N,VARCHAR,50,,N,,등록자ID
+간단 감사,등록·변경 사용자·일시 4컬럼,N,2,등록일시,REG_DTS,N,TIMESTAMP,0,,N,CURRENT_TIMESTAMP,등록일시
+간단 감사,등록·변경 사용자·일시 4컬럼,N,3,변경자ID,CHGR_ID,N,VARCHAR,50,,N,,변경자ID
+간단 감사,등록·변경 사용자·일시 4컬럼,N,4,변경일시,CHG_DTS,N,TIMESTAMP,0,,N,CURRENT_TIMESTAMP,변경일시

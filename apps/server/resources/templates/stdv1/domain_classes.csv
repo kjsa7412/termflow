@@ -1,0 +1,72 @@
+﻿접미어,명칭,타입,길이,스케일,설명
+AMT,금액,BIGINT,,,금액 — 원 단위 정수
+PRICE,"가격, 가",BIGINT,,,가격 — 원 단위 정수
+UPRICE,단가,BIGINT,,,단가 — 원 단위 정수
+COST,"원가, 비용, 비",BIGINT,,,비용·원가 — 원 단위 정수
+FEE,수수료,BIGINT,,,수수료 — 원 단위 정수
+VAT,부가세,BIGINT,,,부가가치세액 — 원 단위 정수
+BLC,잔액,BIGINT,,,잔액 — 원 단위 정수
+MILG,마일리지,BIGINT,,,마일리지 — 정수
+POINT,포인트,BIGINT,,,포인트 — 정수
+QTY,"수량, 량",BIGINT,,,수량 — 정수(소수 수량은 수기 타입 NUMERIC)
+SIZE,"크기, 사이즈",BIGINT,,,크기 — 바이트 등 정수
+CNT,"수, 횟수, 건수, 개수",INT,,,건수·횟수
+TNOP,인원,INT,,,인원 수
+SEQ,순번,INT,,,순번 — 같은 상위 키 안의 일련 정수
+ORD,순서,SMALLINT,,,순서 — 정렬·표시 순서
+RNK,순위,SMALLINT,,,순위
+LVL,레벨,SMALLINT,,,레벨 — 계층 깊이
+DCNT,일수,SMALLINT,,,일수
+MCNT,"개월, 개월수",SMALLINT,,,개월 수
+YCNT,년수,SMALLINT,,,년수
+WKN,주차,SMALLINT,,,주차 — 1~53
+AGE,"연령, 나이",SMALLINT,,,나이
+CHASU,차수,SMALLINT,,,차수 — 1차·2차의 정수
+RTE,"율, 비율, 률, 요율",NUMERIC,7,4,율 — 비율·요율(백분율이면 0~100)
+VAL,값,NUMERIC,18,4,값 — 수치 값
+NVAL,수치,NUMERIC,18,4,수치
+SCORE,점수,NUMERIC,6,2,점수
+WDTH,"폭, 너비",NUMERIC,10,2,너비
+WGHT,"중량, 무게",NUMERIC,12,3,무게 — 단위는 컬럼 코멘트에 적는다
+LTTD,위도,NUMERIC,10,7,위도 — WGS84 십진 도
+LGTD,경도,NUMERIC,10,7,경도 — WGS84 십진 도
+EXRT,환율,NUMERIC,12,4,환율
+DTS,일시,TIMESTAMP,0,,일시 — 초 단위
+DT,일자,VARCHAR,8,,일자 — YYYYMMDD
+YM,년월,VARCHAR,6,,년월 — YYYYMM
+YY,"년도, 년",VARCHAR,4,,년 — YYYY
+TM,시간,VARCHAR,6,,시간 — HHMMSS
+BRDT,생년월일,VARCHAR,8,,생년월일 — YYYYMMDD
+WDAY,요일,VARCHAR,3,,요일
+CD,코드,VARCHAR,10,,코드 — 코드정보의 코드 값
+TP,"구분, 타입",VARCHAR,10,,구분 — 코드성 구분 값
+CLS,유형,VARCHAR,10,,유형 — 코드성 유형 값
+KIND,종류,VARCHAR,10,,종류 — 코드성 종류 값
+STAT,상태,VARCHAR,10,,상태 — 코드성 상태 값
+GRD,등급,VARCHAR,10,,등급 — 코드성 등급 값
+CTG,"분류, 카테고리",VARCHAR,10,,분류 — 코드성 분류 값
+AUTH,권한,VARCHAR,10,,권한 — 코드성 권한 값
+JGMT,판정,VARCHAR,10,,판정 — 코드성 판정 값
+YN,여부,VARCHAR,1,,여부 — Y/N
+ID,ID,VARCHAR,50,,ID — 식별자 문자열
+NO,"번호, 호수",VARCHAR,30,,번호 — 숫자·문자가 섞일 수 있는 번호
+SNO,일련번호,VARCHAR,30,,일련번호
+BCODE,바코드,VARCHAR,50,,바코드
+NM,"명, 이름, 성명",VARCHAR,100,,명 — 이름
+SNM,약칭,VARCHAR,50,,약칭
+TITLE,"제목, 타이틀, 호칭",VARCHAR,200,,제목
+DESC,"내용, 내역",VARCHAR,1000,,내용·내역
+EXPL,설명,VARCHAR,1000,,설명
+RMK,비고,VARCHAR,500,,비고
+RESN,"사유, 원인",VARCHAR,500,,사유
+INFO,정보,VARCHAR,1000,,정보 — 서술형
+WORD,문구,VARCHAR,200,,문구
+EMAIL,"메일, 이메일",VARCHAR,100,,이메일 주소
+ADDR,주소,VARCHAR,200,,주소
+IP,IP,VARCHAR,45,,IP 주소 — IPv6 포함
+PW,비밀번호,VARCHAR,256,,비밀번호 — 해시 값 저장
+PATH,경로,VARCHAR,500,,경로
+URL,URL,VARCHAR,500,,URL
+EXT,확장자,VARCHAR,10,,확장자
+VER,버전,VARCHAR,20,,버전
+RND,회차,SMALLINT,,,회차 — 정수

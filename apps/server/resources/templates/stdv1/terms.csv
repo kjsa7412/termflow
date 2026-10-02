@@ -1,0 +1,1317 @@
+﻿한글용어,물리약어,설명,동의어참조
+가,PRICE,Price,"가격, 가"
+가격,PRICE,Price,"가격, 가"
+가공,PROC,Process,"처리, 프로세스, 가공"
+가능,PSBL,Possible,
+가산,ADD,Additional,"추가, 가산"
+가상,VR,Virtual,
+가용,AVAIL,Availability,
+가입,JOIN,Join,
+가정,FAM,Family,"가족, 가정"
+가족,FAM,Family,"가족, 가정"
+가중,WGHTD,Weighted,
+가지급,SSPPAY,Suspense Payment,
+가치,WRTH,Worthy,
+감가,DPRC,Depreciation,
+감모,LOSS,Loss,"손실, 감모, 로스, 손해"
+감사,AUDT,Audit,
+감소,DECR,Decrease,
+값,VAL,Value,
+강제,CMPSL,Compulsion,
+개발,DEV,Development,
+개설,OPEN,Open,"개설, 개점, 오픈"
+개수,CNT,Count,"수, 횟수, 건수, 개수"
+개시,START,Start,"시작, 개시"
+개요,OTLN,Outline,
+개월,MCNT,Month Count,"개월, 개월수"
+개월수,MCNT,Month Count,"개월, 개월수"
+개인,INDV,Individual,
+개인식별키,CI,Connecting Information (CI),
+개인정보,PINFO,Personal Information,
+개점,OPEN,Open,"개설, 개점, 오픈"
+개정,RVSN,Revision,
+개편,RORG,Reorganization,
+갱신,UPDT,Update,"업데이트, 갱신"
+거래,TRD,Trade,
+거래부,TRDEP,Trading department,
+거래처,PARTNER,Partner,"업체, 거래처, 협력사"
+거리,DISTNC,Distance,
+거부,RFSL,Refusal,
+거주,RSDC,Residence,
+건당,PER,Per,
+건물,BLDG,Building,
+건수,CNT,Count,"수, 횟수, 건수, 개수"
+검사,INSP,Inspection,"검사, 검수"
+검사자,INSPR,Inspector,
+검색,SRCH,Search,"조회, 검색"
+검수,INSP,Inspection,"검사, 검수"
+검증,VRFC,Verification,
+검토,RVIEW,Review,
+검품,INSPQC,Inspect The Quality,
+게시,PSTG,Posting,
+게시판,BOARD,Notice Board,
+게이지,GAUGE,Gauge,
+견본,SAMPL,Sample,"샘플, 견본"
+견적,ESTI,Estimate,
+결과,RSLT,Result,
+결산,CACCT,The Closing Account,
+결재,APV,Approval,"결재, 승인"
+결재자,APVR,Approval User,
+결정,DCSN,Decision,"판단, 결정"
+결제,SETT,Settlement,
+결혼,MRIG,Marriage,
+겸직,MTJOB,MultiJob,
+경고,WARN,Warning,
+경도,LGTD,Longitude,
+경력,CARR,Career,
+경로,PATH,Path,
+경비,EXPNS,Expense,
+경상,ORDNR,Ordinary,
+경영,MNGT,Management,"관리, 경영"
+경쟁,CMPTN,Competition,
+계산,CALC,Calculation,"계산, 연산, 산출"
+계산서,BILL,Bill,
+계약,CTRT,Contract,
+계열,AFFL,Affiliation,
+계정,ACNT,Account,
+계정과목,ACCT,Account Title,
+계좌,BACNT,Bank Account,
+계층,HRCY,Hierarchy,
+계획,PLAN,Planning,
+계획서,PLND,Plan Document,
+고객,CUST,Customer,
+고용,EMPM,Employment,
+고유,UNQ,Unique,
+고지서,NTC,Notice,
+공개,OPPB,Opening To The Public,
+공급,SPLY,Supply,
+공급사,SPLR,Supplier,
+공동,JOINT,Joint,
+공사,CNST,Construction,
+공유,SHAR,Sharing,
+공장,FCTRY,Factory,
+공제,DDCT,Deduction,
+공지,NOTI,Notification,"알림, 공지, 통지, 통보"
+공통,COMM,Common,
+공휴일,PBHL,Public Holiday,
+과목,SUBJ,Subject,"과목, 주제"
+과부족,OAST,Over and Short,
+과세,TAX,Tax,"세금, 과세"
+과실,MSTK,Mistake,
+과실자,MSTKR,Mistaker,
+과제,PRJ,Project,
+관계,REL,Relation,"관계, 관련, 연관, 연계"
+관계자,RPSN,Related person,
+관련,REL,Relation,"관계, 관련, 연관, 연계"
+관리,MNGT,Management,"관리, 경영"
+관리자,MNGR,Manager,
+관세,CTDT,Customs Duties,
+관청,GOFFC,Government Office,
+관할,JRD,Jurisdiction,
+광고,AD,Advertisement,
+교부,ISSU,Issue,"발급, 교부"
+교육,EDU,Education,
+교체,CHG,Change,"변경, 교체"
+교환,EXCH,Exchange,
+구간,SECT,Section,
+구독,SUBSCR,Subscription,
+구매,PUR,Purchase,"구매, 매입, 구입"
+구매자,PURER,Purchaser,
+구분,TP,Type,"구분, 타입"
+구성,CMPS,Composition,
+구역,REGN,Region,"지역, 구역"
+구입,PUR,Purchase,"구매, 매입, 구입"
+구조,STRC,Structure,
+국가,NTN,Nation,
+국내,DMST,Domestic,
+국문,KOR,Korea Language,"한글, 국문"
+국번,EXNO,Telephone Exchange Number,
+국세청,NTS,National Tax Service,
+국외,OVSE,Oversea,"국외, 해외"
+국적,NATLY,Nationality,
+권리,RGHT,Right,
+권한,AUTH,Authority,
+귀속,BLNG,Belonging,"귀속, 소속"
+귀책,IMPU,Imputation,
+규격,SPEC,Specification,"규격, 사양"
+규모,SCAL,Scale,
+규정,RULE,Rule,"규정, 규칙"
+규칙,RULE,Rule,"규정, 규칙"
+균일,EQL,Equal,
+그룹,GRP,Group,"그룹, 단체"
+근거,GRND,Ground,
+근무,WRK,Work,"작업, 업무, 근무"
+근속,CSRV,Continuous Service,
+근태,ATTN,Attendance,
+금액,AMT,Amount,
+금요일,FRI,Friday,
+금융,FNNC,Finance,
+금일,TODAY,Today,
+금지,PRHB,Prohibition,
+급여,SLRY,Salary,
+기간,PRD,Period,
+기계,MCHN,Machine,
+기관,INST,Institution,
+기기,EQMT,Equipment,"장비, 기기, 비품"
+기념,ANVS,Anniversary,
+기능,FUNC,Function,
+기록,RCRD,Record,
+기말,TEND,Term Ending,
+기밀,SECRT,Secret,
+기본,BASE,Base,"기본, 기초"
+기본물,BSMTL,Basic Material,
+기부,DONA,Donation,
+기사,ENGR,Engineer,
+기수,SESS,Session,
+기안,DRFT,Drafting,"기안, 초안"
+기안자,DRFTR,Drafter,
+기존,OLD,Old,
+기준,STD,Standard,"기준, 표준"
+기초,BASE,Base,"기본, 기초"
+기타,ETC,Etc,
+기한,TMLT,Time Limit,
+기호,SYMBL,Symbol,
+기획,MPLN,Make Planning,
+긴급,EMGY,Emergency,
+길이,LEN,Length,
+깊이,DEPTH,Depth,
+끝전,SCHG,Small Change,
+나머지,RMND,The Remainder,
+나이,AGE,Age,"연령, 나이"
+난이도,DIFC,Difficulty,
+날인,SEAL,Seal,
+남녀,SEX,Sex,
+남성,MALE,Male,"남성, 남자"
+남자,MALE,Male,"남성, 남자"
+납기,PDLVY,Period Of Delivery,
+납부,PAY,Payment,"지급, 납부, 지불"
+납품,DLGD,Delivery of Goods,
+내구,DURA,Durability,"내구, 내구성"
+내구성,DURA,Durability,"내구, 내구성"
+내국인,NATV,Native or Resident,
+내부,INSD,The Inside,
+내선,INLN,Inner Line,
+내수,DMCS,Domestic Consumption,
+내역,DESC,Description,"내용, 내역"
+내용,DESC,Description,"내용, 내역"
+너비,WDTH,Width,"폭, 너비"
+년,YY,Year,"년도, 년"
+년간,YYY,Years,
+년도,YY,Year,"년도, 년"
+년수,YCNT,Year Count,
+년월,YM,Year Month,
+년차,YYS,Difference Year,
+노드,NODE,Node,
+노무,LABOR,Labor,
+노선,ROUTE,Route,
+논리,LOGC,Logic,
+높이,HIGH,Height,
+누계,TSUM,Total Summary,"누계, 누적"
+누락,MISS,Miss,
+누적,TSUM,Total Summary,"누계, 누적"
+능력,ABLT,Ability,
+다량,BULK,Bulk,
+다운,DOWN,Down,
+다운로드,DNLD,Download,
+다음,NEXT,Next,
+다중,MLTP,Multiple,
+단가,UPRICE,Unit Price,
+단계,STEP,Step,
+단독,SNGL,Singleness,
+단말기,TMNL,Terminal,
+단순,SMPL,Simple,
+단위,UNIT,Unit,
+단일,SIG,Single,
+단종,DCTUD,Discontinued,
+단체,GRP,Group,"그룹, 단체"
+단축,QUIC,Quick,
+달성,ACHV,Achievement,
+담당,INCHG,In Charge,
+담당자,PIC,Person in Charge,
+담보,CLLTR,Collateral,
+답글,RPLY,Reply,"답글, 회신"
+답변,ANS,Answer,
+답변자,ANSR,Answerer,
+당기,CRTM,Current Term,
+당년,CRYY,Current Year,
+당사자,PTPAT,Participant,
+당월,CRMM,Current Month,
+대,LARG,Large,
+대결,PRXY,Proxy Approval,
+대기,WAIT,Waiting,
+대기업,MAJC,Major Company,
+대변,CR,Credit (Accounting),
+대비,CMPR,Comparison,"대비, 비교"
+대상,TARG,Target,
+대상자,TARGR,Target User,
+대응,RACTN,Reaction,"대응, 반응"
+대체,SBST,Substitution,
+대출,LOAN,Loan,
+대표,RPRS,Representation,
+대표자,CEO,Ceo,
+대학,UNIV,University,
+댓글,CMNT,Comment,
+데이터,DATA,Data,"자료, 데이터"
+도로명,RDNM,Road Name,
+도면,FLPL,Floor plan,
+도장,STAMP,Stamp,
+도착,ARVL,Arrival,
+동기화,SYNC,Synchronization,
+동봉,ECST,Enclosing Something,
+동시,SMTM,Same Time,
+동영상,VIDO,Video,"화상, 동영상"
+동의,AGR,Agree,
+동일,SAME,Same,
+동향,TRND,Trend,
+등급,GRD,Grade,
+등록,REG,Registration,
+등록자,RGSRT,Registrant,
+디바이스,DVC,Device,
+디자인,DSGN,Design,
+라벨,LBL,Label,
+라인,LINE,Line,
+량,QTY,Quantity,"수량, 량"
+레벨,LVL,Level,
+로그,LOG,Log,
+로그아웃,LOGOUT,Logout,
+로그인,LOGIN,Login,
+로깅,LOGN,Logging,
+로스,LOSS,Loss,"손실, 감모, 로스, 손해"
+루트,ROOT,Root,
+률,RTE,Rate,"율, 비율, 률, 요율"
+링크,LINK,Link,
+마감,FNSH,Finishing,
+마감금,CLBLC,Closing Balance,
+마스킹,MASK,Mask,
+마스터,MAST,Master,
+마일리지,MILG,Mileage,
+마진,MRGN,Margin,
+마찰,FRICT,Friction,
+마케팅,MAKT,Marketing,
+만기,EXPR,Expiration,"만기, 만료"
+만료,EXPR,Expiration,"만기, 만료"
+만족,SATI,Satisfaction,
+말소,ERAS,Erasure,
+매각,DSPSL,Disposal,"매각, 처분"
+매입,PUR,Purchase,"구매, 매입, 구입"
+매입사,PURCO,Purchase Company,
+매장,SHOP,Shop,
+매출,SLS,Sales,
+맵핑,MPNG,Mapping,
+메뉴,MENU,Menu,
+메모,MEMO,Memo,
+메시지,MSG,Message,"메시지, 쪽지"
+메인,MAIN,Main,"메인, 주요"
+메일,EMAIL,Email,"메일, 이메일"
+면적,EXTNT,Extent,
+면접,INTV,Interview,
+면제,EXMPT,Exemption,
+면허,LCNS,License,
+명,NM,Name,"명, 이름, 성명"
+명세,DTL,Detail,"명세, 세부, 상세"
+명세서,STMT,Statement,
+명의자,NMIN,Nominee,
+모니터링,MNTG,Monitoring,
+모델,MODEL,Model,
+모듈,MDUL,Module,
+모바일,MOBL,Mobile,
+모집,RCRT,Recruitment,
+목록,LIST,List,
+목요일,THU,Thursday,
+목적,PRPS,Purpose,"목적, 취지"
+목적지,DEST,Destination,
+목표,GOAL,Goal,
+무게,WGHT,Weight,"중량, 무게"
+무상,FREE,Free,
+묶음,BNDL,Bundle,"묶음, 일괄"
+문구,WORD,Word,
+문서,DOC,Document,"문서, 서류"
+문의,QSTN,Question,"문의, 질문"
+문자,SMS,Text Message,"문자, SMS"
+물건,THNG,Thing,
+물류,LOGIS,Logistics,
+물류센터,LCTR,Logistics Center,
+물리,PHYS,Physical,
+물품,ITEM,Item,"품목, 물품, 아이템"
+미검품,NISPQC,Not inspect the quality,
+미공급,NSPLY,Not Supplied,
+미구매,NPUR,Not Purchase,
+미납,NDLVY,NonDelivery,
+미달,SHRTF,Shortfall,
+미대체,NSBST,Non Substitution,
+미등록,NOREG,None Register,
+미래,FT,Future,
+미만,UNDR,Under,
+미수,ACCR,Account Receivable,
+미수금,OTSD,Outstanding,
+미수신,NRCV,Not Receive,
+미입,RESTOC,Receivable stock,
+미적립,NACCM,Not Accumulation,
+미지급,UNPAY,UnPayment,
+미착,UNDLV,Undelivered,
+미확정,UNFIX,None Fix,
+바코드,BCODE,Barcode,
+박스,BOX,Box,
+반기,HFYY,Half of the year,
+반려,RJCT,Reject,
+반복,REPT,Repeat,
+반송,SDBK,Send Back,
+반영,RFLC,Reflection,
+반응,RACTN,Reaction,"대응, 반응"
+반출,OBSHP,Outbound Shipment,
+반품,RTN,Return,
+받을,RECV,Receivable,
+발견,DSCV,Discover,
+발급,ISSU,Issue,"발급, 교부"
+발령,APMT,Appointment,
+발생,OBRK,Outbreak,
+발송,SEND,Send,"발송, 발신, 송신, 전달"
+발신,SEND,Send,"발송, 발신, 송신, 전달"
+발음,PRNCT,Pronunciation,
+발주,PORD,Purchase Order,
+발행,PUBL,Publication,
+발행인,PBSR,Publisher,
+발행자,ISUER,Issuer,"발행처, 발행자"
+발행처,ISUER,Issuer,"발행처, 발행자"
+방문,VISIT,Visit,
+방법,MTHD,Method,"방법, 수단"
+배너,BNNR,Banner,
+배달,DLV,Delivery,"배송, 배달, 운송"
+배부,ALLO,Allocation,"배분, 배부, 배정, 할당"
+배분,ALLO,Allocation,"배분, 배부, 배정, 할당"
+배상,CPST,Compensation,
+배서,ENDO,Endorse,
+배서인,ENDR,Endorser,
+배송,DLV,Delivery,"배송, 배달, 운송"
+배우자,SPOUS,Spouse,
+배정,ALLO,Allocation,"배분, 배부, 배정, 할당"
+배치,BTCH,Batch,
+배포,CRLTN,Circulation,
+백분율,PRCNT,Percentage,
+버전,VER,Version,
+버튼,BTN,Button,
+번지,BUNJI,Lot Number (Bunji),
+번호,NO,Number,"번호, 호수"
+벌금,PNLTY,Penalty,"패널티, 벌금"
+벌점,PNLPT,Penalty Points,
+범위,RNGE,Range,
+법인,CORP,Corporate,
+법정동,STTD,Statutory Dong,
+베이,BAY,Bay,
+변경,CHG,Change,"변경, 교체"
+변경자,CHGR,Changer,
+변수,VRBL,Variable,
+변환,TRFM,Transform,
+별도,SEPRT,Separately,
+별명,NCKN,Nickname,
+별칭,ALIS,Alias,
+병합,MRGE,Merge,
+보고,RPT,Report,"신고, 보고"
+보고서,RPDC,Reporting Document,
+보관,KEEP,Keep,
+보류,HOLD,Hold,
+보안,SECU,Security,
+보유,HLD,Have on hold,
+보조,AUXI,Auxiliary,
+보존,PRSV,Preservation,
+보증,WRNT,Warranty,
+보험,INSRNC,Insurance,
+보훈,RWOM,Rewarding Patriotism,
+복리후생,EBNFT,Employee Benefits,
+복사,COPY,Copy,
+복합,MXD,Mixed,
+복호화,DEC,Decryption,
+본문,BODY,Body,
+본번,MBUN,Main Bunji,
+본부,HQ,Head Quarters,
+본사,HOFFC,Head Office,
+본인,PSN,Personal,
+부가세,VAT,Value Added Tax,
+부담,BRDN,Burden,
+부담율,BDRTE,Burden Rate,
+부대,SBSD,Subsidiary,
+부도,BKRP,Bankruptcy,
+부번,SBUN,Sub Bunji,
+부서,DEPT,Department,
+부속,ATCHD,Attached,
+부자재,SBMTRL,Subsidiary Material,
+부족,SRTG,Shortage,
+부진,SLMP,Slump,
+부피,VLM,Volume,
+부호,MARK,Mark,"부호, 표기"
+분,MI,Minute,
+분기,QTR,Quarter,
+분단,SEPT,Separation,
+분담,DILA,Division of Labor,
+분류,CTG,Category,"분류, 카테고리"
+분배,DIVSH,Divide Share,
+분석,ANLS,Analysis,
+분할,PARTN,Partition,
+불가,IMPSB,Impossible,
+불량,BAD,Bad,
+불용,DISU,Disuse,"폐기, 불용"
+브라우저,BRWS,Browser,
+비,COST,Cost,"원가, 비용, 비"
+비가용,UNUS,UnUse,
+비고,RMK,Remark,
+비공개,NDSC,Non-disclosure,
+비과세,TAXF,Tax Free,
+비교,CMPR,Comparison,"대비, 비교"
+비밀번호,PW,Password,
+비용,COST,Cost,"원가, 비용, 비"
+비율,RTE,Rate,"율, 비율, 률, 요율"
+비중,RIMP,Relative Importance,
+비지급,NNPAY,Non-payment,
+비지정,NDSGT,Not Designation,
+비품,EQMT,Equipment,"장비, 기기, 비품"
+비활성,DSBL,Disabled,
+빈도,FRQ,Frequency,
+사고,INCD,Incidents,
+사내,ICMP,Inside The Company,
+사무,OFFC,Office,"사무, 사무실"
+사무실,OFFC,Office,"사무, 사무실"
+사양,SPEC,Specifications,"규격, 사양"
+사업,BIZ,Business,"사업자, 영업, 사업"
+사업부,BIZD,Business Division,
+사업자,BIZ,Business,"사업자, 영업, 사업"
+사업장,BIZP,Business Place,
+사외,OCOMP,Outside The Company,
+사용,USE,Use,"사용, 이용"
+사용자,USER,User,
+사용중,USNG,Using,
+사용처,USEP,Place of Use,
+사원,EMP,Employee,"사원, 직원"
+사유,RESN,Reason,"사유, 원인"
+사이즈,SIZE,Size,"크기, 사이즈"
+사전,PRE,Previous,
+사진,PHOT,Photo,
+사항,ITMS,Items,
+사회,SOCL,Social,
+사후,AFTR,After,"사후, 후, 이후"
+삭제,DEL,Delete,
+산입,INCL,Inclusion,"포함, 산입"
+산출,CALC,Calculation,"계산, 연산, 산출"
+상각,AMOR,Amortization,
+상계,STFF,Setoff,
+상담,CNSL,Counsel,
+상담실,CNSLO,Counseling Office,
+상담원,CNSLR,Counselor,
+상대,OPNT,Opponent,
+상반기,FHYY,First Half Year,
+상세,DTL,Detail,"명세, 세부, 상세"
+상신,RPTS,Report to One's superior,
+상업,CMRC,Commerce,
+상여,BNS,Bonus,
+상위,UPPR,Upper,
+상태,STAT,State,
+상표,TDMK,Trademark,
+상품,GOOS,Goods,
+상한,UPLMT,Upper Limit,
+상환,REPAY,Repayment,
+색상,COLR,Color,
+샘플,SAMPL,Sample,"샘플, 견본"
+생년월일,BRDT,Birth Date,
+생산,PRDC,Production,
+생산국,PCNTRY,Producing Country,
+생성,CRT,Create,
+생일,BDAY,Birthday,
+서류,DOC,Document,"문서, 서류"
+서명,SIGN,Signature,
+서버,SRVR,Server,
+서브,SUB,Sub,
+서비스,SRVC,Service,
+서식,FORM,Form,"양식, 서식, 형식"
+선급,PPAID,Prepaid,
+선박,SHIP,Ship,
+선수금,ADPAY,Advance Payment,
+선이자,FTIT,Future Interest,
+선적,SHPNG,Shipping,
+선정,SLCT,Select,
+선택,CHOI,Choice,
+선호,PRF,Prefer,
+설립,ETBS,Establish,
+설명,EXPL,Explain,
+설문,SRVY,Survey,
+설비,FCLT,Facility,"설비, 시설"
+설정,SETU,Set-up,
+설정자,SETR,Settlor,
+설치,INSTL,Install,
+성공,SUCC,Success,
+성명,NM,Name,"명, 이름, 성명"
+성별,GENDR,Gender,
+성분,CSTT,Constituent,
+성질,TMPR,Temper,
+세금,TAX,Tax,"세금, 과세"
+세금계산서,TXBL,Tax bill,
+세로,VERT,Vertical,
+세부,DTL,Detail,"명세, 세부, 상세"
+세분류,SCTG,Small Category,
+세션,SESN,Session,
+세탁,LDRY,Laundry,
+세트,SET,Set,
+세팅,SETTG,Setting,
+센터,CNTR,Center,
+소,SMAL,Small,
+소각,INCN,Incineration,
+소계,STOT,Subtotal,
+소급,RTACT,Retroactivity,
+소득,INCM,Income,"수입, 소득"
+소득세,INTX,Income Tax,
+소멸,ETCT,Extinction,
+소모,CNSM,Consumption,
+소모성,ERRC,Expendability,
+소모품,CNSMB,Consumable,
+소분류,LGRP,LowGrouping,
+소비자,CNSMR,Consumer,
+소속,BLNG,Belonging,"귀속, 소속"
+소요,REQM,Requirements,
+소유,OWN,Own,
+소유자,OWNR,Owner,
+소재,SBSTNC,Substances,
+소재지,LOCADR,Location Address,
+소집,CALLUP,Call-up,
+소프트웨어,SW,Software,
+속성,PROP,Property,
+손실,LOSS,Loss,"손실, 감모, 로스, 손해"
+손익,PNL,Profit and Loss,
+손해,LOSS,Loss,"손실, 감모, 로스, 손해"
+송금,RMTNC,Remittance,
+송수신,SNRCV,SendReceive,
+송신,SEND,Send,"발송, 발신, 송신, 전달"
+송장,INV,Invoice,
+수,CNT,Count,"수, 횟수, 건수, 개수"
+수금,CLLT,Collection,"회수, 수금"
+수기,HNDWK,Handwork,
+수단,MTHD,Method,"방법, 수단"
+수당,ALWN,Allowance,
+수락,ACPT,Accept,
+수량,QTY,Quantity,"수량, 량"
+수령,RCV,Receive,"수신, 수령, 수취"
+수선,REPR,Repair,
+수수료,FEE,Fee,
+수신,RCV,Receive,"수신, 수령, 수취"
+수신처,ROFFC,Receive Office,
+수요일,WED,Wednesday,
+수익,RVNU,Revenue,
+수입,INCM,Income,"수입, 소득"
+수정,MODI,Modification,"수정, 조정, 조절"
+수주,OBORD,Obtain Order,
+수집,COLL,Collection,
+수축,SHRNK,Shrink,
+수출,EXPRT,Export,
+수취,RCV,Receive,"수신, 수령, 수취"
+수취인,RCVR,Receiver,
+수치,NVAL,Number of Value,
+수행,RUN,Run,
+순번,SEQ,Sequence,
+순서,ORD,Order,
+순수,PURE,Pure,
+순위,RNK,Rank,
+숫자,NUM,Number,
+스캔,SCAN,Scan,
+스케줄,SCDL,Schedule,"일정, 스케줄"
+스타일거래부,STRDEP,Style trading department,
+스팸,SPAM,Spam,
+승인,APV,Approval,"결재, 승인"
+승진,PRMT,Promotion,
+시,HH,Hour,
+시간,TM,Time,
+시군구,SIGUNGU,City/County/District (Si-Gun-Gu),
+시도,SIDO,Province (Si-Do),
+시뮬레이션,SIMUL,Simulation,
+시상,AWRD,Award,
+시설,FCLT,Facility,"설비, 시설"
+시세,MKPRC,Market Price,
+시스템,SYS,System,
+시작,START,Start,"시작, 개시"
+시점,TMPT,Point in Time,
+시험,EXAM,Exam,
+식별,IDNT,Identification,
+신고,RPT,Report,"신고, 보고"
+신규,NEW,New,
+신용,CRDIT,Credit,"신용, 외상"
+신용장,LC,Letter of Credit,
+신조,PRCPL,Principles,
+신청,REQ,Request,"요청, 의뢰, 요구, 신청"
+신청인,APPN,Applicant,
+실사,PHYC,Physical Count,
+실입고,ATRCP,Actual Receipt,
+실적,PRFM,Performance,
+실패,FAIL,Fail,
+실행,EXEC,Execution,"실행, 집행"
+심사,ASMT,Assessment,
+심의,DLBR,Deliberation,
+썸네일,THMB,Thumbnail,
+아이콘,ICON,Icon,
+아이템,ITEM,Item,"품목, 물품, 아이템"
+안건,AGND,Agenda,
+안분,PRRT,Proration,
+안전,SAFE,Safety,
+알람,ALRM,Alarm,
+알림,NOTI,Notification,"알림, 공지, 통지, 통보"
+암호화,ENC,Encryption,
+애플리케이션,APP,Application,"앱, 애플리케이션"
+액면,PARV,Par Value,
+앱,APP,Application,"앱, 애플리케이션"
+약관,CLAUS,Clauses,
+약속,PROMS,Promise,
+약어,ABBR,Abbreviation,
+약정,STIP,Stipulation,
+약칭,SNM,Short Name,
+양도,ASGM,Assignment,
+양력,SOLC,Solar calendar,
+양방향,INTAC,Interactive,
+양식,FORM,Form,"양식, 서식, 형식"
+어음,PRMNT,Promissory note,
+언어,LANG,Language,
+업데이트,UPDT,Update,"업데이트, 갱신"
+업로드,UPLD,UpLoad,
+업무,WRK,Work,"작업, 업무, 근무"
+업체,PARTNER,Partner,"업체, 거래처, 협력사"
+업태,BZTP,Business Type,
+에디션,EDT,Edition,
+에러,ERR,Error,"오류, 에러, 오차"
+엑셀,XLS,Excel,
+여부,YN,Yes or No,
+여성,FEML,Female,"여성, 여자"
+여유,SPARE,Spare,
+여자,FEML,Female,"여성, 여자"
+역할,ROLE,Role,
+연결,CONN,Connection,
+연계,REL,Relation,"관계, 관련, 연관, 연계"
+연관,REL,Relation,"관계, 관련, 연관, 연계"
+연구,RSCH,Research,
+연구자,RSCHR,Researcher,
+연락,CONTACT,Contact,
+연락처,CNTI,Contact information,
+연령,AGE,Age,"연령, 나이"
+연말,YRED,Year-End,
+연산,CALC,Calculation,"계산, 연산, 산출"
+연속,CNSC,Consecutive,
+연장,EXTN,Extension,
+연차,ANLV,Annual Leave,
+연체,OVDU,Overdue,
+영구,PMNT,Permanent,
+영문,ENG,English,
+영수증,RCT,Receipt,
+영업,BIZ,Business,"사업자, 영업, 사업"
+영업소,BIZA,Business Area,
+영역,AREA,Area,
+예금주,DPSTR,Account Holder,
+예산,BUDG,Budget,
+예상,EXPCT,Expect,
+예약,RSRV,Reservation,
+예외,EXCP,Exception,
+예정,EXPT,Excepted,
+예측,FCST,Forecast,
+오류,ERR,Error,"오류, 에러, 오차"
+오전,AM,Ante Meridiem,
+오차,ERR,Error,"오류, 에러, 오차"
+오픈,OPEN,Open,"개설, 개점, 오픈"
+오후,PM,Post Meridiem,
+온라인,ONLN,Online,
+온오프,ONOFF,On and Off,
+옵션,OPTN,Option,
+완료,CMPLTN,Completion,"완료, 완성"
+완불,FPAY,Full Payment,
+완성,CMPLTN,Completion,"완료, 완성"
+완성품,FNSPD,Finished product,
+외관,OUTLN,Out-Line,
+외국인,FRGNR,Foreigner,
+외부,OUTSD,Outside,
+외부인,OUTR,Outsider,
+외상,CRDIT,Credit,"신용, 외상"
+외주,OSRC,Outsourcing,
+외화,FRCRY,Foreign Currency,
+외환,FEXCG,Foreign Exchange,
+요구,REQ,Request,"요청, 의뢰, 요구, 신청"
+요소,ELMT,Element,
+요약,SUMY,Summary,"요약, 적요"
+요양,RECU,Recuperation,
+요율,RTE,Rate,"율, 비율, 률, 요율"
+요일,WDAY,Week Day,
+요청,REQ,Request,"요청, 의뢰, 요구, 신청"
+요청자,REQTR,Requestor,"요청자, 의뢰인"
+용도,USG,Usage,
+용량,CAPA,Capacity,
+용어,TERM,Term,
+용역,SERV,Services,
+용적,VOLM,Volume Capacity,
+우대,GPRE,Preferential Treatment,
+우선,PRIO,Priority,
+우편,POST,Post,
+운송,DLV,Delivery,"배송, 배달, 운송"
+운송장,WAYB,Waybill,
+운영,OPRT,Operation,
+운영체제,OS,Operating System,
+운임,FARE,Fare,
+워싱,WASH,Washing,
+원가,COST,Cost,"원가, 비용, 비"
+원격,RMT,Remote,
+원금,PRIN,Principal,
+원본,ORG,Original,
+원산국,OCNTRY,Origin Country,
+원산지,OGPL,Place of Origin,
+원인,RESN,Reason,"사유, 원인"
+원자재,RMTRL,Raw Material,"원자재, 원재료"
+원재료,RMTRL,Raw Material,"원자재, 원재료"
+원천세,WHTX,Withholding Tax,
+원화,KRW,Korean Won,
+월,MM,Month,
+월간,MMY,Monthly,"월간, 월별"
+월별,MMY,Monthly,"월간, 월별"
+월세,MTRT,Monthly rent,
+월요일,MON,Monday,
+월일,MMDD,Month Day,
+웹,WEB,Web,
+위도,LTTD,Latitude,
+위반,VIOLT,Violation,
+위원회,CMTE,Committee,
+위임,TRST,Trust,
+위치,LOC,Location,
+위탁,CNSMT,Consignment,
+위험도,RISK,Risk,
+유동,LQDTY,Liquidity,
+유류,OIL,Oil,
+유사,SIMI,Similar,
+유사어,SYNM,Synonym,"유사어, 유의어"
+유실,LOST,Lost,
+유예,DFRM,Deferment,
+유의어,SYNM,Synonym,"유사어, 유의어"
+유지,MNTN,Maintenance,
+유출입,IOFLW,Inflow&Outflow,
+유치,CSTD,Custody,
+유통,DSTBT,Distribution,
+유형,CLS,Class,
+유효,VALI,Valid,
+윤달,LPMM,Leap month,
+율,RTE,Rate,"율, 비율, 률, 요율"
+은행,BANK,Bank,
+음력,LUNC,Lunar Calendar,
+읍면동,EMD,Town/Township/Neighborhood (Eup-Myeon-Dong),
+응답,RPNS,Response,"응답, 응대"
+응대,RPNS,Response,"응답, 응대"
+의견,OPNN,Opinion,
+의견서,OPL,Opinion Letter,
+의도,INTNT,Intent,
+의뢰,REQ,Request,"요청, 의뢰, 요구, 신청"
+의뢰인,REQTR,Requestor,"요청자, 의뢰인"
+의료,MEDI,Medical,
+의미,MNNG,Meaning,
+이관,TRAN,Transfer,
+이동,MOV,Movement,
+이력,HST,History,
+이름,NM,Name,"명, 이름, 성명"
+이메일,EMAIL,Email,"메일, 이메일"
+이미지,IMG,Image,
+이상,ABOV,Above,
+이수,CMPLT,Complete,
+이용,USE,Use,"사용, 이용"
+이월,CROV,Carry over,
+이익,PRFT,Profit,
+이자,INTRST,Interest,
+이전,BEF,Before,
+이체,TRNAC,Transfer Account,
+이탈,BAWY,Break Away,
+이하,BELO,Below,
+이해,UNDST,Understanding,
+이후,AFTR,After,"사후, 후, 이후"
+인가,AUTHZ,Authorization,
+인계자,HNDPR,Handover person,
+인도,HDOVR,Handover,
+인센티브,INCTV,Incentives,
+인쇄,PRNT,Print,"출력, 출력물, 인쇄"
+인원,TNOP,The Number Of Persons,
+인증,CERT,Certification,
+인터넷,INET,Internet,
+인터페이스,INFC,Interface,
+인하,REDU,Reduction,
+일,DD,Day,
+일간,DDY,Daily,"일간, 일별"
+일괄,BNDL,Bundle,"묶음, 일괄"
+일련,SER,Series,
+일련번호,SNO,Serial Number,
+일반,GNRL,General,
+일별,DDY,Daily,"일간, 일별"
+일본,JPN,Japanese,"일본, 일어"
+일수,DCNT,Day Count,
+일시,DTS,Date Time,
+일어,JPN,Japanese Language,"일본, 일어"
+일요일,SUN,Sunday,
+일자,DT,Date,
+일정,SCDL,Schedule,"일정, 스케줄"
+일지,DIRY,Diary,
+임금,EPAY,Employee Pay,
+임대,RENT,Rent,
+임시,TMP,Temporary,
+임원,EXCTV,Executive,
+임직원,STF,Staff,
+임차,LEAS,Lease,
+임차료,RFEE,Rental fee,
+입고,INWH,Into Warehouse,
+입금,DEPO,Deposit,
+입금자,PAYR,Payer,
+입력,INPUT,Input,
+입사,HIRE,Hire,
+입수,OBTE,Obtention,
+입출,IO,In and Out,
+입출고,IOWH,In and Out Warehouse,
+자가,SELF,Self,
+자격,QUAL,Qualification,
+자금,FUND,Funds,
+자녀,CHID,Children,
+자동,AUTO,Automatic,
+자료,DATA,Data,"자료, 데이터"
+자본,CPTL,Capital,
+자산,ASST,Assets,
+자재,MTRL,Material,"자재, 재료"
+자체,ISF,Itself,
+자택,HOME,Home,
+작성,WRT,Writing,
+작성자,WRTR,Writer,
+작업,WRK,Work,"작업, 업무, 근무"
+잔액,BLC,Balance,
+잔여,LOV,Leftover,
+잔존,SURV,Surviving,
+잠김,LOCK,Lock,
+장부,LDG,Ledger,
+장비,EQMT,Equipment,"장비, 기기, 비품"
+장소,PLC,Place,
+장애,DSBLTY,Disability,
+재개,RSM,Resume,
+재고,STOC,Stock,
+재료,MTRL,Material,"자재, 재료"
+재매입,REPUR,Re Purchase,
+재사용,REUSE,Reuse,
+재시도,RTR,Retry,
+재접수,RRCPTP,ReReceipt,
+재직,HOLF,Holding Office,
+재질,TXTRE,Texture,
+재활용,RCYC,Recycle,
+저장,SAVE,Save,
+저장품,SPPLE,Supplies,
+적립,ACCM,Accumulation,
+적요,SUMY,Summary,"요약, 적요"
+적용,APPLY,Apply,
+적자,DEFCT,Defict,
+적재,LOAD,Loading,
+적합,FITNS,Fitness,
+전결,DLGT,Delegated Approval,
+전년,LSTYY,Last year,"전년, 전년도"
+전년도,LSTYY,Last year,"전년, 전년도"
+전단,LFLT,Leflet,
+전달,SEND,Send,"발송, 발신, 송신, 전달"
+전담,EXCG,Exclusive Charge,
+전략,STAGY,Strategy,
+전면,FRNT,Front,
+전사,ENTP,Enterprise,
+전산,DTPROC,Data Processing,
+전세,JNSE,Jeonse (Deposit Lease),
+전송,TRSM,Transmission,
+전시,EXHB,Exhibition,
+전용,PRIVT,Private,
+전월,LSTMM,Last Month,
+전일,YSDAY,Yesterday,
+전입,MVIN,Move In,
+전자,ELC,Electronic,
+전주,LSTWK,Last Week,
+전체,TOT,Total,"총, 전체, 합산, 집계"
+전표,SLIP,Slip,
+전화,TEL,Telephone,
+전환,CNVS,Conversion,"전환, 환산"
+절차,PROCD,Procedure,
+점검,CHK,Check,"점검, 체크"
+점수,SCORE,Score,
+접근,ACCS,Access,"접속, 접근"
+접대,ENTMT,Entertainment,
+접속,ACCS,Access,"접속, 접근"
+접수,RCPT,Receipt,
+접수자,RCPR,Recipient,
+정기,FXTM,Fix Time,
+정렬,SORT,Sort,
+정리,ARRN,Arrangement,
+정보,INFO,Information,
+정비,ORGZ,Organize,
+정산,ADJ,Adjustment,
+정상,NORM,Normal,
+정지,STOP,Stop,"중지, 정지, 중단"
+정책,PLCY,Policy,
+제공,OFFR,Offer,
+제목,TITLE,Title,"제목, 타이틀, 호칭"
+제시,SGST,Suggest,"제시, 제안"
+제안,SGST,Suggest,"제시, 제안"
+제안자,PRPSR,Proposer,
+제외,EXCL,Exclusion,
+제재,SANC,Sanction,
+제조,MNFTR,Manufacturing,
+제출,SBMT,Submit,
+제품,PRDT,Product,
+제품군,PRDG,Production Group,
+제한,LMT,Limit,"제한, 한도, 한정"
+제휴,PTNS,Partnership,
+조각,PCS,Piece,
+조건,CNDT,Condition,
+조명,LAMP,Lamp,
+조사,INVS,Investigation,
+조절,MODI,Modification,"수정, 조정, 조절"
+조정,MODI,Modification,"수정, 조정, 조절"
+조직,ORGN,Organization,
+조치,ACTN,Action,
+조항,ATICL,Article,
+조회,SRCH,Search,"조회, 검색"
+조회수,VIEWS,Views,
+종교,RLGN,Religion,
+종료,END,End,
+종류,KIND,Kind,
+종목,BZIT,Business Item,
+종속,SUBN,Subordination,
+좌표,COORD,Coordinate,
+주거,DWLG,Dwelling,
+주기,CYCL,Cycle,
+주문,ORDR,Order,
+주민,RSDT,Resident,
+주민등록,RES,Resident Registration,
+주소,ADDR,Address,
+주요,MAIN,Main,"메인, 주요"
+주의,CAUTN,Caution,
+주제,SUBJ,Subject,"과목, 주제"
+주차,WKN,Week Number,
+주체,MBDY,Main Body,
+주택,HOUS,Housing,
+준비,REDY,Ready,
+중,MID,Middle,"중, 중간"
+중간,MID,Middle,"중, 중간"
+중국어,CHN,Chinese Character,"중문, 한자, 한문, 중국어"
+중단,STOP,Stop,"중지, 정지, 중단"
+중량,WGHT,Weight,"중량, 무게"
+중문,CHN,Chinese Character,"중문, 한자, 한문, 중국어"
+중복,DUP,Duplication,
+중복확인키,DI,Duplication Information,
+중요도,IMPR,Important,
+중점,FCS,Focus,
+중지,STOP,Stop,"중지, 정지, 중단"
+즉시,PMPT,Promptly,
+즐겨찾기,BMK,Bookmark,
+증가,INCR,Increase,
+증권,SECS,Securities,
+증명,PROF,Proof,
+증명서,CRTFCT,Certificate,
+증빙,EVID,Evidence,
+증정,PRSNT,Presentation,
+지급,PAY,Payment,"지급, 납부, 지불"
+지번,LOTNO,Lot Number,
+지불,PAY,Payment,"지급, 납부, 지불"
+지사,BOFFC,Branch Office,"지점, 지사"
+지속,ENDU,Endure,
+지수,INDX,Index,
+지시,DRCT,Direction,
+지시자,SUPV,Supervisor,
+지역,REGN,Region,"지역, 구역"
+지연,DELAY,Delay,
+지원,SPRT,Support,
+지점,BOFFC,Branch Office,"지점, 지사"
+지정,DSGT,Designation,
+지표,MTRC,Metrics,
+지하,UNGR,Underground,
+직계,LINL,Lineal,
+직군,OGRP,Occupational Group,
+직급,PSTN,Position,
+직납,DRDE,Direct delivery,
+직무,DUTY,Duty,
+직업,JOB,Job,
+직업군,JOBG,Job Group,
+직원,EMP,Employee,"사원, 직원"
+직위,POSI,Position,
+직장,WKPC,Workplace,
+직접,DIRT,Direct,
+직종,JBCLS,Job Class,
+직책,DTY,Job Duty,
+진행,PRGRS,Progress,
+질문,QSTN,Question,"문의, 질문"
+질병,DISS,Disease,
+집계,TOT,Aggregation,"총, 전체, 합산, 집계"
+집기,FIXT,Fixtures,
+집합,GATH,Gathering,
+집행,EXEC,Execution,"실행, 집행"
+쪽지,MSG,Message,"메시지, 쪽지"
+차감,SBTR,Subtraction,
+차단,BLCK,Block,
+차량,CAR,Car,
+차변,DR,Debit (Accounting),
+차수,CHASU,Chasu,
+차액,DIFFAMT,Difference Amount,
+차이,DIFF,Difference,
+참고,REF,Reference,"참고, 참조"
+참관,WTCH,Watch,
+참관인,WATR,Watcher,
+참석,ATND,Attendance,
+참여,PRTN,Participation,
+참조,REF,Reference,"참고, 참조"
+창고,WH,Warehouse,
+창구,CUNTR,Counter,
+채권,BOND,Bond,
+채널,CHNL,Channel,
+채무,DEBT,Debt,
+채무자,DBTR,Debtor,
+채번,ATNO,Auto Number,
+채용,RCRUT,Recruit,
+채택,ADPT,Adoption,
+책임,RSPN,Responsibility,
+책임자,MGR,Manager,
+처리,PROC,Process,"처리, 프로세스, 가공"
+처리자,PROCS,Processor,
+처분,DSPSL,Disposal,"매각, 처분"
+철수,PLOUT,Pull Out,
+첨부,ATTCH,Attachment,
+청구,CHRG,Charge,
+체감도,PRCP,Perception,
+체인,CHAIN,Chain,
+체중,WGT,Body Weight,
+체크,CHK,Check,"점검, 체크"
+초,SS,Seconds,
+초과,EXCS,Excess,
+초기화,INIT,Initialization,
+초도,INITL,Initial,
+초두,BGN,Beginning,
+초안,DRFT,Draft,"기안, 초안"
+초청,INVI,Invitation,
+총,TOT,Total,"총, 전체, 합산, 집계"
+최근,RCNT,Recent,
+최대,MAX,Maximum,
+최소,MIN,Minimum,
+최신,LTST,Latest,
+최저,LWST,Lowest,
+최종,FINA,Final,
+최초,FIRS,First,
+추가,ADD,Additional,"추가, 가산"
+추심,COLCT,Collection,
+추적,TRAK,Tracking,
+추천,RCMMD,Recommend,
+추천인,RCD,Recommender,
+추첨,LTTRY,Lottery,
+추출,EXTRCT,Extract,
+출고,OUTWH,Warehouse Out,
+출근,CKIN,Clock In,
+출금,WDRL,Withdrawal,
+출력,PRNT,Print,"출력, 출력물, 인쇄"
+출력물,PRNT,Print,"출력, 출력물, 인쇄"
+출발,DEPA,Departure,
+출입,ENTR,Enter,
+출장,BTRP,Business Trip,
+출하,SHPM,Shipment,
+취급,HNDL,Handling,
+취득,GET,Get,
+취미,HOBY,Hobby,
+취소,CNCL,Cancel,"취소, 해제, 해지"
+취지,PRPS,Purpose,"목적, 취지"
+측정,MEA,Measure,
+치수,MSMT,Measurement,
+친절,KNDN,Kindness,
+카드,CARD,Card,
+카드사,CRCP,Card company,
+카테고리,CTG,Category,"분류, 카테고리"
+캠페인,EVNT,Event,"캠페인, 행사, 프로모션"
+컬럼,COL,Column,
+코드,CD,Code,
+쿠폰,CUPN,Coupon,
+쿼리,QRY,Query,
+크기,SIZE,Size,"크기, 사이즈"
+클라이언트,CLNT,Client,
+클레임,CLAM,Claim,
+클린,CLE,Clean,
+키,KEY,Key,
+키워드,KWD,Keyword,
+타사,THPT,Third Party,
+타이틀,TITLE,Title,"제목, 타이틀, 호칭"
+타입,TP,Type,"구분, 타입"
+탈퇴,WTDR,Withdrawal (Membership),
+태그,TAG,Tag,
+태블릿,TABLT,Tablet,
+택배,CRR,Courier,
+테스트,TEST,Test,
+테이블,TBL,Table,
+텍스트,TXT,Text,
+템플릿,TMPL,Template,
+토요일,SAT,Saturday,
+토지,LAND,Land,
+토큰,TKN,Token,
+통과,PASS,Pass,
+통보,NOTI,Notification,"알림, 공지, 통지, 통보"
+통상,USUA,Usual,
+통신사,MCC,Mobile carrier company,
+통제,CTRL,Control,
+통지,NOTI,Notification,"알림, 공지, 통지, 통보"
+통합,INTG,Integration,
+통행,PSSG,Passage,
+통화,CURR,Currency,"통화, 화폐"
+퇴근,CKOT,Clock Out,
+퇴사,RETR,Retirement,
+퇴직,RTRM,Retirement,
+투자,INVSM,Investment,
+트리,TREE,Tree,
+특기,SPCLT,Specialty,
+특례,SPCL,Special,"특별, 특례, 특수"
+특별,SPCL,Special,"특별, 특례, 특수"
+특성,CHRT,Character,
+특수,SPCL,Special,"특별, 특례, 특수"
+특약,SPEX,Special contract,
+특이,PCLT,Peculiarity,
+특정,SPFC,Specific,
+특징,CHRSC,Characteristic,
+팀,TEAM,Team,
+팀장,TMLDR,Team Leader,
+파라미터,PARM,Parameter,
+파손,BRK,Break,
+파일,FILE,File,
+파트,PART,Part,
+판단,DCSN,Decision,"판단, 결정"
+판매,SALE,Sale,
+판매원,SLSMN,Sales Man,
+판정,JGMT,Judgment,
+판촉,PROM,Promotion,
+팝업,POP,Pop,
+패널티,PNLTY,Penalty,"패널티, 벌금"
+패턴,PTTN,Pattern,
+팩스,FAX,Fax,
+페이지,PAGE,Page,
+편차,DVIN,Deviation,
+평가,EVL,Evaluation,
+평가자,ASSR,Assessor,
+평균,AVRG,Average,
+평문,PLTX,Plaintext,
+평일,WEKD,Weekdays,
+폐기,DISU,Disuse,"폐기, 불용"
+폐기자,DISUR,Disuser,
+폐업,CLOS,Closed,
+포괄,CPHV,Comprehensive,
+포상,RWAD,Reward,
+포워드,FRD,Forward,
+포인트,POINT,Point,
+포장,PACK,Packing,
+포트,PORT,Port,
+포함,INCL,Including,"포함, 산입"
+폭,WDTH,Width,"폭, 너비"
+표기,MARK,Mark,"부호, 표기"
+표시,DISP,Display,
+표절,PLGR,Plagiarism,
+표준,STD,Standard,"기준, 표준"
+푸시,PUSH,Push,
+품목,ITEM,Item,"품목, 물품, 아이템"
+품의,CNSU,Consultation,
+품질,QLTY,Quality,
+프로그램,PGM,Program,
+프로모션,EVNT,Event,"캠페인, 행사, 프로모션"
+프로세스,PROC,Process,"처리, 프로세스, 가공"
+프로젝트,PJT,Project,
+프로필,PRFL,Profile,
+플랫폼,PLFM,Platform,
+피킹,PKING,Picking,
+픽업,PKUP,Pick Up,
+필드,FILD,Field,
+필수,ESSN,Essential,
+필요,NEED,Need,
+필터,FLTR,Filter,
+하반기,SHYY,Second Half Year,
+하위,LOWR,Low Rank,
+하한,DWLMT,Down Limit,
+학교,SCHL,School,
+학력,ACBG,Academic Background,
+한글,KOR,Korea Language,"한글, 국문"
+한도,LMT,Limit,"제한, 한도, 한정"
+한문,CHN,Chinese Character,"중문, 한자, 한문, 중국어"
+한자,CHN,Chinese Character,"중문, 한자, 한문, 중국어"
+한정,LMT,Limit,"제한, 한도, 한정"
+할당,ALLO,Allocation,"배분, 배부, 배정, 할당"
+할부,ISTM,Instalment,
+할인,DC,Discount,
+함량,COET,Content,
+합계,SUM,Summary,
+합산,TOT,Total,"총, 전체, 합산, 집계"
+합의,AGMT,Agreement,
+합작,CLRN,Collaboration,
+항목,IEM,Item (Field),
+해당,RLVT,Relevant,
+해시,HASH,Hash,
+해외,OVSE,Oversea,"국외, 해외"
+해제,CNCL,Cancel,"취소, 해제, 해지"
+해지,CNCL,Cancel,"취소, 해제, 해지"
+핸드폰,HP,Handphone,"핸드폰, 휴대폰"
+행낭,PCH,Pouch,
+행사,EVNT,Event,"캠페인, 행사, 프로모션"
+행정,ADM,Administrative,
+행정동,ADMD,Administrative Dong,
+향상도,IMPRV,Improvement,
+허용,ALWD,Allowed,
+헤더,HEADER,Header,
+현금,CASH,Cash,
+현재,NOW,Now,
+현지,ACTP,Actual Place,
+현황,CSA,Current State of Affairs,
+혈액,BLOOD,Blood,
+혈액형,BLDTP,Blood Type,
+협력,COPR,Cooperation,"협력, 협조"
+협력사,PARTNER,Partner,"업체, 거래처, 협력사"
+협조,COPR,Cooperation,"협력, 협조"
+협조도,CPRR,Cooperation Rate,
+형식,FORM,Form,"양식, 서식, 형식"
+형태,SHP,Shape,
+혜택,BNFT,Benefit,
+호수,NO,Number,"번호, 호수"
+호칭,TITLE,Title,"제목, 타이틀, 호칭"
+홈페이지,HMPG,Home Page,
+화면,SCRN,Screen,
+화물,FRGT,Freight,
+화상,VIDO,Video,"화상, 동영상"
+화요일,TUE,Tuesday,
+화폐,CURR,Currency,"통화, 화폐"
+확률,PRBLTY,Probability,
+확인,CNFM,Confirm,
+확인자,CNFMR,Confirmer,
+확장,EXPS,Expansion,
+확장자,EXT,Extension,
+확정,FIX,Fix,
+환경,ENV,Environment,
+환불,RFND,Refund,
+환산,CNVS,Conversion,"전환, 환산"
+환율,EXRT,Exchange Rate,
+환입,RVSR,Reversal,
+활동,ACTIV,Activity,
+활성,ENBL,Enabled,
+활용,PRUS,Practical Use,
+회계,ACCN,Accounting,
+회사,COMP,Company,
+회수,CLLT,Collect,"회수, 수금"
+회신,RPLY,Reply,"답글, 회신"
+회원,MBR,Member,
+회의실,MTRM,MeetingRoom,
+회전,RT,Rotation,
+회차,RND,Round,
+회화,COVS,Conversation,
+획득,ACQT,Acquisition,
+횟수,CNT,Count,"수, 횟수, 건수, 개수"
+효과,EFCT,Effect,
+후,AFTR,After,"사후, 후, 이후"
+휴가,VCTN,Vacation,
+휴대폰,HP,Handphone,"핸드폰, 휴대폰"
+휴면,DRMT,Dormant,
+휴무,OFDT,Off Duty,
+휴일,HLDY,Holiday,
+희망,HOPE,Hope,
+힌트,HINT,Hint,
+API,API,Application Programming Interface,
+AS,AS,After Service,
+CS,CS,Customer Service,
+EDI,EDI,Electronic Data Interchange,
+ERP,ERP,Enterprise Resource Planning,
+FAQ,FAQ,Frequently Asked Questions,
+ID,ID,Identifier,
+IP,IP,Internet Protocol,
+JSON,JSON,JavaScript Object Notation,
+LOT,LOT,Lot,
+MMS,MMS,Multimedia Messaging Service,
+OTP,OTP,One-Time Password,
+PC,PC,Personal Computer,
+QR,QR,Quick Response,
+SMS,SMS,Short Message Service,"문자, SMS"
+URL,URL,Uniform Resource Locator,
+VOC,VOC,Voice of Customer,
