@@ -123,12 +123,15 @@ bash scripts/release-check.sh
 
 규약은 `apps/server/drizzle/README.md`.
 
-### 초기 데이터 승계(1차: legacy → 템플릿 STDV1)
+### 기본 표준 템플릿과 초기 데이터 승계(1차: legacy → 패션·유통 템플릿 RETAILV1)
+
+- 범용 기본 표준 **STDV1**(업무구분 10·용어 1,316·도메인 1,020·코드 541, 검토필요 0)은 승계와 무관하게 서버가 처음 기동할 때 `apps/server/resources/templates/stdv1/*.csv`로 한 번 만든다(CR-16). 데이터를 고치면 `pnpm --filter @termflow/server test -- builtin-template`(품질 검사 Q1~Q8)이 통과해야 한다.
+- 승계 결과 템플릿은 **RETAILV1** "패션·유통 표준 v1"(1.1.x까지 키 STDV1 — 기동 시 자동으로 키를 바꾼다).
 
 ```bash
 pnpm --filter @termflow/server migrate:scan   # dump 민감값 사전 점검 → migration/report/sensitive-scan.csv
 pnpm migrate:seed                             # 기본 --steps=LOAD_LEGACY..DEFAULT_COL + RECONCILE(1차 대사)
-pnpm migrate:seed -- --reset                  # dev 전용: STDV1·RMS·legacy 삭제 후 처음부터(멱등 확인용)
+pnpm migrate:seed -- --reset                  # dev 전용: RETAILV1·RMS·legacy 삭제 후 처음부터(멱등 확인용, 범용 STDV1은 그대로)
 pnpm migrate:seed -- --steps=RECONCILE        # 대사만 다시
 pnpm migrate:seed -- --steps=TERM_UNIFY,RECONCILE,DDL_REGRESSION   # CR-09 이전 이름(…_MST·…_REG_USER_ID)으로 적재된 DB 정정
 pnpm --filter @termflow/server cr09:sql       # 운영 DB 전환 스크립트 docs/cr09_rename_postgresql.sql 재생성
@@ -164,7 +167,7 @@ scp release/termflow-linux-<판>.tar.gz* <계정>@<서버>:/tmp/   # 번들 옮�
 pnpm --filter @termflow/site dev               # http://localhost:5175 — 제품과 따로 서는 정적 소개 사이트
 pnpm --filter @termflow/site build             # site/dist — 주소별 사본·404·robots(·sitemap) → 누출 검사(걸리면 실패)
 pnpm -C e2e exec playwright test -c site-review.config.ts   # 사이트 검수(데스크톱·모바일 가로 스크롤 0, 콘솔 오류 0)
-# 화면 그림 docs/img/screens/*.png(설명서·사이트 공용) — 데모 인스턴스(STDV1만 승계)의 가상 프로젝트 EDU를 찍는다
+# 화면 그림 docs/img/screens/*.png(설명서·사이트 공용) — 데모 인스턴스(승계 없이 범용 STDV1만)의 가상 프로젝트 EDU를 찍는다
 DEMO_BASE_URL=http://localhost:8095 DEMO_ADMIN_PASSWORD=<데모 .env 초기 비밀번호> pnpm -C e2e exec playwright test -c site-shots.config.ts
 ```
 

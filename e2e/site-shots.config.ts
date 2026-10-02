@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
 
 /**
- * 소개 사이트·설명서 그림(T12.6, CR-12 C3): **데모 인스턴스**(STDV1만 승계, 가상 프로젝트 EDU)를 찍어 `docs/img/screens/*.png`로 저장한다.
+ * 소개 사이트·설명서 그림(T12.6, CR-12 C3): **데모 인스턴스**(승계 없이 범용 기본 표준 STDV1만, 가상 프로젝트 EDU)를 찍어 `docs/img/screens/*.png`로 저장한다.
  * dev DB(RMS 실데이터)를 쓰는 일반 E2E(`playwright.config.ts`)와 따로 돈다.
  *
  *   DEMO_BASE_URL=http://localhost:8095 DEMO_ADMIN_PASSWORD=<데모 인스턴스 .env의 초기 관리자 비밀번호> \

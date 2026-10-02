@@ -6,7 +6,7 @@ import { request, type APIRequestContext } from '@playwright/test';
 
 /**
  * 데모 데이터(T12.6, CR-12 C3): 소개 사이트·설명서 그림용 **가상** 프로젝트 `EDU`(교육 운영 관리)를 API로 만든다.
- * 대상은 STDV1만 승계한 데모 인스턴스(기본 `http://localhost:8095`, Linux 설치 검증 인스턴스). RMS·사내 이름을 쓰지 않는다.
+ * 대상은 승계 없이 범용 기본 표준 STDV1만 있는 데모 인스턴스(1.2.0 이전 그림은 승계 1차 STDV1)(기본 `http://localhost:8095`, Linux 설치 검증 인스턴스). RMS·사내 이름을 쓰지 않는다.
  * 같은 인스턴스에 다시 돌려도 된다: 사용자·프로젝트가 있으면 건너뛴다. 데모 계정 비밀번호는 `e2e/.auth/demo-accounts.json`(gitignore).
  */
 export const DEMO = 'EDU';
@@ -264,7 +264,7 @@ export async function seedDemo(baseURL: string, adminInitial: string | undefined
     }
     saveAccounts({ ...loadAccounts(), ...accounts });
 
-    // 2) 프로젝트 — 표준은 STDV1 템플릿(용어·도메인분류·도메인·기본컬럼), 업무구분·코드는 비우고 데모용으로 만든다
+    // 2) 프로젝트 — 표준은 범용 기본 표준 STDV1 템플릿(용어·도메인분류·도메인·기본컬럼), 업무구분·코드는 비우고 데모용으로 만든다
     const tpl = { source: 'TEMPLATE', sourceKey: 'STDV1' };
     if (!(await admin.ctx.get(`/api/v1/projects/${DEMO}`)).ok())
       await admin.json('post', '/api/v1/projects', {
