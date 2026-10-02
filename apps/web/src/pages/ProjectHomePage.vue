@@ -4,7 +4,7 @@ import { RouterLink, useRoute } from 'vue-router';
 import type { ProjectHome } from '@termflow/shared';
 import { ApiError } from '../api/client.js';
 import { projectsApi } from '../api/projects.js';
-import { ROLE_LABEL, shortDateTime } from '../components/layout/labels.js';
+import { historySummary, ROLE_LABEL, shortDateTime } from '../components/layout/labels.js';
 import EmptyState from '../components/ui/EmptyState.vue';
 import TfBadge from '../components/ui/TfBadge.vue';
 import TfIcon from '../components/ui/TfIcon.vue';
@@ -255,7 +255,9 @@ const ACTION_LABEL: Record<string, string> = {
               c.version
             }}
             {{ ACTION_LABEL[c.action] ?? c.action
-            }}{{ c.changeSummary ? ` — ${c.changeSummary}` : '' }}</span
+            }}{{
+              historySummary(c.changeSummary) ? ` — ${historySummary(c.changeSummary)}` : ''
+            }}</span
           >
           <span class="meta">{{ shortDateTime(c.savedAt) }}</span>
         </div>

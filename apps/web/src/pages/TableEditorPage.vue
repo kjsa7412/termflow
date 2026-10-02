@@ -1079,6 +1079,7 @@ onBeforeUnmount(() => mainWatch?.disconnect());
       :table-id="ed.tableId"
       :current-version="ed.version"
       :current="compareCols"
+      :current-table="ed.payload.table"
       :can-restore="restoreBlocked === null"
       :restore-blocked="restoreBlocked"
       @close="setPanel(null)"

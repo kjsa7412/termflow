@@ -45,7 +45,7 @@ defineExpose({ diff });
       </div>
       <span class="spacer" />
       <span class="text-sm text-muted" data-testid="compare-summary"
-        >차이 {{ diff }}건 · 동일 컬럼 {{ same }}건{{ showSame ? '' : '은 접힘' }}</span
+        >컬럼 차이 {{ diff }}건 · 동일 컬럼 {{ same }}건{{ showSame ? '' : '은 접힘' }}</span
       >
       <button
         v-if="same > 0"

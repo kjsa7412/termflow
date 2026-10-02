@@ -4,6 +4,7 @@ import { fillJosa, type TableHistoryDetail, type TableHistoryItem } from '@termf
 import { tablesApi } from '../../api/tables.js';
 import { errMsg, fmtTs } from '../../composables/useProject.js';
 import type { CompareColumn } from '../../editor/compare.js';
+import { historySummary } from '../layout/labels.js';
 import { useToastStore } from '../../stores/toast.js';
 import TfBadge from '../ui/TfBadge.vue';
 import TfButton from '../ui/TfButton.vue';
@@ -21,6 +22,13 @@ const props = defineProps<{
   tableId: number;
   currentVersion: number;
   current: readonly CompareColumn[];
+  /** 현재 편집본 테이블 정보(비교에 테이블 정보 차이도 보이도록, CR-15 C14). */
+  currentTable?: {
+    bizAreaId: number | null;
+    tableNm: string;
+    tableLogicalNm: string;
+    description: string | null;
+  };
   canRestore: boolean;
   /** 복원 불가 사유(확정·권한·저장 안 한 편집). */
   restoreBlocked?: string | null;
@@ -81,6 +89,23 @@ const ACTION: Record<string, string> = {
   MIGRATE: '승계',
 };
 const snapCols = computed(() => picked.value?.snapshot.columns ?? []);
+/** 테이블 정보 차이(논리명·물리명·설명·업무구분) — 컬럼 비교만으로는 "차이 0건"으로 보였다. */
+const headerDiffs = computed(() => {
+  const s = picked.value?.snapshot.table;
+  const c = props.currentTable;
+  if (!s?.tableNm || !c) return [];
+  const v = (x: string | null | undefined) => (x ?? '').trim() || '—';
+  const out: { label: string; from: string; to: string }[] = [];
+  if (v(s.tableLogicalNm) !== v(c.tableLogicalNm))
+    out.push({ label: '논리 테이블명', from: v(s.tableLogicalNm), to: v(c.tableLogicalNm) });
+  if (v(s.tableNm).toUpperCase() !== v(c.tableNm).toUpperCase())
+    out.push({ label: '물리 테이블명', from: v(s.tableNm), to: v(c.tableNm) });
+  if (v(s.description) !== v(c.description))
+    out.push({ label: '설명', from: v(s.description), to: v(c.description) });
+  if (c.bizAreaId !== null && s.bizAreaId !== c.bizAreaId)
+    out.push({ label: '업무구분', from: s.bizCd, to: '다른 업무구분' });
+  return out;
+});
 </script>
 
 <template>
@@ -107,7 +132,12 @@ const snapCols = computed(() => picked.value?.snapshot.columns ?? []);
           role="listitem"
         >
           <TfBadge kind="outline" mono>v{{ h.version }}</TfBadge>
-          <span class="grow">{{ ACTION[h.action] ?? h.action }} · {{ h.changeSummary ?? '' }}</span>
+          <span class="grow"
+            >{{ ACTION[h.action] ?? h.action
+            }}{{
+              historySummary(h.changeSummary) ? ` · ${historySummary(h.changeSummary)}` : ''
+            }}</span
+          >
           <span class="meta"
             >{{ h.savedByNm ?? h.savedBy }} {{ fmtTs(h.savedAt) }}
             <button
@@ -125,6 +155,15 @@ const snapCols = computed(() => picked.value?.snapshot.columns ?? []);
 
       <template v-if="picked">
         <div class="section-title">v{{ picked.version }} ↔ 현재 편집본</div>
+        <div v-if="headerDiffs.length > 0" class="alert alert-info" data-testid="header-diff">
+          <TfIcon name="info" />
+          <div class="alert-body">
+            <div class="alert-title">테이블 정보 차이 {{ headerDiffs.length }}건</div>
+            <div v-for="d in headerDiffs" :key="d.label" class="text-sm">
+              {{ d.label }}: {{ d.from }} → {{ d.to }}
+            </div>
+          </div>
+        </div>
         <ColumnCompare
           :left="snapCols"
           :right="current"

@@ -94,7 +94,7 @@ describe('이력·복원(T8.5)', () => {
     const list = (await e.get(`${PA}/tables/${id}/history`)).body as TableHistoryItem[];
     expect(list.map((x) => [x.version, x.action, x.changeSummary])).toEqual([
       [4, 'UPDATE', '컬럼 +0 ~1 -0, 테이블 정보 변경'],
-      [3, 'UPDATE', '컬럼 +0 ~0 -1, 순서 변경'],
+      [3, 'UPDATE', '컬럼 +0 ~0 -1'], // 가운데 삭제로 C의 순번만 당겨짐 — 순서 변경 아님(CR-15 C14)
       [2, 'UPDATE', '컬럼 +1 ~0 -0'],
       [1, 'CREATE', '테이블 생성 · 컬럼 2'],
     ]);
@@ -125,7 +125,7 @@ describe('이력·복원(T8.5)', () => {
     expect(r.status, JSON.stringify(r.body)).toBe(200);
     const s = r.body as TableSaveResponse;
     expect(s.version).toBe(5);
-    expect(s.changeSummary).toBe('v2 복원 · 컬럼 +1 ~1 -0, 순서 변경, 테이블 정보 변경');
+    expect(s.changeSummary).toBe('v2 복원 · 컬럼 +1 ~1 -0, 테이블 정보 변경');
 
     d = await get();
     expect(d.table.version).toBe(5);

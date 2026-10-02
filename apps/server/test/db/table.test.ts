@@ -421,7 +421,7 @@ describe('저장 PUT(T8.2): 낙관적 잠금·diff·스냅샷', () => {
     expect(p.type).toMatch(/\/version-conflict$/);
     expect(p.code).toBe('E_VERSION_CONFLICT');
     expect(p).toMatchObject({ yourVersion: v0, currentVersion: v0 + 1, savedBy: '편집자' });
-    expect(p.detail).toMatch(/^편집자이\(가\) \d\d:\d\d:\d\d에 저장했습니다\.$/);
+    expect(p.detail).toMatch(/^편집자가 \d\d:\d\d:\d\d에 저장했습니다\.$/); // 조사 맞춤(CR-15 C13)
     expect(p.current.table.version).toBe(v0 + 1);
     expect(p.current.columns.map((x) => x.physicalNm)).toEqual(['BASE_ID', 'BASE_NM', 'A_ONLY']);
     expect(p.current.columns[1]!.dataLength).toBe(100);

@@ -66,8 +66,9 @@ describe('planColumnDiff(§8.2)', () => {
       ['insert', 4],
     ]);
     expect(p.deletes).toEqual([13]);
-    expect(p.summary).toEqual({ ins: 2, upd: 1, del: 1, reordered: true });
-    expect(changeSummaryText(p.summary)).toBe('컬럼 +2 ~1 -1, 순서 변경');
+    // 끼워 넣기로 B의 순번만 밀렸다 — 기존 컬럼끼리의 앞뒤(A < B)는 그대로라 "순서 변경" 아님(CR-15 C14)
+    expect(p.summary).toEqual({ ins: 2, upd: 1, del: 1, reordered: false });
+    expect(changeSummaryText(p.summary)).toBe('컬럼 +2 ~1 -1');
   });
 
   it('순서만 변경: reseq(감사 미갱신 경로), 수정 0', () => {

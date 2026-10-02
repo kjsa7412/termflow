@@ -18,3 +18,15 @@ export function shortDateTime(iso: string | null, now: Date = new Date()): strin
   if (d.getFullYear() === now.getFullYear()) return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+
+/**
+ * 테이블 이력 요약에서 동작 이름과 겹치는 앞부분을 뺀다(CR-15 C14). 서버 요약은 `확정(FINAL)`·`확정 해제(DRAFT)`·`복제: …`처럼
+ * 동작을 되풀이해 "확정 · 확정(FINAL)", "복제 · 복제: …"로 보였다. 이미 저장된 이력에도 맞도록 화면에서 처리한다.
+ */
+export function historySummary(summary: string | null | undefined): string {
+  const s = (summary ?? '').trim();
+  for (const head of ['확정 해제(DRAFT)', '확정(FINAL)', '복제:']) {
+    if (s.startsWith(head)) return s.slice(head.length).replace(/^[\s:·]+/, '');
+  }
+  return s;
+}

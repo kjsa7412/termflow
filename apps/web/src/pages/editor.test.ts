@@ -761,7 +761,13 @@ describe('이력 패널(T8.14)', () => {
           ...hist[2],
           snapshot: {
             schemaVersion: 1,
-            table: {},
+            table: {
+              tableNm: 'RP_TEST_MST',
+              tableLogicalNm: '시험마스터',
+              description: '옛 설명',
+              bizAreaId: 6,
+              bizCd: 'RP',
+            },
             columns: [col(1, 1, 'TEST_ID'), col(8, 2, 'OLD_ONLY')],
             action: 'CREATE',
             changeSummary: '',
@@ -793,6 +799,8 @@ describe('이력 패널(T8.14)', () => {
       '비교',
     );
     expect(w.get('[data-testid="history-panel"]').text()).toContain('OLD_ONLY');
+    // 테이블 정보 차이도 보인다(컬럼 비교만으로는 "차이 0건", CR-15 C14)
+    expect(w.get('[data-testid="header-diff"]').text()).toContain('설명: 옛 설명 → —');
     await button(w, 'v1로 복원').trigger('click');
     await w.get('[data-testid="confirm-restore"]').trigger('click');
     await until(

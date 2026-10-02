@@ -75,17 +75,20 @@ export function planColumnDiff(
   const byId = new Map(existing.map((e) => [e.columnId, e]));
   const seen = new Set<number>();
   const summary: DiffSummary = { ins: 0, upd: 0, del: 0, reordered: false };
+  // "순서 변경" = 기존 컬럼끼리의 앞뒤가 바뀐 경우만. 끼워 넣기·삭제로 순번만 밀린 것(reseq)은 아니다(CR-15 C14)
+  let lastOldSeq = 0;
   const ops = incoming.map((c, index): ColumnOp => {
     const seq = index + 1;
     const row = c.columnId !== null ? byId.get(c.columnId) : undefined;
     if (row && !seen.has(row.columnId)) {
       seen.add(row.columnId);
+      if (row.colSeq < lastOldSeq) summary.reordered = true;
+      lastOldSeq = Math.max(lastOldSeq, row.colSeq);
       if (fieldsChanged(row, c)) {
         summary.upd++;
         return { kind: 'update', index, seq, columnId: row.columnId, input: c };
       }
       if (row.colSeq !== seq) {
-        summary.reordered = true;
         return { kind: 'reseq', index, seq, columnId: row.columnId };
       }
       return { kind: 'keep', index, seq, columnId: row.columnId };
