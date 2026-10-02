@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
+  fillJosa,
   normalizeTermKor,
   validateTermFields,
   type TermCheckResponse,
@@ -355,8 +356,10 @@ const COLS = 7;
               <td :colspan="COLS">
                 <div class="row wrap text-sm" data-testid="draft-msg">
                   <span v-if="check?.korExists" class="text-danger"
-                    ><TfIcon name="alert-circle" size="sm" /> '{{ check.korTerm?.termKor }}'은(는)
-                    이미 있습니다({{ check.korTerm?.termPhysical }})</span
+                    ><TfIcon name="alert-circle" size="sm" />
+                    {{ fillJosa(`'${check.korTerm?.termKor}'은(는)`) }} 이미 있습니다({{
+                      check.korTerm?.termPhysical
+                    }})</span
                   >
                   <span v-else-if="check && draft.termKor.trim()" class="text-success"
                     ><TfIcon name="check" size="sm" /> '{{ draft.termKor.trim() }}' 중복 없음</span

@@ -1,4 +1,10 @@
-import type { ImportIssue, ImportKind, ImportRow, StdEntityType } from '@termflow/shared';
+import {
+  fillJosa,
+  type ImportIssue,
+  type ImportKind,
+  type ImportRow,
+  type StdEntityType,
+} from '@termflow/shared';
 import type { Audit } from '../../common/audit/audit.js';
 import type { Tx } from '../std-write.js';
 import type { Db } from '../../db/client.js';
@@ -44,8 +50,11 @@ export interface KindEngine<S = unknown, O = unknown> {
   ): Promise<ApplyCount>;
 }
 
-export const issue = (code: string, message: string, field?: string): ImportIssue =>
-  field !== undefined ? { code, message, field } : { code, message };
+/** 행 오류·경고 1건. 조사 자리(`이(가)` 등)는 앞 값에 맞춘다(CR-15 C13). */
+export const issue = (code: string, raw: string, field?: string): ImportIssue => {
+  const message = fillJosa(raw);
+  return field !== undefined ? { code, message, field } : { code, message };
+};
 
 /** 필수 텍스트 셀(길이 상한). */
 export function reqText(

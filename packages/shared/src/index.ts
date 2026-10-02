@@ -21,6 +21,7 @@ export const API_PREFIX = '/api/v1';
 
 export * from './enums.js';
 export * from './limits.js';
+export * from './text/josa.js';
 export * from './validation/codes.js';
 export * from './validation/identifier.js';
 export * from './validation/password.js';

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { fillJosa } from '@termflow/shared';
 
 export type ToastType = 'success' | 'error' | 'info';
 export interface Toast {
@@ -31,7 +32,8 @@ export const useToastStore = defineStore('toast', () => {
     );
   }
 
-  function push(text: string, type: ToastType = 'success', ms: number = TOAST_MS[type]): number {
+  function push(raw: string, type: ToastType = 'success', ms: number = TOAST_MS[type]): number {
+    const text = fillJosa(raw); // "QATEST을(를)" → "QATEST를"(CR-15 C13)
     const same = items.value.find((t) => t.text === text && t.type === type);
     if (same) {
       arm(same.id, ms);

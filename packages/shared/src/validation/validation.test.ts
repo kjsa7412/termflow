@@ -38,7 +38,7 @@ describe('validation/codes (T2.10)', () => {
   it('메시지는 한국어이고 자리표시자를 채운다', () => {
     for (const def of Object.values(VALIDATION_CODES)) expect(def.message).toMatch(/[가-힣]/);
     expect(formatValidationMessage('E_PHYS_DUP', { physicalNm: 'RSCH_PRJ_ID', rowNo: 3 })).toBe(
-      '물리명 RSCH_PRJ_ID이(가) 3행과 중복됩니다',
+      '물리명 RSCH_PRJ_ID가 3행과 중복됩니다',
     );
     expect(formatValidationMessage('E_PHYS_LEN', { max: 63 })).toBe(
       '물리명이 63자를 초과합니다({dialect})',

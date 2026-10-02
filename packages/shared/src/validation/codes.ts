@@ -3,6 +3,8 @@
  * 편집기 배지 텍스트와 서버 메시지가 이 상수 하나에서 나온다(§2.5.5).
  * 메시지의 `{name}`은 formatValidationMessage()가 채운다.
  */
+import { fillJosa } from '../text/josa.js';
+
 export type ValidationSeverity = 'E' | 'W';
 export type ValidationTarget = 'column' | 'table' | 'all';
 
@@ -203,13 +205,15 @@ export const VALIDATION_CODES = {
 
 export type ValidationCode = keyof typeof VALIDATION_CODES;
 
-/** `{name}` 자리표시자를 채운다. 없는 값은 자리표시자를 그대로 둔다. */
+/** `{name}` 자리표시자를 채운다. 없는 값은 자리표시자를 그대로 둔다. 조사 자리(`이(가)` 등)는 채운 값에 맞춘다(CR-15 C13). */
 export function formatValidationMessage(
   code: ValidationCode,
   params: Record<string, string | number> = {},
 ): string {
-  return VALIDATION_CODES[code].message.replace(/\{(\w+)\}/g, (m, k: string) =>
-    params[k] === undefined ? m : String(params[k]),
+  return fillJosa(
+    VALIDATION_CODES[code].message.replace(/\{(\w+)\}/g, (m, k: string) =>
+      params[k] === undefined ? m : String(params[k]),
+    ),
   );
 }
 

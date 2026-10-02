@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, toRef, useId } from 'vue';
+import { fillJosa } from '@termflow/shared';
 import TfButton from './TfButton.vue';
 import TfIcon from './TfIcon.vue';
 import { useFocusTrap } from './focus-trap.js';
@@ -37,7 +38,7 @@ useFocusTrap(toRef(props, 'open'), box, () => emit('cancel'));
   >
     <div ref="box" class="modal">
       <div :id="titleId" class="modal-title">
-        <TfIcon name="trash" class="text-danger" />{{ title }}
+        <TfIcon name="trash" class="text-danger" />{{ fillJosa(title) }}
       </div>
       <div class="modal-body"><slot /></div>
       <div class="modal-footer">

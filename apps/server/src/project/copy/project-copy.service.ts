@@ -4,6 +4,7 @@ import { eq, inArray, sql, type SQL } from 'drizzle-orm';
 import {
   API_ERROR_CODES,
   COPY_WARNING_CODES,
+  fillJosa,
   type C3Revalidation,
   type CopyItemResult,
   type CopyPreviewItem,
@@ -551,7 +552,7 @@ async function insertMembers(q: Q, projectId: number, plan: CopyPlan, a: Audit):
         code: 'E_NOT_FOUND',
         target: 'field',
         field: `members.${i}.userId`,
-        message: `사용자 ${m.userId}을(를) 찾을 수 없습니다`,
+        message: fillJosa(`사용자 ${m.userId}을(를) 찾을 수 없습니다`),
       });
     else if (!found.get(m.userId))
       errors.push({

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { TableHistoryDetail, TableHistoryItem } from '@termflow/shared';
+import { fillJosa, type TableHistoryDetail, type TableHistoryItem } from '@termflow/shared';
 import { tablesApi } from '../../api/tables.js';
 import { errMsg, fmtTs } from '../../composables/useProject.js';
 import type { CompareColumn } from '../../editor/compare.js';
@@ -139,7 +139,7 @@ const snapCols = computed(() => picked.value?.snapshot.columns ?? []);
             :disabled="!canRestore"
             :title="restoreBlocked ?? undefined"
             @click="confirming = true"
-            >v{{ picked.version }}(으)로 복원</TfButton
+            >{{ fillJosa(`v${picked.version}(으)로 복원`) }}</TfButton
           >
           <span v-if="restoreBlocked" class="text-sm text-muted">{{ restoreBlocked }}</span>
         </div>

@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   API_ERROR_CODES,
+  fillJosa,
   MEMBER_ROLE_RANK,
   VALIDATION_CODES,
   type ColumnInput,
@@ -288,7 +289,7 @@ export class TableService {
     const savedAt = table.updatedAt;
     throw new ConflictProblem(
       'E_VERSION_CONFLICT',
-      `${savedBy}이(가) ${savedAt.slice(11)}에 저장했습니다.`,
+      fillJosa(`${savedBy}이(가) ${savedAt.slice(11)}에 저장했습니다.`),
       { yourVersion, currentVersion: table.version, savedBy, savedAt, current: { table, columns } },
     );
   }

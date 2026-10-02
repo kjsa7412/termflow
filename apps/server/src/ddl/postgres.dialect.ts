@@ -1,4 +1,4 @@
-import type { Dialect, StdType } from '@termflow/shared';
+import { fillJosa, type Dialect, type StdType } from '@termflow/shared';
 import type { DefaultSpec } from './defaults.js';
 import { classifyDefault } from './defaults.js';
 import {
@@ -117,7 +117,7 @@ export class PostgresDialect implements DdlDialect {
       if (cn.shortened) {
         warnings.push({
           code: 'W_CONSTRAINT_NM_SHORTENED',
-          message: `PK 제약명을 ${cn.name}(으)로 축약했습니다`,
+          message: fillJosa(`PK 제약명을 ${cn.name}(으)로 축약했습니다`),
         });
       }
       const cols = pk.map((c) => this.identifier(c.physicalNm, opts)).join(', ');
@@ -156,7 +156,7 @@ export class PostgresDialect implements DdlDialect {
     if (cn.shortened) {
       warnings.push({
         code: 'W_CONSTRAINT_NM_SHORTENED',
-        message: `CHECK 제약명을 ${cn.name}(으)로 축약했습니다`,
+        message: fillJosa(`CHECK 제약명을 ${cn.name}(으)로 축약했습니다`),
         columnNm: col.physicalNm,
       });
     }

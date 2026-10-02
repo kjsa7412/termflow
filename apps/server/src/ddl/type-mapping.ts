@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { z } from 'zod';
-import { DIALECTS, STD_TYPES, type Dialect, type StdType } from '@termflow/shared';
+import { DIALECTS, fillJosa, STD_TYPES, type Dialect, type StdType } from '@termflow/shared';
 import { ddlResource } from './resources.js';
 
 /**
@@ -141,14 +141,18 @@ export function mapStdType(
   if (rule.maxLength !== undefined && length !== null && length > rule.maxLength && rule.overflow) {
     warnings.push({
       code: 'W_TYPE_OVERFLOW',
-      message: `${type}(${length})이(가) ${mapping.dialect} 상한 ${rule.maxLength}을 넘어 ${rule.overflow}로 생성합니다`,
+      message: fillJosa(
+        `${type}(${length})이(가) ${mapping.dialect} 상한 ${rule.maxLength}을 넘어 ${rule.overflow}로 생성합니다`,
+      ),
     });
     return { sql: renderPattern(rule.overflow, { n: null, p: null, s: null }), warnings };
   }
   if (rule.warnBytesOver !== undefined && length !== null && length > rule.warnBytesOver) {
     warnings.push({
       code: 'W_VARCHAR_BYTES',
-      message: `${mapping.dialect}에서 ${type}(${length})은(는) 바이트 상한을 넘을 수 있습니다`,
+      message: fillJosa(
+        `${mapping.dialect}에서 ${type}(${length})은(는) 바이트 상한을 넘을 수 있습니다`,
+      ),
     });
   }
   return { sql: renderPattern(rule.pattern, { n: length, p: length, s: scale }), warnings };

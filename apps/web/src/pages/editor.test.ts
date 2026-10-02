@@ -793,7 +793,7 @@ describe('이력 패널(T8.14)', () => {
       '비교',
     );
     expect(w.get('[data-testid="history-panel"]').text()).toContain('OLD_ONLY');
-    await button(w, 'v1(으)로 복원').trigger('click');
+    await button(w, 'v1로 복원').trigger('click');
     await w.get('[data-testid="confirm-restore"]').trigger('click');
     await until(
       () => bodies(calls, 'POST', `${P}/tables/17/history/1/restore`).length === 1,

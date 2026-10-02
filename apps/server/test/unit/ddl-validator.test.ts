@@ -134,7 +134,7 @@ describe('TableValidator — 코드표 전 행(§5.7)', () => {
         columnNm: 'ORDER',
         field: 'physicalNm',
         tableNm: 'RP_OK',
-        message: 'ORDER은(는) PostgreSQL 예약어입니다',
+        message: 'ORDER는 PostgreSQL 예약어입니다',
       }),
     ]);
     expect(r.warnings.map((w) => w.code)).toEqual(
@@ -181,6 +181,6 @@ describe('TableValidator — 코드표 전 행(§5.7)', () => {
 
   it('중복 물리명 메시지는 먼저 나온 행 번호(1-기준)', () => {
     const r = validateTable(withCol({ physicalNm: 'ID' }), CTX);
-    expect(r.errors[0]?.message).toBe('물리명 ID이(가) 1행과 중복됩니다');
+    expect(r.errors[0]?.message).toBe('물리명 ID가 1행과 중복됩니다');
   });
 });
