@@ -7,6 +7,7 @@ import ConfirmDeleteModal from './ConfirmDeleteModal.vue';
 import DataTable from './DataTable.vue';
 import TfBadge from './TfBadge.vue';
 import TfButton from './TfButton.vue';
+import TfPopover from './TfPopover.vue';
 import ToastRegion from './ToastRegion.vue';
 
 // T4.9 공통 UI 컴포넌트 동작(목업 클래스·접근성 속성). 시각 비교는 메인 세션 검수(UX 확인)
@@ -143,6 +144,40 @@ describe('DataTable', () => {
     expect(
       [...w.get('select').element.querySelectorAll('option')].map((o) => o.textContent),
     ).toEqual(['20', '50', '100']);
+  });
+});
+
+describe('TfPopover — 화면 기준 위치(CR-15 C8)', () => {
+  it('아래가 모자라면 위로, 오른쪽 정렬은 트리거 오른쪽 끝에 맞추고, 바깥 스크롤이면 닫힌다', async () => {
+    const spies = [
+      vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200),
+      vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(120),
+    ];
+    const w = mount(TfPopover, {
+      props: { align: 'right' },
+      slots: {
+        trigger: ({ toggle }: { toggle: () => void }) =>
+          h('button', { 'aria-haspopup': 'menu', onClick: toggle }, '…'),
+        default: () => h('button', { class: 'dropdown-item' }, '행 삭제'),
+      },
+      attachTo: document.body,
+    });
+    const trigger = w.get('button[aria-haspopup]');
+    trigger.element.getBoundingClientRect = () =>
+      ({ left: 700, right: 726, top: 700, bottom: 726, width: 26, height: 26 }) as DOMRect;
+    await trigger.trigger('click');
+    await flushPromises();
+    const menu = w.get<HTMLElement>('.dropdown-menu');
+    expect(menu.classes()).toContain('is-open');
+    // jsdom 창 1024×768: 아래(730 + 120)는 넘치므로 위(700 − 4 − 120 = 576), 왼쪽 = 726 − 200
+    expect(menu.element.style.position).toBe('fixed');
+    expect(menu.element.style.top).toBe('576px');
+    expect(menu.element.style.left).toBe('526px');
+    window.dispatchEvent(new Event('scroll'));
+    await flushPromises();
+    expect(menu.classes()).not.toContain('is-open');
+    w.unmount();
+    for (const s of spies) s.mockRestore();
   });
 });
 

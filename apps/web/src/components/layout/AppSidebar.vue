@@ -142,7 +142,7 @@ const version = __APP_VERSION__;
             @click="close()"
           >
             <span class="project-key">{{ p.key }}</span
-            >{{ p.nm }}
+            ><span class="grow ellipsis" :title="p.nm">{{ p.nm }}</span>
             <span class="dropdown-meta">{{ ROLE_LABEL[p.role] }}</span>
           </RouterLink>
           <div v-if="switchable.length === 0" class="dropdown-item is-disabled">

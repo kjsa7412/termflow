@@ -46,9 +46,9 @@ const columns: Column[] = [
   { key: 'loginId', label: '아이디', sortable: true },
   { key: 'email', label: '이메일' },
   { key: 'isSysAdmin', label: '시스템 관리자' },
-  { key: 'projects', label: '프로젝트 · 역할' },
+  { key: 'projects', label: '프로젝트 · 역할', class: 'col-text' },
   { key: 'status', label: '상태', class: 'col-status' },
-  { key: 'lastLoginAt', label: '최근 로그인' },
+  { key: 'lastLoginAt', label: '최근 로그인', class: 'nowrap' },
   { key: 'menu', label: '', class: 'col-menu' },
 ];
 const segments: { value: UserStatusFilter; label: string; count: (d: AdminUserPage) => number }[] =

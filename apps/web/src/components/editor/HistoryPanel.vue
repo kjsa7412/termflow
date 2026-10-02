@@ -107,7 +107,7 @@ const snapCols = computed(() => picked.value?.snapshot.columns ?? []);
           role="listitem"
         >
           <TfBadge kind="outline" mono>v{{ h.version }}</TfBadge>
-          <span>{{ ACTION[h.action] ?? h.action }} · {{ h.changeSummary ?? '' }}</span>
+          <span class="grow">{{ ACTION[h.action] ?? h.action }} · {{ h.changeSummary ?? '' }}</span>
           <span class="meta"
             >{{ h.savedByNm ?? h.savedBy }} {{ fmtTs(h.savedAt) }}
             <button

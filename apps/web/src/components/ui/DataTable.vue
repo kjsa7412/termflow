@@ -163,7 +163,7 @@ function go(p: number): void {
     <nav v-if="paginate && totalCount > 0" class="pagination" aria-label="페이지">
       <span class="info">총 {{ totalCount }}건 · {{ page }}/{{ pageCount }} 페이지</span>
       <label class="row text-sm">
-        <span>페이지당</span>
+        <span class="nowrap">페이지당</span>
         <select
           v-model.number="size"
           class="select select-sm w-80"

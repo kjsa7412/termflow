@@ -53,8 +53,8 @@ const excluded = computed(() => ed.defaultRows.length - included.value);
             <th class="c-def">기본값</th>
             <th class="c-comment">코멘트</th>
             <th class="c-code" />
-            <th class="c-status" />
-            <th class="c-menu" />
+            <th class="c-status sticky-r" />
+            <th class="c-menu sticky-r" />
           </tr>
         </thead>
         <tbody>
@@ -72,18 +72,18 @@ const excluded = computed(() => ed.defaultRows.length - included.value);
               /></label>
             </td>
             <td />
-            <td>{{ r.logicalNm }}</td>
-            <td class="mono">{{ r.physicalNm }}</td>
-            <td class="mono">{{ r.typeText }}</td>
+            <td :title="r.logicalNm">{{ r.logicalNm }}</td>
+            <td class="mono" :title="r.physicalNm">{{ r.physicalNm }}</td>
+            <td class="mono" :title="r.typeText ?? undefined">{{ r.typeText }}</td>
             <td class="c-null">{{ r.isNullable ? 'Y' : 'N' }}</td>
-            <td class="mono">{{ r.defaultVal }}</td>
-            <td>{{ r.colComment }}</td>
+            <td class="mono" :title="r.defaultVal ?? undefined">{{ r.defaultVal }}</td>
+            <td :title="r.colComment ?? undefined">{{ r.colComment }}</td>
             <td />
-            <td>
+            <td class="c-status sticky-r">
               <TfBadge v-if="r.included" kind="default">기본컬럼</TfBadge>
               <TfBadge v-else kind="gray">제외</TfBadge>
             </td>
-            <td />
+            <td class="c-menu sticky-r" />
           </tr>
         </tbody>
       </table>

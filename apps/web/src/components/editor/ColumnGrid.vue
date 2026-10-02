@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
   acItems,
   useEditorStore,
@@ -28,6 +28,17 @@ const emit = defineEmits<{ reapply: [uid: string]; registerDomain: [uid: string]
 const ed = useEditorStore();
 const root = ref<HTMLElement | null>(null);
 const cards = ref<Record<string, InstanceType<typeof InlineTermCard> | null>>({});
+
+// 보이는 폭(--grid-vw): 보조 줄(후보·조각·등록 카드)이 가로 스크롤 영역 밖으로 나가지 않게(CR-15 C9)
+let widthWatch: ResizeObserver | null = null;
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined' || !root.value) return;
+  widthWatch = new ResizeObserver(([e]) => {
+    if (e) root.value?.style.setProperty('--grid-vw', `${Math.round(e.contentRect.width)}px`);
+  });
+  widthWatch.observe(root.value);
+});
+onBeforeUnmount(() => widthWatch?.disconnect());
 
 type TextField = Extract<
   CellField,
@@ -233,8 +244,8 @@ const suffixNote = (r: EditorRow) =>
           <th class="c-def">기본값</th>
           <th class="c-comment">코멘트</th>
           <th class="c-code">코드구분</th>
-          <th class="c-status">상태</th>
-          <th class="c-menu"><span class="sr-only">행 메뉴</span></th>
+          <th class="c-status sticky-r">상태</th>
+          <th class="c-menu sticky-r"><span class="sr-only">행 메뉴</span></th>
         </tr>
       </thead>
       <tbody>
@@ -347,7 +358,7 @@ const suffixNote = (r: EditorRow) =>
             <td class="c-code">
               <CodeClsPicker :row="r" :read-only="readOnly" :row-no="i + 1" />
             </td>
-            <td class="c-status">
+            <td class="c-status sticky-r">
               <span class="cell-status" :data-state="ed.displayState(r)">
                 <span v-if="r.state === 'loading'" class="text-sm text-muted" role="status"
                   ><span class="spinner" aria-hidden="true" /> 자동완성 중</span
@@ -410,7 +421,7 @@ const suffixNote = (r: EditorRow) =>
                 </button>
               </span>
             </td>
-            <td class="c-menu">
+            <td class="c-menu sticky-r">
               <TfPopover v-if="!readOnly" align="right">
                 <template #trigger="{ toggle, open, menuId }">
                   <button
@@ -457,35 +468,37 @@ const suffixNote = (r: EditorRow) =>
           </tr>
           <tr v-if="subRow(r)" class="sub-row" :data-sub-row="i + 1">
             <td colspan="11">
-              <AcListbox
-                v-if="r.ac!.open === 'list'"
-                :row="r"
-                :list-id="listId(r)"
-                @choose="choose(r, $event)"
-              />
-              <div
-                v-else-if="r.state === 'composed' || r.state === 'unregistered'"
-                class="pieces-line"
-              >
-                <span>{{ r.state === 'composed' ? '분절 조합' : '분절 결과' }}</span>
-                <SegmentPieces
-                  :segments="r.ac!.segments"
-                  :result="r.state === 'composed' ? r.physicalNm : null"
+              <div class="sub-inner">
+                <AcListbox
+                  v-if="r.ac!.open === 'list'"
+                  :row="r"
+                  :list-id="listId(r)"
+                  @choose="choose(r, $event)"
                 />
-                <span v-if="r.state === 'composed'"
-                  >{{ suffixNote(r) }} · 다음 행으로 이동하면 그대로 확정됩니다</span
+                <div
+                  v-else-if="r.state === 'composed' || r.state === 'unregistered'"
+                  class="pieces-line"
                 >
-                <span v-if="r.state === 'composed' && r.ac!.alternatives.length > 0"
-                  >· 다른 분절: {{ r.ac!.alternatives.map((a) => a.physicalNm).join(', ') }}</span
-                >
+                  <span>{{ r.state === 'composed' ? '분절 조합' : '분절 결과' }}</span>
+                  <SegmentPieces
+                    :segments="r.ac!.segments"
+                    :result="r.state === 'composed' ? r.physicalNm : null"
+                  />
+                  <span v-if="r.state === 'composed'"
+                    >{{ suffixNote(r) }} · 다음 행으로 이동하면 그대로 확정됩니다</span
+                  >
+                  <span v-if="r.state === 'composed' && r.ac!.alternatives.length > 0"
+                    >· 다른 분절: {{ r.ac!.alternatives.map((a) => a.physicalNm).join(', ') }}</span
+                  >
+                </div>
+                <InlineTermCard
+                  v-if="r.ac!.open === 'register'"
+                  :ref="(c) => (cards[r.uid] = c as InstanceType<typeof InlineTermCard> | null)"
+                  :row="r"
+                  @submit="submitRegister(r)"
+                  @cancel="cancelRegister(r)"
+                />
               </div>
-              <InlineTermCard
-                v-if="r.ac!.open === 'register'"
-                :ref="(c) => (cards[r.uid] = c as InstanceType<typeof InlineTermCard> | null)"
-                :row="r"
-                @submit="submitRegister(r)"
-                @cancel="cancelRegister(r)"
-              />
             </td>
           </tr>
         </template>

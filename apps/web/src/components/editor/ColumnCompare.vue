@@ -38,7 +38,7 @@ defineExpose({ diff });
 
 <template>
   <div data-testid="column-compare">
-    <div class="row mb-3">
+    <div class="row wrap mb-3">
       <div class="diff-legend">
         <span><i class="legend-add" />이쪽에만 있음</span><span><i class="legend-chg" />변경</span
         ><span><i class="legend-empty" />상대 버전에 없음</span>

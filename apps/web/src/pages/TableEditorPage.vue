@@ -101,12 +101,18 @@ const biz = computed(() => bizAreas.value.find((b) => b.bizAreaId === ed.header.
 
 // ── 우측 패널(DDL·이력) ─────────────────────────────────────────────
 const PANEL_KEY = 'tf.editor.panel';
+/** 1,500px보다 좁은 창은 처음 열 때 DDL 패널을 닫아 둔다 — 그리드가 반쯤 가려졌다(CR-15 C9). 한 번 열고 닫으면 그 선택을 따른다. */
+const NARROW_FOR_PANEL = '(max-width: 1499px)';
 function storedPanel(): 'ddl' | null {
   try {
-    return localStorage.getItem(PANEL_KEY) === '0' ? null : 'ddl';
+    const v = localStorage.getItem(PANEL_KEY);
+    if (v !== null) return v === '0' ? null : 'ddl';
   } catch {
-    return 'ddl';
+    /* 저장소 없음 — 아래 기본값 */
   }
+  return typeof window !== 'undefined' && window.matchMedia?.(NARROW_FOR_PANEL).matches
+    ? null
+    : 'ddl';
 }
 const panel = ref<'ddl' | 'history' | null>(storedPanel());
 function setPanel(p: 'ddl' | 'history' | null): void {
@@ -659,6 +665,25 @@ const statusLine = computed(() => {
   if (draftSavedAt.value) parts.push(`브라우저 임시저장 ${draftSavedAt.value}`);
   return parts;
 });
+
+// 편집 영역 폭(CR-15 C9): 좁으면(DDL 패널이 열린 1366·1920px 등) 덜 쓰는 단축키 안내를 숨겨 한 줄로,
+// 아주 좁으면(좁은 창에서 패널을 연 경우) 그리드 오른쪽 고정 열을 풀어 왼쪽 고정 열과 겹치지 않게
+const mainEl = ref<HTMLElement | null>(null);
+const narrow = ref(false);
+const cramped = ref(false);
+let mainWatch: ResizeObserver | null = null;
+watch(mainEl, (el) => {
+  mainWatch?.disconnect();
+  mainWatch = null;
+  if (!el || typeof ResizeObserver === 'undefined') return;
+  mainWatch = new ResizeObserver(([e]) => {
+    if (!e) return;
+    narrow.value = e.contentRect.width < 1320;
+    cramped.value = e.contentRect.width < 760;
+  });
+  mainWatch.observe(el);
+});
+onBeforeUnmount(() => mainWatch?.disconnect());
 </script>
 
 <template>
@@ -668,7 +693,7 @@ const statusLine = computed(() => {
     >
   </EmptyState>
   <div v-else class="editor" data-testid="table-editor">
-    <div class="editor-main">
+    <div ref="mainEl" :class="['editor-main', { 'is-narrow': narrow, 'is-cramped': cramped }]">
       <div class="editor-head">
         <div class="breadcrumb">
           <RouterLink :to="`/projects/${key}`">{{ project?.nm ?? key }}</RouterLink
@@ -713,7 +738,7 @@ const statusLine = computed(() => {
           <TfBadge v-else :kind="final ? 'final' : 'draft'" lg data-testid="status-badge">{{
             ed.status
           }}</TfBadge>
-          <div class="editor-status" data-testid="editor-status">
+          <div class="editor-status" data-testid="editor-status" :title="statusLine.join(' · ')">
             <span v-for="(p, i) in statusLine" :key="i">{{ p }}</span>
           </div>
           <div class="editor-actions">
@@ -882,10 +907,7 @@ const statusLine = computed(() => {
           </div>
           <div class="field">
             <label class="field-label" for="ed-phys"
-              >물리 테이블명 <span class="req">*</span
-              ><span v-if="nmAuto && !readOnly" class="field-help">
-                · 업무구분 접두어 + 용어 분절 자동 제안 · 수정 가능</span
-              ></label
+              >물리 테이블명 <span class="req">*</span></label
             >
             <input
               id="ed-phys"
@@ -898,6 +920,9 @@ const statusLine = computed(() => {
               @input="onPhysInput"
               @change="ed.header.tableNm = ed.header.tableNm.trim().toUpperCase()"
             />
+            <span v-if="nmAuto && !readOnly" class="field-help"
+              >업무구분 접두어 + 용어 분절 자동 제안 · 수정 가능</span
+            >
             <SegmentPieces
               v-if="nmAuto && nameSegs.length > 0"
               class="ed-phys-pieces"
@@ -1017,19 +1042,20 @@ const statusLine = computed(() => {
       <div class="editor-foot">
         <div class="kbd-bar">
           <span
-            ><span class="kbd">Enter</span> 자동완성 → 다음 행(후보·등록 카드는 Enter
-            선택·등록)</span
+            ><span class="kbd">Enter</span> 자동완성 → 다음 행<span class="kbd-more"
+              >(후보·등록 카드는 Enter 선택·등록)</span
+            ></span
           >
           <span><span class="kbd">Tab</span> 다음 셀</span>
-          <span><span class="kbd">↑</span><span class="kbd">↓</span> 행 이동</span>
-          <span
+          <span class="kbd-more"><span class="kbd">↑</span><span class="kbd">↓</span> 행 이동</span>
+          <span class="kbd-more"
             ><span class="kbd">Alt</span>+<span class="kbd">↑</span><span class="kbd">↓</span> 순서
             변경</span
           >
           <span><span class="kbd">Ctrl</span>+<span class="kbd">S</span> 저장</span>
           <span><span class="kbd">Ctrl</span>+<span class="kbd">D</span> DDL 패널</span>
           <span><span class="kbd">Esc</span> 후보·카드 닫기</span>
-          <span
+          <span class="kbd-more"
             ><span class="kbd">Ctrl</span>+<span class="kbd">V</span> 여러 줄 → 일괄 자동완성</span
           >
         </div>
