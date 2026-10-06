@@ -75,11 +75,17 @@ describe('범용 기본 표준 STDV1 적재(CR-16 C4)', () => {
     expect(ml.n).toBe(1);
   });
 
-  it('다시 불러도 그대로(ALREADY), 관리자가 지운 뒤에도 다시 만들지 않는다', async () => {
-    expect((await prepareTemplates(t.db, log)).seeded).toBe('ALREADY');
+  it('다시 불러도 그대로(ALREADY, 상태 로그 한 줄), 관리자가 지운 뒤에도 다시 만들지 않는다', async () => {
+    const seen: string[] = [];
+    expect((await prepareTemplates(t.db, (m) => seen.push(m))).seeded).toBe('ALREADY');
     await t.pool.query('delete from tf_project where project_key = $1', [BUILTIN_STD.key]);
-    expect((await prepareTemplates(t.db, log)).seeded).toBe('ALREADY');
+    expect((await prepareTemplates(t.db, (m) => seen.push(m))).seeded).toBe('ALREADY');
     expect(await one('select count(*)::int n from tf_project')).toEqual({ n: 0 });
+    expect(seen).toHaveLength(2);
+    expect(seen[0]).toMatch(
+      /^기본 표준 STDV1 확인 — "TermFlow 기본 표준 v1"\(ACTIVE\), \d{4}-\d{2}-\d{2} /,
+    );
+    expect(seen[1]).toMatch(/^기본 표준 STDV1 없음 — .+ 적재 뒤 삭제됨/);
   });
 
   it('옛 승계 STDV1(created_by MIGRATION) → RETAILV1 "패션·유통 표준 v1", 그다음 범용 STDV1 적재', async () => {

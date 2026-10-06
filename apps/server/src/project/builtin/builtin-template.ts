@@ -318,10 +318,22 @@ export async function prepareTemplates(
     const renamed = await renameLegacy(tx, log);
 
     const [done] = await tx
-      .select({ id: migrationLog.migrationId })
+      .select({ id: migrationLog.migrationId, at: migrationLog.finishedAt })
       .from(migrationLog)
       .where(and(eq(migrationLog.step, BUILTIN_STEP), eq(migrationLog.status, 'SUCCESS')));
-    if (done) return { renamed, seeded: 'ALREADY' };
+    if (done) {
+      // 기동마다 상태 한 줄(CR-16 C15): 적재가 이미 끝난 설치도 로그만으로 확인할 수 있게
+      const [tpl] = await tx
+        .select({ nm: tfProject.projectNm, status: tfProject.status })
+        .from(tfProject)
+        .where(and(eq(tfProject.projectKey, BUILTIN_STD.key), eq(tfProject.kind, 'TEMPLATE')));
+      log(
+        tpl
+          ? `기본 표준 ${BUILTIN_STD.key} 확인 — "${tpl.nm}"(${tpl.status}), ${done.at ?? '-'} 적재`
+          : `기본 표준 ${BUILTIN_STD.key} 없음 — ${done.at ?? '-'} 적재 뒤 삭제됨(다시 만들지 않는다)`,
+      );
+      return { renamed, seeded: 'ALREADY' };
+    }
 
     const [taken] = await tx
       .select({ id: tfProject.projectId })
