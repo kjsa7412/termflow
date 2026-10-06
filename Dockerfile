@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# TermFlow 단일 이미지 termflow-app(설계서 §2.5.8, §12.6, T11.1). 빌드: docker build -t termflow-app:1.2.0 .
+# TermFlow 단일 이미지 termflow-app(설계서 §2.5.8, §12.6, T11.1). 빌드: docker build -t termflow-app:1.2.1 .
 #
 # 이미지 안 배치는 저장소 구조를 그대로 따른다(CR-11a C1). 서버 코드가 자기 위치 기준 상대 경로로 찾는 것:
 #   /app/apps/server/dist        ← main.js, migration/seed.js
