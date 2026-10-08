@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TermFlow CI/CD 흐름</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 한 단 문서. 위에 전체 흐름도, 아래에 흐름도 번호(1~5)와 같은 순서의 단계 설명, 끝에 실행 #7 판독 */
+:root {
+  --bg: #f6f7f8;
+  --paper: #ffffff;
+  --ink: #1b2026;
+  --muted: #5a6470;
+  --line: #d5dae0;
+  --line-strong: #9aa4af;
+  --ci: #4b4fb8;
+  --ci-soft: #ecedfb;
+  --ci-ink: #2f327f;
+  --cd: #0f7a63;
+  --cd-soft: #e2f4ee;
+  --cd-ink: #075242;
+  --neutral-soft: #eef0f2;
+  --ok: #1f7a3a;
+  --skip: #8a6a12;
+  --skip-soft: #fbf1d9;
+  --font-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171b; --paper: #1b1f24; --ink: #e6e9ed; --muted: #9ca5b0; --line: #2e343b; --line-strong: #5b6570;
+    --ci: #9a9df0; --ci-soft: #262850; --ci-ink: #d4d5fb; --cd: #5dcaa5; --cd-soft: #10372e; --cd-ink: #b8eedb;
+    --neutral-soft: #252a30; --ok: #6fcf8a; --skip: #e3bb5a; --skip-soft: #3a2f12; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171b; --paper: #1b1f24; --ink: #e6e9ed; --muted: #9ca5b0; --line: #2e343b; --line-strong: #5b6570;
+  --ci: #9a9df0; --ci-soft: #262850; --ci-ink: #d4d5fb; --cd: #5dcaa5; --cd-soft: #10372e; --cd-ink: #b8eedb;
+  --neutral-soft: #252a30; --ok: #6fcf8a; --skip: #e3bb5a; --skip-soft: #3a2f12; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.7; }
+.wrap { max-width: 860px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; display: flex; flex-direction: column; gap: 40px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 21px; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--neutral-soft); padding: 1px 5px; border-radius: 4px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+header { display: flex; flex-direction: column; gap: 12px; }
+header p { color: var(--muted); }
+.files { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-mono); font-size: 13px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); }
+.chip.ci { border-color: var(--ci); color: var(--ci-ink); background: var(--ci-soft); }
+.chip.cd { border-color: var(--cd); color: var(--cd-ink); background: var(--cd-soft); }
+
+figure { margin: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 620px; height: auto; }
+figcaption { font-size: 13px; color: var(--muted); }
+svg text { font-family: var(--font-body); }
+svg .t { font-size: 14px; font-weight: 600; }
+svg .s { font-size: 12px; }
+svg .lbl { font-size: 14px; font-weight: 600; fill: var(--ink); }
+svg .lbl-s { font-size: 12px; fill: var(--muted); }
+svg .ci rect { fill: var(--ci-soft); stroke: var(--ci); }
+svg .ci .t { fill: var(--ci-ink); } svg .ci .s { fill: var(--ci); }
+svg .cd rect { fill: var(--cd-soft); stroke: var(--cd); }
+svg .cd .t { fill: var(--cd-ink); } svg .cd .s { fill: var(--cd); }
+svg .nu rect { fill: var(--neutral-soft); stroke: var(--line-strong); }
+svg .nu .t { fill: var(--ink); } svg .nu .s { fill: var(--muted); }
+svg .box rect { stroke-width: 1; }
+svg .dash rect { stroke-dasharray: 5 4; }
+svg .zone { fill: none; stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 4 5; }
+svg .arr { fill: none; stroke: var(--line-strong); stroke-width: 1.4; }
+svg .badge circle { fill: var(--ink); }
+svg .badge text { fill: var(--paper); font-size: 12px; font-weight: 600; }
+svg #ah path { stroke: var(--line-strong); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid; display: inline-block; }
+.sw.ci { background: var(--ci-soft); border-color: var(--ci); }
+.sw.cd { background: var(--cd-soft); border-color: var(--cd); }
+.sw.nu { background: var(--neutral-soft); border-color: var(--line-strong); border-style: dashed; }
+
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.summary div { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.summary b { font-weight: 600; }
+.summary span { font-size: 14px; color: var(--muted); }
+
+.steps { display: flex; flex-direction: column; gap: 28px; }
+.step { display: grid; grid-template-columns: 36px 1fr; gap: 16px; }
+.step .num { width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-weight: 600; font-size: 14px; margin-top: 2px; }
+.step .body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.step .tag { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 70ch; }
+li::marker { color: var(--line-strong); }
+
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; background: var(--neutral-soft); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--font-mono); font-size: 13px; }
+.st { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.st.ok { color: var(--ok); border: 1px solid var(--ok); }
+.st.skip { color: var(--skip); background: var(--skip-soft); border: 1px solid var(--skip); }
+
+.note { border-left: 3px solid var(--cd); padding: 4px 0 4px 16px; display: flex; flex-direction: column; gap: 6px; }
+.note.ci { border-left-color: var(--ci); }
+section { display: flex; flex-direction: column; gap: 16px; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+@media (max-width: 520px) {
+  h1 { font-size: 25px; }
+  .step { grid-template-columns: 1fr; gap: 8px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">GITHUB ACTIONS · TERMFLOW</div>
+    <h1>TermFlow CI/CD 흐름</h1>
+    <p>커밋 하나가 검사를 거쳐 오프라인 설치 번들과 GitHub Release 초안이 되기까지의 길입니다. 워크플로는 세 개이고, 판 번호의 원천은 <code>package.json</code>의 <code>version</code> 하나입니다. 태그는 사람이 달지 않습니다.</p>
+    <div class="files">
+      <span class="chip ci">ci.yml</span>
+      <span class="chip cd">auto-release.yml</span>
+      <span class="chip cd">release.yml</span>
+    </div>
+  </header>
+
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 680 790" role="img" aria-labelledby="dg-t dg-d">
+        <title id="dg-t">TermFlow CI/CD 전체 흐름도</title>
+        <desc id="dg-d">main push가 ci.yml을 돌리고, 통과하면 auto-release.yml이 판 태그 유무를 확인한다. 새 판이면 태그를 만들고 release.yml을 불러 판 번호 확인, 오프라인 번들 설치 확인, Release 초안 순으로 진행한다. 게시와 서버 반영은 사람이 한다.</desc>
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+        <g class="badge"><circle cx="232" cy="60" r="11"/><text x="232" y="64" text-anchor="middle">1</text></g>
+        <g class="box nu"><rect x="250" y="36" width="180" height="48" rx="5"/><text class="t" x="340" y="56" text-anchor="middle">main push · PR</text><text class="s" x="340" y="74" text-anchor="middle">커밋마다 자동</text></g>
+
+        <rect class="zone" x="40" y="110" width="600" height="210" rx="10"/>
+        <g class="badge"><circle cx="62" cy="132" r="11"/><text x="62" y="136" text-anchor="middle">2</text></g>
+        <text class="lbl" x="82" y="137">ci.yml</text>
+        <path class="arr" d="M340 84 V143" marker-end="url(#ah)"/>
+
+        <g class="box ci"><rect x="250" y="145" width="180" height="52" rx="5"/><text class="t" x="340" y="166" text-anchor="middle">lint · typecheck</text><text class="s" x="340" y="184" text-anchor="middle">실패 시 이후 중단</text></g>
+        <g class="box ci"><rect x="460" y="145" width="160" height="52" rx="5"/><text class="t" x="540" y="166" text-anchor="middle">설치 스크립트</text><text class="s" x="540" y="184" text-anchor="middle">shellcheck · PS 구문</text></g>
+
+        <path class="arr" d="M340 197 V221 H115 V243" marker-end="url(#ah)"/>
+        <path class="arr" d="M340 197 V221 H265 V243" marker-end="url(#ah)"/>
+        <path class="arr" d="M340 197 V221 H415 V243" marker-end="url(#ah)"/>
+        <path class="arr" d="M340 197 V221 H565 V243" marker-end="url(#ah)"/>
+
+        <g class="box ci"><rect x="50" y="245" width="130" height="52" rx="5"/><text class="t" x="115" y="266" text-anchor="middle">test(단위)</text><text class="s" x="115" y="284" text-anchor="middle">pnpm test</text></g>
+        <g class="box ci"><rect x="200" y="245" width="130" height="52" rx="5"/><text class="t" x="265" y="266" text-anchor="middle">test:db</text><text class="s" x="265" y="284" text-anchor="middle">postgres:17</text></g>
+        <g class="box ci"><rect x="350" y="245" width="130" height="52" rx="5"/><text class="t" x="415" y="266" text-anchor="middle">build</text><text class="s" x="415" y="284" text-anchor="middle">pnpm build</text></g>
+        <g class="box ci"><rect x="500" y="245" width="130" height="52" rx="5"/><text class="t" x="565" y="266" text-anchor="middle">이미지 · 설치</text><text class="s" x="565" y="284" text-anchor="middle">install.sh · 복구</text></g>
+
+        <path class="arr" d="M340 320 V338 H160 V412" marker-end="url(#ah)"/>
+
+        <rect class="zone" x="40" y="350" width="600" height="170" rx="10"/>
+        <g class="badge"><circle cx="618" cy="372" r="11"/><text x="618" y="376" text-anchor="middle">3</text></g>
+        <text class="lbl" x="598" y="377" text-anchor="end">auto-release.yml</text>
+
+        <g class="box cd"><rect x="60" y="414" width="200" height="52" rx="5"/><text class="t" x="160" y="435" text-anchor="middle">판 태그</text><text class="s" x="160" y="453" text-anchor="middle">main ci 성공 시 실행</text></g>
+        <path class="arr" d="M260 440 H295 V408 H328" marker-end="url(#ah)"/>
+        <path class="arr" d="M260 440 H295 V474 H328" marker-end="url(#ah)"/>
+        <g class="box nu"><rect x="330" y="386" width="200" height="46" rx="5"/><text class="t" x="430" y="405" text-anchor="middle">v판 태그 있음</text><text class="s" x="430" y="422" text-anchor="middle">평소 커밋 · 종료</text></g>
+        <g class="box cd"><rect x="330" y="448" width="200" height="52" rx="5"/><text class="t" x="430" y="469" text-anchor="middle">태그 없음 → 생성</text><text class="s" x="430" y="487" text-anchor="middle">release-check.sh</text></g>
+
+        <path class="arr" d="M430 500 V535 H115 V588" marker-end="url(#ah)"/>
+
+        <rect class="zone" x="40" y="550" width="600" height="112" rx="10"/>
+        <g class="badge"><circle cx="618" cy="572" r="11"/><text x="618" y="576" text-anchor="middle">4</text></g>
+        <text x="598" y="577" text-anchor="end"><tspan class="lbl">release.yml</tspan><tspan class="lbl-s" dx="8">태그 push · 수동 실행도 가능</tspan></text>
+
+        <g class="box cd"><rect x="50" y="590" width="130" height="52" rx="5"/><text class="t" x="115" y="611" text-anchor="middle">판 번호 확인</text><text class="s" x="115" y="629" text-anchor="middle">태그 = version</text></g>
+        <path class="arr" d="M180 616 H198" marker-end="url(#ah)"/>
+        <g class="box ci dash"><rect x="200" y="590" width="130" height="52" rx="5"/><text class="t" x="265" y="611" text-anchor="middle">ci 재검사</text><text class="s" x="265" y="629" text-anchor="middle">자동이면 건너뜀</text></g>
+        <path class="arr" d="M330 616 H348" marker-end="url(#ah)"/>
+        <g class="box cd"><rect x="350" y="590" width="130" height="52" rx="5"/><text class="t" x="415" y="611" text-anchor="middle">오프라인 번들</text><text class="s" x="415" y="629" text-anchor="middle">번들만으로 설치</text></g>
+        <path class="arr" d="M480 616 H498" marker-end="url(#ah)"/>
+        <g class="box cd"><rect x="500" y="590" width="130" height="52" rx="5"/><text class="t" x="565" y="611" text-anchor="middle">Release 초안</text><text class="s" x="565" y="629" text-anchor="middle">tar.gz · sha256</text></g>
+
+        <path class="arr" d="M565 642 V690" marker-end="url(#ah)"/>
+        <g class="badge"><circle cx="440" cy="718" r="11"/><text x="440" y="722" text-anchor="middle">5</text></g>
+        <g class="box nu dash"><rect x="460" y="692" width="170" height="52" rx="5"/><text class="t" x="545" y="713" text-anchor="middle">게시 · 서버 반영</text><text class="s" x="545" y="731" text-anchor="middle">사람 · upgrade.sh</text></g>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i class="sw ci"></i>ci.yml 검사 잡</span>
+      <span><i class="sw cd"></i>자동 태그 · 릴리스(CD)</span>
+      <span><i class="sw nu"></i>점선: 건너뜀 또는 사람이 하는 단계</span>
+    </div>
+    <figcaption>흐름도의 번호 1~5는 아래 단계 설명의 번호와 같습니다.</figcaption>
+  </figure>
+
+  <section>
+    <h2>한눈에</h2>
+    <div class="summary">
+      <div><b>CI는 모든 push에서</b><span>main·stage/** push와 main 대상 PR마다 ci.yml이 6개 잡으로 검사합니다.</span></div>
+      <div><b>판을 올린 커밋만 릴리스</b><span>version을 바꾸지 않은 커밋은 auto-release가 바로 끝냅니다.</span></div>
+      <div><b>검사는 한 번만</b><span>자동 경로는 같은 커밋의 CI 통과를 근거로 release 안의 ci를 건너뜁니다.</span></div>
+      <div><b>자동화는 초안까지</b><span>Release 게시와 서버 반영은 사람이 확인하고 합니다.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>단계별 설명</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="num" aria-hidden="true">1</div>
+        <div class="body">
+          <h3>개발자: 커밋하고 main에 push</h3>
+          <div class="tag">git push origin main</div>
+          <p>평소 커밋은 그냥 push합니다. 판을 올릴 때만 세 곳을 한 커밋에서 함께 고칩니다.</p>
+          <ul>
+            <li><code>package.json</code>의 <code>version</code></li>
+            <li><code>docker-compose.yml</code>의 이미지 태그 <code>termflow-app:&lt;판&gt;</code></li>
+            <li><code>docs/릴리스_노트_v&lt;판&gt;.md</code></li>
+          </ul>
+          <p>push 전에 <code>bash scripts/release-check.sh</code>로 세 값이 맞는지 로컬에서 확인합니다. CI의 판 번호 검사도 같은 스크립트를 씁니다.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num" aria-hidden="true">2</div>
+        <div class="body">
+          <h3>ci.yml: 6개 잡으로 검사</h3>
+          <div class="tag">on: push(main, stage/**) · pull_request · workflow_dispatch · workflow_call</div>
+          <p><code>lint · typecheck</code>가 관문입니다. 가장 빨리 끝나는 검사라 먼저 돌리고, 실패하면 무거운 잡 네 개를 시작하지 않습니다. 설치 스크립트 검사는 의존 없이 처음부터 나란히 돕니다.</p>
+          <div class="tbl">
+            <table>
+              <thead><tr><th>잡</th><th>하는 일</th><th>선행</th><th>제한</th></tr></thead>
+              <tbody>
+                <tr><td>lint · typecheck</td><td>eslint · prettier · <code>check:no-ai</code> · tsc</td><td>없음</td><td class="num">15분</td></tr>
+                <tr><td>설치 스크립트 검사</td><td>shellcheck(install.sh · start.sh · scripts/*.sh), PowerShell 구문 파싱</td><td>없음</td><td class="num">5분</td></tr>
+                <tr><td>test(단위)</td><td>shared · web · server · site 단위 테스트</td><td>lint</td><td class="num">20분</td></tr>
+                <tr><td>test:db</td><td>Testcontainers postgres:17, 실행마다 새 컨테이너</td><td>lint</td><td class="num">40분</td></tr>
+                <tr><td>build</td><td>shared → web → server, site 누출 검사</td><td>lint</td><td class="num">20분</td></tr>
+                <tr><td>이미지 · Linux 설치</td><td>docker build → <code>install.sh</code>(승계 1~12 · 대사 · DDL 회귀) → /health · /manual → 백업 · 복구</td><td>lint</td><td class="num">40분</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul>
+            <li>같은 ref에 새 push가 오면 진행 중인 CI를 취소합니다(<code>cancel-in-progress: true</code>).</li>
+            <li>설치 잡이 실패하면 compose 로그 · <code>migration/report/</code>를 7일 보관 산출물로 올립니다.</li>
+            <li>E2E(Playwright)는 dev DB와 설치된 Chrome · Edge가 필요해 CI가 아니라 로컬 게이트에서 돌립니다.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num" aria-hidden="true">3</div>
+        <div class="body">
+          <h3>auto-release.yml: 판이 바뀌었는지 판단</h3>
+          <div class="tag">on: workflow_run(ci, completed, main) · 조건: 성공 + push 이벤트</div>
+          <p>main의 CI가 성공하면 그 커밋의 <code>package.json</code> version을 읽고, 원격에 <code>v&lt;version&gt;</code> 태그가 있는지 봅니다.</p>
+          <ul>
+            <li><b>태그가 있음</b>: 판을 올리지 않은 평소 커밋입니다. 여기서 끝납니다.</li>
+            <li><b>태그가 없음</b>: 판을 올린 커밋입니다. <code>release-check.sh</code>로 판 번호를 다시 맞춰 보고, 그 커밋에 태그를 만든 뒤 release.yml을 <code>skip_ci: true</code>로 부릅니다.</li>
+          </ul>
+          <div class="note">
+            <p><b>왜 직접 부르나</b>: <code>GITHUB_TOKEN</code>으로 만든 태그 push는 다른 워크플로를 깨우지 않습니다. 그래서 release.yml의 태그 트리거에 기대지 않고 <code>workflow_call</code>로 바로 호출합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num" aria-hidden="true">4</div>
+        <div class="body">
+          <h3>release.yml: 번들을 만들고 Release 초안 올리기</h3>
+          <div class="tag">jobs: meta → ci → bundle → publish</div>
+          <p>시작하는 길은 세 가지입니다. 기본은 3단계의 자동 호출이고, 손으로 <code>v*</code> 태그를 push하거나 Actions 화면에서 수동 실행해도 됩니다. 자동 호출일 때만 ci를 건너뜁니다.</p>
+          <div class="tbl">
+            <table>
+              <thead><tr><th>잡</th><th>하는 일</th></tr></thead>
+              <tbody>
+                <tr><td>판 번호 확인</td><td>태그 = <code>package.json</code> version = compose 이미지 태그, 릴리스 노트가 있는지 확인</td></tr>
+                <tr><td>ci</td><td>ci.yml 전체를 태그 커밋으로 다시 실행. 자동 경로(<code>skip_ci</code>)면 건너뜀</td></tr>
+                <tr><td>번들 · 오프라인 설치 확인</td><td>docker build → <code>bundle.sh</code> → 빌드한 이미지와 postgres:17을 지움 → 번들을 새 폴더에 풀어 <code>install.sh</code> → 설치된 이미지 ID가 번들의 이미지와 같은지 확인 → /health</td></tr>
+                <tr><td>Release 초안</td><td>sha256 확인 뒤 <code>termflow-linux-&lt;판&gt;.tar.gz</code>와 <code>.sha256</code>을 초안(draft)으로 올림. 같은 판이 이미 있으면 파일만 교체</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="note">
+            <p><b>번들 검사의 의도</b>: 설치할 서버에는 레지스트리도 소스 빌드도 없습니다. 그래서 러너에서 이미지를 일부러 지우고, 번들 안의 <code>images/</code>만으로 설치되는지 확인합니다. 이미지 ID까지 맞춰 봐서 몰래 다시 빌드되는 경우도 잡아냅니다.</p>
+          </div>
+          <p>번들에는 승계 원본(<code>seed/original</code>)이 들어 있어서 저장소와 Release는 비공개로 둡니다.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num" aria-hidden="true">5</div>
+        <div class="body">
+          <h3>사람: 게시하고 서버에 반영</h3>
+          <p>초안의 파일과 릴리스 노트를 확인한 뒤 Release를 게시합니다. 서버에는 번들을 옮겨 <code>upgrade.sh</code>로 올리고, 기동 로그에서 기본 표준 템플릿 상태 줄로 적용 여부를 확인합니다. 이 단계는 자동화하지 않았습니다.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>실행 auto-release #7 읽기</h2>
+    <p>커밋 <code>65f77fb</code>(v1.2.1 TODO 체크)의 main CI가 통과해 시작된 실행입니다. 전체 3분 12초에 성공했고, 태그 <code>v1.2.1</code>은 이 커밋에 달렸습니다.</p>
+    <p>판을 올린 커밋은 바로 앞의 <code>fb2cd93</code>인데 태그가 그 뒤 커밋에 달린 이유는 CI 취소 규칙으로 보입니다. ci.yml은 같은 브랜치에 새 push가 오면 진행 중인 실행을 취소합니다. <code>fb2cd93</code>의 CI가 끝나기 전에 <code>65f77fb</code>를 push했다면 앞 실행은 취소되고, v1.2.1 태그가 없는 상태에서 처음 성공한 CI는 <code>65f77fb</code>의 것이 됩니다. 두 커밋 사이 차이는 TODO 문서뿐이라 번들 내용은 같습니다.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>잡</th><th>결과</th><th>시간</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>판 태그</td><td><span class="st ok">성공</span></td><td class="num">6s</td><td>태그 존재 여부 확인, 필요하면 생성</td></tr>
+          <tr><td>release / 판 번호 확인</td><td><span class="st ok">성공</span></td><td class="num">6s</td><td>release-check.sh</td></tr>
+          <tr><td>release / ci (6개 잡)</td><td><span class="st skip">건너뜀</span></td><td class="num">–</td><td>같은 커밋의 CI가 이미 통과해서 <code>skip_ci: true</code></td></tr>
+          <tr><td>release / 번들 · 오프라인 설치 확인</td><td><span class="st ok">성공</span></td><td class="num">2m 19s</td><td>docker build 21초, 캐시 적중 62%</td></tr>
+          <tr><td>release / Release 초안</td><td><span class="st ok">성공</span></td><td class="num">28s</td><td>tar.gz · sha256 첨부</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note ci">
+      <p>화면에서 ci 아래 잡들이 빈 원으로 보이는 건 실패가 아니라 건너뛴 것입니다. 검사는 바로 앞의 main CI 실행에서 이미 끝났습니다.</p>
+    </div>
+  </section>
+
+  <footer>근거 파일: .github/workflows/ci.yml · auto-release.yml · release.yml, scripts/release-check.sh · bundle.sh</footer>
+</div>
+</body>
+</html>
