@@ -102,9 +102,11 @@ E2E(`pnpm e2e`)는 dev DB(RMS)·설치된 Chrome·Edge가 필요해 로컬 게�
 
 **판을 올린 커밋을 main에 push하면 릴리스까지 자동으로 된다. 태그는 손으로 달지 않는다.** 판 번호의 원천은 `package.json`의 `version` 하나다.
 
-1. 판 올림 커밋: `package.json` version · `docker-compose.yml` `termflow-app:<판>` · `docs/릴리스_노트_v<판>.md`를 함께 고치고 `scripts/release-check.sh`로 확인한 뒤 main에 push.
+1. 판 올림 커밋: `package.json` version · `docker-compose.yml` `termflow-app:<판>` · `docs/릴리스_노트_v<판>.md`를 함께 고치고 `scripts/release-check.sh`로 확인한 뒤 main에 push. 커밋 메시지는 `v<판> — 판 올림 · <요약>`으로 시작한다.
 2. main의 `ci.yml`에서 `판 확인` 작업이 `v<판>` 태그가 원격에 없는지(= 판을 올린 커밋) 보고 판 번호 일치를 확인한다. 검사 작업이 모두 통과하면 마지막 작업 `배포물 요청`이 [`release.yml`](.github/workflows/release.yml)을 실행한다(CR-17).
-3. `release.yml`: `scripts/bundle.sh` → 번들만으로 빈 폴더 설치 확인 → 그 커밋에 태그 → **Release 초안**에 `termflow-linux-<판>.tar.gz`·`.sha256`. 초안을 확인한 뒤 Releases 화면에서 게시한다.
+3. `release.yml`: `scripts/bundle.sh` → 번들만으로 빈 폴더 설치 확인 → 판 올림 커밋에 태그 → **Release 초안**에 `termflow-linux-<판>.tar.gz`·`.sha256`. 초안을 확인한 뒤 Releases 화면에서 게시한다.
+
+태그는 판 올림 커밋에 달리므로 GitHub 커밋 목록에서 그 커밋 옆에 `v<판>` 표시가 붙는다. 판 올림 뒤 커밋을 같이 push했을 때 그 커밋들이 문서뿐이면 판 올림 커밋, 제품 파일을 바꿨으면 CI가 검사한 끝 커밋에 단다([`scripts/release-commit.sh`](scripts/release-commit.sh)).
 
 Actions 목록에서 코드 push는 커밋 메시지 제목의 `ci` 실행 하나로 보이고, 배포물은 판이 앞에 붙은 `v<판> 배포물` 실행으로 따로 보인다(수동으로 다시 만들면 `v<판> 배포물 다시 만들기`). 문서만 바꾼 push는 실행이 없다. 흐름도는 [docs/CI_CD_흐름.html](docs/CI_CD_흐름.html).
 
