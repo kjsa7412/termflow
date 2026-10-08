@@ -1,5 +1,5 @@
 # TermFlow CI/CD(T13.1·CR-13, 개편 CR-17). 로컬 종료 게이트(TODO 원칙 1)의 자동 실행분을 GitHub Actions(ubuntu)로 돌리고,
-# 판을 올린 main push면 이어서 배포물(release.yml)까지 만든다. 워크플로 실행은 push 한 번에 이것 하나다.
+# 판을 올린 main push면 검사 통과 뒤 배포물 실행(release.yml, 목록 제목 "v<판> 배포물")을 요청한다.
 #
 #   lint        pnpm lint(eslint·prettier·check:no-ai) + typecheck — 가장 빠른 검사, 실패하면 뒤 작업을 돌리지 않는다
 #   scripts     shellcheck(install.sh·start.sh·scripts/*.sh) + PowerShell 구문 검사(start.ps1·scripts/*.ps1)
@@ -8,7 +8,7 @@
 #   build       pnpm build(shared → web → server, site 누출 검사 포함)
 #   install     docker build → install.sh(빈 Linux 설치·승계 1~12·대사·DDL 회귀) → /health·/manual → 백업·복구
 #   version     (main push만) v<package.json version> 태그가 원격에 없으면 = 판을 올린 커밋 → 판 번호 일치 확인
-#   release     version이 판 올림이라고 판단하고 위 검사가 모두 통과하면 release.yml(번들 → 번들만으로 설치 → 태그·Release 초안)
+#   release     version이 판 올림이라고 판단하고 위 검사가 모두 통과하면 release.yml 실행 요청(번들 → 번들만으로 설치 → 태그·Release 초안)
 #
 # 문서만 바꾼 push·PR은 돌지 않는다(CR-17 C2). 제품에 들어가는 문서(설명서 두 권·그림)는 예외로 돈다.
 # E2E(Playwright)는 dev DB(RMS 33 테이블)·설치된 Chrome·Edge 채널을 전제로 하므로 로컬 게이트에 둔다(CR-13 C4).
@@ -202,12 +202,14 @@ jobs:
     timeout-minutes: 5
     outputs:
       release: ${{ steps.check.outputs.release }}
+      tag: ${{ steps.check.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
       - name: v<version> 태그 확인
         id: check
         run: |
           ver="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' package.json | head -n1)"
+          echo "tag=v$ver" >> "$GITHUB_OUTPUT"
           if git ls-remote --exit-code --tags origin "refs/tags/v$ver" >/dev/null; then
             echo "v$ver 태그가 이미 있습니다 — 판을 올린 커밋이 아니므로 배포물을 만들지 않습니다"
             echo "release=false" >> "$GITHUB_OUTPUT"
@@ -217,12 +219,21 @@ jobs:
             echo "release=true" >> "$GITHUB_OUTPUT"
           fi
 
+  # 배포물은 release.yml의 별도 실행으로 시작한다 — Actions 목록에 "v<판> 배포물"로 따로 보이게(CR-17 C7).
+  # GITHUB_TOKEN으로 만든 이벤트 중 workflow_dispatch는 새 실행을 만든다(태그 push는 만들지 않음)
   release:
-    name: release
+    name: 배포물 요청
     needs: [version, lint, scripts, test, test-db, build, install]
     if: ${{ needs.version.outputs.release == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     permissions:
-      contents: write
-    uses: ./.github/workflows/release.yml
-    with:
-      sha: ${{ github.sha }}
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.version.outputs.tag }}
+    steps:
+      - name: release.yml 실행
+        run: |
+          gh workflow run release.yml -R "$GITHUB_REPOSITORY" --ref main -f tag="$TAG" -f sha="$GITHUB_SHA"
+          echo "$TAG 배포물 실행을 요청했습니다 — Actions 목록의 \"$TAG 배포물\"에서 진행을 봅니다"

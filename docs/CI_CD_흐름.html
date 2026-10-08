@@ -129,7 +129,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <header>
     <div class="eyebrow">GITHUB ACTIONS · TERMFLOW · CR-17</div>
     <h1>TermFlow CI/CD 흐름</h1>
-    <p>코드를 push하면 실행이 하나 생깁니다. 그 실행이 검사를 하고, 판을 올린 push라면 같은 실행 안에서 오프라인 설치 번들과 GitHub Release 초안까지 만듭니다. 문서만 바꾼 push는 실행이 생기지 않습니다. 판 번호의 원천은 <code>package.json</code>의 <code>version</code> 하나이고, 태그는 사람이 달지 않습니다.</p>
+    <p>코드를 push하면 실행이 하나 생깁니다. 그 실행이 검사를 하고, 판을 올린 push라면 검사가 끝난 뒤 <code>v1.2.2 배포물</code>처럼 판이 앞에 붙은 별도 실행이 오프라인 설치 번들과 GitHub Release 초안을 만듭니다. 문서만 바꾼 push는 실행이 생기지 않습니다. 판 번호의 원천은 <code>package.json</code>의 <code>version</code> 하나이고, 태그는 사람이 달지 않습니다.</p>
     <div class="files">
       <span class="chip ci">ci.yml</span>
       <span class="chip cd">release.yml</span>
@@ -141,7 +141,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <div class="diagram">
       <svg viewBox="0 0 680 680" role="img" aria-labelledby="dg-t dg-d">
         <title id="dg-t">TermFlow CI/CD 전체 흐름도</title>
-        <desc id="dg-d">코드 push가 ci.yml을 돌린다. 판 확인, lint와 typecheck, 설치 스크립트 검사가 함께 시작하고 lint 뒤에 테스트, test:db, build, 이미지 설치가 돈다. 모두 통과하고 판을 올린 push면 release 호출 작업이 release.yml을 불러 판 번호 확인, 오프라인 번들, 태그와 Release 초안을 만든다. 게시와 서버 반영은 사람이 한다.</desc>
+        <desc id="dg-d">코드 push가 ci.yml을 돌린다. 판 확인, lint와 typecheck, 설치 스크립트 검사가 함께 시작하고 lint 뒤에 테스트, test:db, build, 이미지 설치가 돈다. 모두 통과하고 판을 올린 push면 배포물 요청 작업이 release.yml을 별도 실행으로 시작해 판 번호 확인, 오프라인 번들, 태그와 Release 초안을 만든다. 게시와 서버 반영은 사람이 한다.</desc>
         <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
         <g class="badge"><circle cx="232" cy="60" r="11"/><text x="232" y="64" text-anchor="middle">1</text></g>
@@ -179,13 +179,13 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <path class="arr" d="M340 328 V350" marker-end="url(#ah)"/>
 
         <g class="badge"><circle cx="212" cy="378" r="11"/><text x="212" y="382" text-anchor="middle">3</text></g>
-        <g class="box cd"><rect x="230" y="352" width="220" height="52" rx="5"/><text class="t" x="340" y="373" text-anchor="middle">release 호출</text><text class="s" x="340" y="391" text-anchor="middle">판 올림일 때만 · 아니면 건너뜀</text></g>
+        <g class="box cd"><rect x="230" y="352" width="220" height="52" rx="5"/><text class="t" x="340" y="373" text-anchor="middle">배포물 요청</text><text class="s" x="340" y="391" text-anchor="middle">판 올림일 때만 · 아니면 건너뜀</text></g>
 
         <path class="arr" d="M340 404 V437 H135 V488" marker-end="url(#ah)"/>
 
         <rect class="zone" x="40" y="450" width="600" height="112" rx="10"/>
         <g class="badge"><circle cx="618" cy="472" r="11"/><text x="618" y="476" text-anchor="middle">4</text></g>
-        <text x="598" y="477" text-anchor="end"><tspan class="lbl">release.yml</tspan><tspan class="lbl-s" dx="8">수동 실행(tag)도 가능</tspan></text>
+        <text x="598" y="477" text-anchor="end"><tspan class="lbl">release.yml</tspan><tspan class="lbl-s" dx="8">별도 실행 "v판 배포물"</tspan></text>
 
         <g class="box cd"><rect x="50" y="490" width="170" height="52" rx="5"/><text class="t" x="135" y="511" text-anchor="middle">판 번호 확인</text><text class="s" x="135" y="529" text-anchor="middle">release-check.sh</text></g>
         <path class="arr" d="M220 516 H253" marker-end="url(#ah)"/>
@@ -203,15 +203,15 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
       <span><i class="sw cd"></i>판 확인 · 배포물(CD)</span>
       <span><i class="sw nu"></i>점선: 사람이 하는 단계</span>
     </div>
-    <figcaption>흐름도의 번호 1~5는 아래 단계 설명의 번호와 같습니다. 3번 release 호출은 ci 실행 안의 작업이라 Actions 화면에서는 한 실행 안에 "release / …"로 이어 보입니다.</figcaption>
+    <figcaption>흐름도의 번호 1~5는 아래 단계 설명의 번호와 같습니다. 2·3번은 <code>ci</code> 실행 하나(제목은 커밋 메시지)이고, 4번은 Actions 목록에 <code>v1.2.2 배포물</code>처럼 판이 앞에 붙은 별도 실행으로 보입니다.</figcaption>
   </figure>
 
   <section>
     <h2>한눈에</h2>
     <div class="summary">
-      <div><b>push 한 번에 실행 하나</b><span>Actions 목록에는 커밋마다 <code>ci</code> 실행 하나만 생깁니다.</span></div>
+      <div><b>배포는 판으로 구분</b><span>평소 커밋은 커밋 메시지 제목의 <code>ci</code> 실행 하나, 배포는 <code>v1.2.2 배포물</code> 실행으로 따로 보입니다.</span></div>
       <div><b>문서만의 push는 실행 없음</b><span>docs·루트 .md만 바꾸면 돌지 않습니다. 제품에 들어가는 설명서 두 권과 그림은 예외입니다.</span></div>
-      <div><b>판 올림만 배포물</b><span>평소 커밋은 release 호출이 건너뜀으로 남고, 판을 올린 커밋만 번들을 만듭니다.</span></div>
+      <div><b>판 올림만 배포물</b><span>평소 커밋은 배포물 요청이 건너뜀으로 남고, 판을 올린 커밋만 번들을 만듭니다.</span></div>
       <div><b>자동화는 초안까지</b><span>Release 게시와 서버 반영은 사람이 확인하고 합니다.</span></div>
     </div>
   </section>
@@ -266,15 +266,16 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
       <div class="step">
         <div class="num" aria-hidden="true">3</div>
         <div class="body">
-          <h3>ci.yml: 판 확인과 release 호출</h3>
-          <div class="tag">jobs: version(판 확인) → release(needs: 검사 6개 + 판 확인)</div>
+          <h3>ci.yml: 판 확인과 배포물 요청</h3>
+          <div class="tag">jobs: version(판 확인) → release(배포물 요청, needs: 검사 6개 + 판 확인)</div>
           <p>main push일 때만 <code>판 확인</code>이 <code>package.json</code> version을 읽고 원격에 <code>v&lt;version&gt;</code> 태그가 있는지 봅니다.</p>
           <ul>
             <li><b>태그가 있음</b>: 판을 올리지 않은 평소 커밋입니다. <code>release</code> 작업은 건너뜀으로 끝납니다.</li>
-            <li><b>태그가 없음</b>: 판을 올린 커밋입니다. 그 자리에서 <code>release-check.sh</code>로 판 번호를 맞춰 보고, 어긋나면 검사를 기다리지 않고 바로 실패합니다. 검사 6개가 모두 통과하면 <code>release</code> 작업이 release.yml을 부릅니다.</li>
+            <li><b>태그가 없음</b>: 판을 올린 커밋입니다. 그 자리에서 <code>release-check.sh</code>로 판 번호를 맞춰 보고, 어긋나면 검사를 기다리지 않고 바로 실패합니다. 검사 6개가 모두 통과하면 <code>배포물 요청</code> 작업이 release.yml을 판과 커밋을 넣어 실행합니다.</li>
           </ul>
           <div class="note">
-            <p><b>왜 같은 실행 안인가</b>: 예전에는 CI가 끝날 때마다 별도 워크플로(auto-release)가 깨어나 태그를 확인했습니다. 할 일이 없을 때도 실행이 하나씩 쌓였습니다. 지금은 판 확인이 CI의 작업 하나라서 목록에 따로 나타나지 않습니다.</p>
+            <p><b>판 확인을 CI 안에 둔 이유</b>: 예전에는 CI가 끝날 때마다 별도 워크플로(auto-release)가 깨어나 태그를 확인했습니다. 할 일이 없을 때도 실행이 하나씩 쌓였습니다. 지금은 판 확인이 CI의 작업 하나이고, 판을 올렸을 때만 배포물 실행이 새로 생깁니다.</p>
+            <p><b>평소 ci 실행 제목에 판이 없는 이유</b>: 실행 제목은 실행이 시작될 때 정해져서 <code>package.json</code>을 읽을 수 없습니다. 그래서 판을 입력으로 받는 배포물 실행에만 판을 붙입니다.</p>
           </div>
         </div>
       </div>
@@ -283,8 +284,8 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <div class="num" aria-hidden="true">4</div>
         <div class="body">
           <h3>release.yml: 번들을 만들고 태그와 Release 초안</h3>
-          <div class="tag">on: workflow_call(sha) · workflow_dispatch(tag) — jobs: meta → bundle → publish</div>
-          <p>평소에는 3단계의 호출로만 돕니다. 이미 있는 태그로 배포물을 다시 만들 때만 Actions › release › Run workflow로 직접 실행합니다.</p>
+          <div class="tag">on: workflow_dispatch(tag, sha) · run-name: "&lt;tag&gt; 배포물" — jobs: meta → bundle → publish</div>
+          <p>평소에는 3단계의 요청으로만 돌고, Actions 목록에 <code>v1.2.2 배포물</code>로 보입니다. 이미 있는 태그로 배포물을 다시 만들 때는 Actions › release › Run workflow에서 tag만 넣어 실행하고, 목록에는 <code>v1.2.1 배포물 다시 만들기</code>로 보입니다.</p>
           <div class="tbl">
             <table>
               <thead><tr><th>작업</th><th>하는 일</th></tr></thead>
@@ -322,7 +323,8 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <tbody>
           <tr><td>문서만 바꾼 push</td><td>ci 약 5분 + auto-release 약 8초, 실행 2개</td><td>실행 없음</td></tr>
           <tr><td>평소 코드 push</td><td>ci + auto-release(할 일 없이 종료), 실행 2개</td><td>ci 실행 1개, release 작업은 건너뜀</td></tr>
-          <tr><td>판을 올린 push</td><td>ci 실행 + auto-release 실행 안에 release 작업</td><td>ci 실행 1개 안에 검사 → release 작업까지</td></tr>
+          <tr><td>판을 올린 push</td><td>ci 실행 + auto-release 실행 안에 release 작업</td><td><code>ci</code> 실행(검사) + <code>v&lt;판&gt; 배포물</code> 실행</td></tr>
+          <tr><td>배포 실행 찾기</td><td>auto-release 실행을 하나씩 열어 봐야 함</td><td>목록 제목 앞의 판(<code>v1.2.2 배포물</code>)으로 바로 구분</td></tr>
           <tr><td>태그를 만드는 시점</td><td>번들 전(번들 실패 시 태그만 남음)</td><td>번들 검증 뒤</td></tr>
           <tr><td>release 시작 경로</td><td>자동 호출 · 손 태그 push · 수동 실행</td><td>자동 호출 · 수동 실행(태그 push 경로 삭제)</td></tr>
         </tbody>
