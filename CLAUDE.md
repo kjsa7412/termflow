@@ -19,7 +19,7 @@
 - 절차는 `docs/03_TODO.md`를 따른다. 항목 완료 시 체크 `[x]` + 커밋 해시.
 - 작업·커밋·푸시는 기본적으로 `main` 브랜치에서 한다(커밋 후 `git -C C:/project/termflow push origin main`). 별도 브랜치는 사용자가 요청할 때만 만든다. push마다 GitHub Actions CI(`.github/workflows/ci.yml`)가 돌므로 push 전에 고친 범위의 lint·typecheck·테스트를 로컬에서 확인한다.
 - 태그는 버전 태그 `v{X.Y.Z}`만 쓴다. 단계 태그(`stage-*`)는 만들지 않는다.
-- 버전 태그는 손으로 달지 않는다(CR-14 C11). 판을 올릴 때는 `package.json` version · `docker-compose.yml` `termflow-app:<판>` · `docs/릴리스_노트_v<판>.md`를 한 커밋에서 함께 고치고 `bash scripts/release-check.sh`로 확인한 뒤 main에 push한다. main CI가 통과하면 `auto-release.yml`이 태그를 만들고 Release 초안까지 올린다. 판을 올리지 않는 커밋은 version을 건드리지 않는다.
+- 버전 태그는 손으로 달지 않는다(CR-14 C11). 판을 올릴 때는 `package.json` version · `docker-compose.yml` `termflow-app:<판>` · `docs/릴리스_노트_v<판>.md`를 한 커밋에서 함께 고치고 `bash scripts/release-check.sh`로 확인한 뒤 main에 push한다. main CI(`ci.yml`)가 검사를 통과하면 같은 실행 안에서 `release.yml`을 불러 번들·태그·Release 초안까지 만든다(CR-17). 문서만 바꾼 push는 CI가 돌지 않는다. 판을 올리지 않는 커밋은 version을 건드리지 않는다.
 - 항목 단위로 자주 커밋한다(사용량 한도·세션 종료로 중단될 수 있음). 재개 시 git 상태와 TODO 체크로 이어서 진행.
 - 커밋 메시지는 한국어, 마지막 줄 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - 사용자 결정이 필요한 항목은 설계서·TODO의 권장안으로 처리하고 기록한다. 설계 수준 변경은 `docs/CR-{nn}_*.md`로 남긴다.

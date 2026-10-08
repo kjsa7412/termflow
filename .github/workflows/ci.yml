@@ -1,4 +1,5 @@
-# TermFlow CI(T13.1, CR-13). 로컬 종료 게이트(TODO 원칙 1)의 자동 실행분을 GitHub Actions(ubuntu)로 돌린다.
+# TermFlow CI/CD(T13.1·CR-13, 개편 CR-17). 로컬 종료 게이트(TODO 원칙 1)의 자동 실행분을 GitHub Actions(ubuntu)로 돌리고,
+# 판을 올린 main push면 이어서 배포물(release.yml)까지 만든다. 워크플로 실행은 push 한 번에 이것 하나다.
 #
 #   lint        pnpm lint(eslint·prettier·check:no-ai) + typecheck — 가장 빠른 검사, 실패하면 뒤 작업을 돌리지 않는다
 #   scripts     shellcheck(install.sh·start.sh·scripts/*.sh) + PowerShell 구문 검사(start.ps1·scripts/*.ps1)
@@ -6,29 +7,42 @@
 #   test-db     pnpm test:db(Testcontainers postgres:17 — 러너의 Docker를 쓴다)
 #   build       pnpm build(shared → web → server, site 누출 검사 포함)
 #   install     docker build → install.sh(빈 Linux 설치·승계 1~12·대사·DDL 회귀) → /health·/manual → 백업·복구
+#   version     (main push만) v<package.json version> 태그가 원격에 없으면 = 판을 올린 커밋 → 판 번호 일치 확인
+#   release     version이 판 올림이라고 판단하고 위 검사가 모두 통과하면 release.yml(번들 → 번들만으로 설치 → 태그·Release 초안)
 #
-# 배포물(Linux 오프라인 번들 → GitHub Release)은 release.yml(CR-14)이 이 워크플로를 먼저 부른 뒤 만든다.
-#
+# 문서만 바꾼 push·PR은 돌지 않는다(CR-17 C2). 제품에 들어가는 문서(설명서 두 권·그림)는 예외로 돈다.
 # E2E(Playwright)는 dev DB(RMS 33 테이블)·설치된 Chrome·Edge 채널을 전제로 하므로 로컬 게이트에 둔다(CR-13 C4).
 name: ci
 
-# 버전 태그(v*)는 release.yml이 이 워크플로를 불러(workflow_call) 같은 검사를 한 번만 돌린다(CR-14 C2)
+# paths는 위에서 아래로 적용된다: 모두 → docs·루트 .md·개발 도구 폴더 제외 → 제품 내 설명서 원천(.dockerignore 예외와 같음)은 다시 포함
+# 대괄호는 check:no-ai 문자열 검사를 피하려는 glob 표기(.dockerignore와 같음)
 on:
   push:
     branches: [main, 'stage/**']
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!*.md'
+      - '!.[cC]laude/**'
+      - 'docs/사용자_가이드.md'
+      - 'docs/설치_운영_가이드.md'
+      - 'docs/img/**'
   pull_request:
     branches: [main]
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!*.md'
+      - '!.[cC]laude/**'
+      - 'docs/사용자_가이드.md'
+      - 'docs/설치_운영_가이드.md'
+      - 'docs/img/**'
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      ref:
-        description: 검사할 git ref(예 refs/tags/v1.2.0). 비우면 이벤트의 ref
-        type: string
-        default: ''
 
+# 브랜치·PR은 새 push가 오면 앞 실행을 취소한다. main은 취소하지 않고 순서대로 돈다 — 배포물을 만드는 중에 끊기지 않게(CR-17 C5)
 concurrency:
-  group: ci-${{ inputs.ref || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -43,8 +57,6 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
       # pnpm 버전은 루트 package.json의 packageManager(pnpm@10.33.0)를 따른다
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
@@ -61,8 +73,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
       - name: shellcheck
         run: shellcheck install.sh start.sh scripts/*.sh
       - name: PowerShell 구문
@@ -83,8 +93,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -104,8 +112,6 @@ jobs:
       TF_TEST_DB_REUSE: '0'
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -122,8 +128,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -139,8 +143,6 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
       - name: 이미지 태그(docker-compose.yml)
         id: tag
         run: |
@@ -190,3 +192,37 @@ jobs:
             migration/report/
           if-no-files-found: ignore
           retention-days: 7
+
+  # 판 번호의 원천은 package.json "version" 하나다(CR-14 C11). 태그가 이미 있으면 평소 커밋 — release를 건너뛴다.
+  # 판을 올렸는데 package.json·compose·릴리스 노트가 어긋나면 여기서 바로 실패한다(검사를 기다리지 않음).
+  version:
+    name: 판 확인
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: v<version> 태그 확인
+        id: check
+        run: |
+          ver="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' package.json | head -n1)"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$ver" >/dev/null; then
+            echo "v$ver 태그가 이미 있습니다 — 판을 올린 커밋이 아니므로 배포물을 만들지 않습니다"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            scripts/release-check.sh "v$ver"
+            echo "v$ver 태그가 없습니다 — 검사가 모두 통과하면 배포물을 만듭니다"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    name: release
+    needs: [version, lint, scripts, test, test-db, build, install]
+    if: ${{ needs.version.outputs.release == 'true' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      sha: ${{ github.sha }}
