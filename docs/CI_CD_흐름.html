@@ -313,7 +313,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <section>
     <h2>실행 auto-release #7 읽기</h2>
     <p>커밋 <code>65f77fb</code>(v1.2.1 TODO 체크)의 main CI가 통과해 시작된 실행입니다. 전체 3분 12초에 성공했고, 태그 <code>v1.2.1</code>은 이 커밋에 달렸습니다.</p>
-    <p>판을 올린 커밋은 바로 앞의 <code>fb2cd93</code>인데 태그가 그 뒤 커밋에 달린 이유는 CI 취소 규칙으로 보입니다. ci.yml은 같은 브랜치에 새 push가 오면 진행 중인 실행을 취소합니다. <code>fb2cd93</code>의 CI가 끝나기 전에 <code>65f77fb</code>를 push했다면 앞 실행은 취소되고, v1.2.1 태그가 없는 상태에서 처음 성공한 CI는 <code>65f77fb</code>의 것이 됩니다. 두 커밋 사이 차이는 TODO 문서뿐이라 번들 내용은 같습니다.</p>
+    <p>판을 올린 커밋은 바로 앞의 <code>fb2cd93</code>인데 태그가 그 뒤 커밋에 달린 이유는 두 커밋을 한 번에 push했기 때문입니다(10월 6일 10:16, <code>6fae4e1</code> → <code>65f77fb</code>). GitHub는 push 한 번에 마지막 커밋의 CI만 돌리므로 <code>fb2cd93</code>의 CI 실행은 없고, v1.2.1 태그가 없는 상태에서 처음 성공한 CI가 <code>65f77fb</code>의 것이었습니다. 두 커밋 사이 차이는 TODO 문서뿐이라 번들 내용은 같습니다.</p>
     <div class="tbl">
       <table>
         <thead><tr><th>잡</th><th>결과</th><th>시간</th><th>설명</th></tr></thead>
