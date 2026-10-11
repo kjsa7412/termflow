@@ -8,6 +8,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.1',
+    date: '2026-10-11',
+    summary: '에이전트 연동 설명 보강.',
+    items: [
+      '설명서에 에이전트로 테이블 하나를 설계한 실제 흐름과 오류별 대응을 더했다',
+      '소개 사이트에 에이전트 연동 기능·설치 절',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-10-11',
     summary: '에이전트 도구 연동.',
