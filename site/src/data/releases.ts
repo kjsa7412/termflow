@@ -8,6 +8,16 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.0',
+    date: '2026-10-11',
+    summary: '에이전트 도구 연동.',
+    items: [
+      '개인 접근 토큰으로 에이전트 도구(MCP 클라이언트)가 내 권한 그대로 TermFlow를 쓴다',
+      '용어·도메인 등록부터 컬럼 자동완성·테이블 저장·DDL까지 화면과 같은 규칙으로',
+      '서버 설정으로 켜고 끈다(기본 꺼짐), 토큰은 해시로만 보관·즉시 폐기',
+    ],
+  },
+  {
     version: '1.2.1',
     date: '2026-10-06',
     summary: '화면 다듬기.',
