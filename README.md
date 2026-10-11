@@ -175,7 +175,7 @@ pnpm -C e2e exec playwright test -c site-review.config.ts   # 사이트 검수(�
 DEMO_BASE_URL=http://localhost:8095 DEMO_ADMIN_PASSWORD=<데모 .env 초기 비밀번호> pnpm -C e2e exec playwright test -c site-shots.config.ts
 ```
 
-공개 주소는 https://termflow-about.vercel.app — Vercel Git 연동으로 `main` push마다 자동 배포된다. 설정은 루트 `vercel.json`(사이트 파일이 바뀐 커밋만 빌드). 사이트 문구·그림에 사내 이름을 넣지 않는다 — 새 이름은 `site/tools/leak-names.txt`.
+공개 주소는 https://termflow-about.vercel.app — Vercel Git 연동으로 `main` push마다 자동 배포된다. 설정은 루트 `vercel.json`(직전 배포 이후 사이트 파일이 바뀐 push만 빌드 — `VERCEL_GIT_PREVIOUS_SHA` 대비, CR-18 C10). 사이트 문구·그림에 사내 이름을 넣지 않는다 — 새 이름은 `site/tools/leak-names.txt`.
 제품 내 설명서는 `apps/web/build/manual.ts`(Vite 플러그인)가 `docs/사용자_가이드.md`·`docs/설치_운영_가이드.md`를 빌드 때 HTML로 바꾼다(`/manual`).
 
 ### 저장소 구조

@@ -27,6 +27,19 @@ docker compose ps                  # 상태 — db · app 둘 다 healthy
 scripts/backup.sh                  # 백업 → backup/termflow_yyyyMMdd.dump(14일 보관)
 scripts/restore.sh backup/termflow_20261001.dump    # 복구(확인 문구 RESTORE)
 systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이머`;
+const AGENT_ENABLE = `# 서버 .env — 외부 연동(접근 토큰 · /mcp) 켜기. 기본은 꺼짐
+TERMFLOW_MCP_ENABLED=true
+# 설치 폴더에서 app 다시 만들기
+sudo docker compose up -d app`;
+const AGENT_CONFIG = `{
+  "mcpServers": {
+    "termflow": {
+      "type": "http",
+      "url": "http://<서버 주소>:7340/mcp",
+      "headers": { "Authorization": "Bearer tfp_…" }
+    }
+  }
+}`;
 </script>
 
 <template>
@@ -155,6 +168,25 @@ systemctl list-timers termflow-backup.timer         # 매일 02:00 백업 타이
           명 이상 둔다.
         </li>
         <li>사용법은 제품 상단 바의 <b>?</b> 단추(설명서). 로그인 화면에서도 열린다.</li>
+      </ol>
+    </section>
+
+    <section id="agent" class="sec">
+      <h2>에이전트 연동(선택, v1.3.0~)</h2>
+      <ol class="steps">
+        <li>
+          시스템 관리자가 서버에서 외부 연동을 켠다. 켜면 사용자의 에이전트가 표준 사전·테이블
+          정의를 가져가 그 에이전트의 모델 서비스로 보낼 수 있으므로 회사 정보보호 기준으로 정한다.
+          <CodeBlock :code="AGENT_ENABLE" />
+        </li>
+        <li>
+          사용자는 제품의 <b>[내 계정] › 외부 연동 접근 토큰</b>에서 토큰을 발급한다(30일~1년, 한
+          번만 보인다). 토큰은 발급한 사람의 역할 그대로 쓰인다.
+        </li>
+        <li>
+          화면에 함께 나오는 연결 설정을 에이전트 도구(MCP 클라이언트)의 설정 파일에 넣는다.
+          <CodeBlock :code="AGENT_CONFIG" label="json" />
+        </li>
       </ol>
     </section>
 

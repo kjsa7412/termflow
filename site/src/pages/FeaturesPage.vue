@@ -1,9 +1,31 @@
 <script setup lang="ts">
+import CodeBlock from '../components/CodeBlock.vue';
 import Shot from '../components/Shot.vue';
 import { SiteLink } from '../router.js';
 
-/** 기능 — 영역마다 그림 한 장(왼쪽)과 요약·할 수 있는 일(오른쪽), 화면 페이지와 같은 배치. 끝에 하지 않는 것. */
-const SECTIONS = [
+/**
+ * 기능 — 영역마다 그림 한 장(왼쪽)과 요약·할 수 있는 일(오른쪽), 화면 페이지와 같은 배치. 끝에 하지 않는 것.
+ * 그림이 없는 영역(에이전트 연동)은 그림 자리에 예시(code)를 둔다.
+ */
+const AGENT_EXAMPLE = `# 에이전트에게: 교육(ED) 업무구분에 교육기관 협약 이력 테이블 설계해 줘
+> table_name_suggest   교육기관협약이력 → '협약' 미등록
+> term_create          협약 = AGMT (계약 CTRT · 약정 STIP 관례)
+> domain_create        협약금액 → AGMT_AMT BIGINT
+> columns_autocomplete 9개 → 표준 · 새 도메인 · 용어 조합
+> table_validate       오류 0 · 경고 0
+> table_create         ED_EDU_INST_AGMT_HST v1 (기본컬럼 포함)
+> table_ddl            CREATE TABLE ED_EDU_INST_AGMT_HST (…)`;
+
+interface Section {
+  id: string;
+  title: string;
+  shot?: string;
+  code?: string;
+  desc: string;
+  points: string[];
+}
+
+const SECTIONS: Section[] = [
   {
     id: 'project',
     title: '프로젝트·권한',
@@ -53,6 +75,19 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'agent',
+    title: '에이전트 연동',
+    code: AGENT_EXAMPLE,
+    desc: '개발자가 쓰는 에이전트 도구(MCP 클라이언트)에 연결 설정 한 번 — 에이전트가 화면과 같은 규칙으로 표준을 찾고 등록하며 테이블을 설계한다. (v1.3.0~)',
+    points: [
+      '개인 접근 토큰 — [내 계정]에서 발급, 발급자 역할 그대로·변경 기록도 발급자 이름. DB에는 해시만, 폐기 즉시 끊김',
+      '기능 거의 전부를 도구로 — 검색·자동완성·용어·도메인·코드·기본컬럼·테이블 저장·이력·DDL·승인(로그인·비밀번호·엑셀 업로드 제외)',
+      '결과는 서버 규칙 엔진이 낸다 — 에이전트가 물리명을 지어내지 않고, 편집자 등록 용어는 검토대기로 승인 큐를 거친다',
+      '테이블 설계 순서 안내와 준비된 흐름(design_table) 제공, 토큰별 요청 한도',
+      '서버 설정으로 켜고 끈다(기본 꺼짐)',
+    ],
+  },
+  {
     id: 'manual',
     title: '제품 안 설명서',
     shot: '18-manual',
@@ -80,7 +115,8 @@ const SECTIONS = [
 
     <div class="shots shots--feat">
       <section v-for="s in SECTIONS" :id="s.id" :key="s.id" class="shots__item">
-        <Shot :id="s.shot" :caption="false" />
+        <Shot v-if="s.shot" :id="s.shot" :caption="false" />
+        <CodeBlock v-else-if="s.code" :code="s.code" label="예시" />
         <div class="shots__txt">
           <h2>{{ s.title }}</h2>
           <p>{{ s.desc }}</p>
@@ -126,7 +162,11 @@ const SECTIONS = [
         <li>
           표준을 고쳐도 이미 저장된 테이블을 몰래 바꾸지 않는다 — 편집기에서 경고와 [재적용]으로
         </li>
-        <li>외부 서비스로 데이터를 보내지 않는다 — 설치한 서버 안에서만 돈다</li>
+        <li>
+          외부 서비스로 데이터를 보내지 않는다 — 설치한 서버 안에서만 돈다(에이전트 연동을 켜면
+          토큰을 받은 사용자의 에이전트가 가져간다)
+        </li>
+        <li>서버가 모델(생성형 서비스)을 호출하지 않는다 — 추천·물리명은 규칙 엔진이 낸다</li>
       </ul>
       <p class="more"><SiteLink to="/screens">화면 18장 보기 →</SiteLink></p>
     </section>
