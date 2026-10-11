@@ -170,6 +170,77 @@ describe('MePage — 강제 변경 모드(/me?forcePassword=1)', () => {
   });
 });
 
+describe('MePage — 외부 연동 접근 토큰(CR-18)', () => {
+  const ITEM = {
+    tokenId: 3,
+    tokenNm: '내 PC',
+    tokenPrefix: 'tfp_AbCd1234',
+    createdAt: '2026-10-11 10:00:00',
+    expiresAt: '2027-01-09 10:00:00',
+    lastUsedAt: null,
+    lastUsedIp: null,
+    status: 'ACTIVE',
+  };
+
+  it('발급: 원문·연결 설정은 발급 직후 1회, 폐기는 확인 후', async () => {
+    const raw = `tfp_${'x'.repeat(43)}`;
+    let revoked = false;
+    const { pinia, router, calls } = await setup('/me', {
+      'GET /api/v1/me': () => json(200, ME),
+      'GET /api/v1/me/tokens': () =>
+        json(200, {
+          enabled: true,
+          mcpPath: '/mcp',
+          items: revoked ? [{ ...ITEM, status: 'REVOKED' }] : [],
+        }),
+      'POST /api/v1/me/tokens': () => json(201, { item: ITEM, token: raw }),
+      'DELETE /api/v1/me/tokens/3': () => ((revoked = true), new Response(null, { status: 204 })),
+    });
+    await useSessionStore().refresh();
+    const w = mount(MePage, { global: { plugins: [pinia, router] }, attachTo: document.body });
+    await flushPromises();
+    expect(w.text()).toContain('발급한 토큰이 없습니다');
+    await w.get('#token-nm').setValue('내 PC');
+    await w.get('#token-days').setValue('30');
+    await w.findAll('form').at(-1)!.trigger('submit');
+    await flushPromises();
+    const post = calls.find((c) => c.method === 'POST' && c.path === '/api/v1/me/tokens')!;
+    expect(JSON.parse(post.body!)).toEqual({ tokenNm: '내 PC', expiresInDays: 30 });
+    const shown = w.get('[data-testid="token-issued"]').text();
+    expect(shown).toContain(raw);
+    expect(shown).toContain('"url": "http://localhost:3000/mcp"');
+    expect(shown).toContain(`"Authorization": "Bearer ${raw}"`);
+    expect(w.text()).toContain('tfp_AbCd1234…');
+
+    await w
+      .findAll('button')
+      .find((b) => b.text() === '폐기')!
+      .trigger('click');
+    await flushPromises();
+    await w
+      .findAll('button')
+      .filter((b) => b.text() === '폐기')
+      .at(-1)!
+      .trigger('click');
+    await flushPromises();
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(true);
+    expect(w.text()).toContain('폐기');
+    w.unmount();
+  });
+
+  it('서버에서 꺼져 있으면 안내만(발급 폼 없음)', async () => {
+    const { pinia, router } = await setup('/me', {
+      'GET /api/v1/me': () => json(200, ME),
+      'GET /api/v1/me/tokens': () => json(200, { enabled: false, mcpPath: '/mcp', items: [] }),
+    });
+    await useSessionStore().refresh();
+    const w = mount(MePage, { global: { plugins: [pinia, router] } });
+    await flushPromises();
+    expect(w.text()).toContain('TERMFLOW_MCP_ENABLED');
+    expect(w.find('#token-nm').exists()).toBe(false);
+  });
+});
+
 describe('AdminUsersPage', () => {
   const page = (items: unknown[]) =>
     json(200, {

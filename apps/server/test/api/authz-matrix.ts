@@ -777,6 +777,30 @@ export const AUTHZ_MATRIX: readonly MatrixRow[] = [
         newPassword: 'Matrix#2026pw',
       }),
   },
+  // ── 개인 접근 토큰(CR-18, 세션 로그인 전용 — 토큰 요청 403은 test:db mcp) ─────────────
+  {
+    path: '/me/tokens',
+    method: 'GET',
+    allow: LOGGED_IN,
+    ok: [200],
+    run: (c) => c.get('/api/v1/me/tokens'),
+  },
+  {
+    path: '/me/tokens',
+    method: 'POST',
+    allow: LOGGED_IN,
+    // 매트릭스 앱은 연동 꺼짐(기본값) → 도달 = 409 E_TOKEN_DISABLED
+    ok: [201, 409],
+    run: (c) => c.post('/api/v1/me/tokens', { tokenNm: '매트릭스' }),
+  },
+  {
+    path: '/me/tokens/{id}',
+    method: 'DELETE',
+    allow: LOGGED_IN,
+    // 없는 토큰 ID → 도달 = 404
+    ok: [404],
+    run: (c) => c.delete('/api/v1/me/tokens/999999'),
+  },
   // ── 시스템·사용자(§7.3 마지막 행) ────────────────────────────────
   {
     path: '/admin/users',

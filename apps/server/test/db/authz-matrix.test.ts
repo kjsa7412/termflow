@@ -131,6 +131,9 @@ describe('권한 매트릭스 완전성(T10.1)', () => {
   const EXEMPT: Record<string, string> = {
     'GET /health': '헬스(§12.3, 익명·사내 모니터링 폴링) — test:db health',
     'GET /metrics': '지표(§12.3, 익명·로컬, CR-08 C6) — test:db autocomplete /metrics',
+    'POST /mcp': '외부 연동(CR-18, 접근 토큰 전용·도구별 권한은 REST 행 그대로) — test:db mcp',
+    'GET /mcp': '외부 연동(CR-18) 무상태 405 — test:db mcp',
+    'DELETE /mcp': '외부 연동(CR-18) 무상태 405 — test:db mcp',
   };
   const norm = (p: string) =>
     `/${p}`

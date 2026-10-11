@@ -5,6 +5,7 @@ import type pg from 'pg';
 import type session from 'express-session';
 import type { Env } from '../config/env.schema.js';
 import { PG_POOL } from '../db/db.module.js';
+import { ApiTokenService } from './api-token.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { BootstrapAdmin } from './bootstrap-admin.js';
@@ -32,6 +33,7 @@ import {
   controllers: [AuthController],
   providers: [
     AuthService,
+    ApiTokenService,
     BootstrapAdmin,
     SysAdminGuard,
     ProjectRoleGuard,
@@ -60,7 +62,14 @@ import {
       useFactory: (pool: pg.Pool) => createSessionStore(pool),
     },
   ],
-  exports: [AuthService, CSRF_UTILS, SESSION_STORE, SysAdminGuard, ProjectRoleGuard],
+  exports: [
+    AuthService,
+    ApiTokenService,
+    CSRF_UTILS,
+    SESSION_STORE,
+    SysAdminGuard,
+    ProjectRoleGuard,
+  ],
 })
 export class AuthModule implements OnApplicationShutdown {
   constructor(@Inject(SESSION_STORE) private readonly store: session.Store & { close(): void }) {}

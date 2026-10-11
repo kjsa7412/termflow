@@ -1044,3 +1044,31 @@ export interface ImportApplyResponse {
   batchId: string;
   elapsedMs: number;
 }
+
+// ── 개인 접근 토큰(/me/tokens, CR-18) ────────────────────────────────────────
+export interface ApiTokenItem {
+  tokenId: number;
+  tokenNm: string;
+  /** 원문 앞부분(식별용, 예 `tfp_AbCd1234`). */
+  tokenPrefix: string;
+  createdAt: string;
+  expiresAt: string;
+  lastUsedAt: string | null;
+  lastUsedIp: string | null;
+  /** 만료·폐기를 반영한 상태. */
+  status: 'ACTIVE' | 'EXPIRED' | 'REVOKED';
+}
+
+export interface ApiTokenListResponse {
+  /** 서버 설정 TERMFLOW_MCP_ENABLED. false면 발급·사용 불가. */
+  enabled: boolean;
+  /** 외부 연동 엔드포인트 경로(`/mcp`). 화면이 접속 주소를 만들 때 쓴다. */
+  mcpPath: string;
+  items: ApiTokenItem[];
+}
+
+export interface ApiTokenCreateResponse {
+  item: ApiTokenItem;
+  /** 토큰 원문 — 이 응답에서 한 번만 보인다. */
+  token: string;
+}

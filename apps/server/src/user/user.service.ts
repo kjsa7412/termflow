@@ -28,6 +28,7 @@ import { tfProject, tfProjectMember, tfUser } from '../db/schema.js';
 import type { AuthUser } from '../auth/session-user.js';
 import { generateTemporaryPassword, hashPassword, verifyPassword } from '../auth/password.js';
 import { deleteUserSessions } from '../auth/session-util.js';
+import { ApiTokenService } from '../auth/api-token.service.js';
 
 const iso = (v: string | null): string | null => (v ? v.replace(' ', 'T') : null);
 
@@ -50,6 +51,7 @@ export class UserService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Db,
     @Inject(PG_POOL) private readonly pool: pg.Pool,
+    private readonly tokens: ApiTokenService,
   ) {}
 
   // ── 내 계정 ────────────────────────────────────────────────────────────
@@ -287,7 +289,10 @@ export class UserService {
       isActive ? { isActive, loginFailCnt: 0, lockedUntil: null } : { isActive },
       a,
     ).where(eq(tfUser.userId, id));
-    if (!isActive) await deleteUserSessions(this.pool, id);
+    if (!isActive) {
+      await deleteUserSessions(this.pool, id);
+      await this.tokens.revokeAll(id, a); // 접근 토큰도 폐기(CR-18 C3)
+    }
     this.logger.log(`사용자 ${isActive ? '활성화' : '비활성화'}: ${target.loginId} by ${a.actor}`);
     return this.get(id);
   }
@@ -308,6 +313,7 @@ export class UserService {
       a,
     ).where(eq(tfUser.userId, id));
     await deleteUserSessions(this.pool, id);
+    await this.tokens.revokeAll(id, a); // 초기화 = 계정 노출 의심 → 접근 토큰도 폐기(CR-18 C3)
     this.logger.log(`비밀번호 초기화: ${target.loginId} by ${a.actor}`);
     return { temporaryPassword };
   }

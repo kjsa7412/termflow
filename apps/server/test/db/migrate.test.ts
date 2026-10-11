@@ -31,11 +31,19 @@ const EXPECTED_TABLES = [
   'std_domain',
   'std_domain_cls',
   'std_term',
+  'tf_api_token',
   'tf_project',
   'tf_project_member',
   'tf_session',
   'tf_user',
 ];
+
+/** 저장소 마이그레이션 파일 수(journal 항목) — 0001_baseline + 후속(0002_api_token, CR-18 …). */
+const APPLIED = (
+  JSON.parse(readFileSync(path.join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as {
+    entries: unknown[];
+  }
+).entries.length;
 
 async function tables(pool: pg.Pool): Promise<string[]> {
   const { rows } = await pool.query<{ t: string }>(
@@ -108,14 +116,14 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
     for (const d of tmpDirs) rmSync(d, { recursive: true, force: true });
   });
 
-  it('T1.2 부록 A 적용 → 19 테이블 + 이력 1행, 재실행 시 변경 없음', async () => {
+  it('T1.2 부록 A + 후속 마이그레이션 적용 → 20 테이블 + 이력 전부, 재실행 시 변경 없음', async () => {
     const t0 = performance.now();
     await runMigrations(pool);
     console.log(`[db/migrate] baseline 적용 ${Math.round(performance.now() - t0)}ms`);
     expect(await tables(pool)).toEqual(EXPECTED_TABLES);
-    expect(await historyCount(pool)).toBe(1);
-    expect(await runMigrations(pool)).toEqual({ applied: 0, total: 1 });
-    expect(await historyCount(pool)).toBe(1);
+    expect(await historyCount(pool)).toBe(APPLIED);
+    expect(await runMigrations(pool)).toEqual({ applied: 0, total: APPLIED });
+    expect(await historyCount(pool)).toBe(APPLIED);
   });
 
   it('T2.1 적용된 파일이 바뀌거나 사라지면 MigrationIntegrityError(해시 대조), 동시 실행은 직렬화', async () => {
@@ -124,7 +132,7 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
     const baseline = path.join(edited, '0001_baseline.sql');
     writeFileSync(baseline, `${readFileSync(baseline, 'utf8')}-- 적용 후 수정`);
     await expect(runMigrations(pool, edited)).rejects.toBeInstanceOf(MigrationIntegrityError);
-    expect(await historyCount(pool)).toBe(1); // 0002도 적용되지 않음
+    expect(await historyCount(pool)).toBe(APPLIED); // 덧붙인 파일도 적용되지 않음
 
     const missing = mkdtempSync(path.join(os.tmpdir(), 'tf-mig-'));
     tmpDirs.push(missing);
@@ -141,9 +149,9 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
       runMigrations(pool),
     ]);
     expect(results).toEqual([
-      { applied: 0, total: 1 },
-      { applied: 0, total: 1 },
-      { applied: 0, total: 1 },
+      { applied: 0, total: APPLIED },
+      { applied: 0, total: APPLIED },
+      { applied: 0, total: APPLIED },
     ]);
   });
 
@@ -183,7 +191,7 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
     );
     tmpDirs.push(dir);
     expect(await failureCause(runMigrations(pool, dir))).toMatch(/division by zero/);
-    expect(await historyCount(pool)).toBe(1);
+    expect(await historyCount(pool)).toBe(APPLIED);
     expect(await tables(pool)).not.toContain('poc_partial');
   });
 
@@ -201,7 +209,7 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
     );
     tmpDirs.push(dir);
     expect(await failureCause(runMigrations(pool, dir))).toMatch(/division by zero/);
-    expect(await historyCount(pool)).toBe(1);
+    expect(await historyCount(pool)).toBe(APPLIED);
     expect(await tables(pool)).not.toContain('poc_partial_bp');
     const { rows } = await pool.query(
       "select 1 from information_schema.columns where table_name='tf_user' and column_name='poc_col'",
@@ -216,7 +224,7 @@ describe('db/migrate (T1.2·T1.3 → T2.1)', () => {
     await expect(resetDatabase(pool, 'production')).rejects.toThrow(/production/);
     await resetDatabase(pool, 'development');
     expect(await tables(pool)).toEqual(EXPECTED_TABLES);
-    expect(await historyCount(pool)).toBe(1);
+    expect(await historyCount(pool)).toBe(APPLIED);
     const { rows } = await pool.query<{ n: string }>('select count(*) as n from tf_user');
     expect(Number(rows[0]?.n)).toBe(0);
   });

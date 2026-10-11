@@ -8,6 +8,13 @@
       "when": 1790588422103,
       "tag": "0001_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791691347928,
+      "tag": "0002_api_token",
+      "breakpoints": true
     }
   ]
 }

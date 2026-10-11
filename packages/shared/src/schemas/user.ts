@@ -46,3 +46,17 @@ export const userSearchQuerySchema = z.object({
     .optional()
     .transform((v) => v === 'true'),
 });
+
+/** 개인 접근 토큰 유효 기간(일, CR-18 C3). 기본 90일, 최대 1년. */
+export const API_TOKEN_EXPIRY_DAYS = { default: 90, max: 365 } as const;
+
+/** POST /me/tokens — 이름(용도 메모)과 유효 기간. 원문은 응답으로 1회만 돌려준다. */
+export const apiTokenCreateSchema = z.object({
+  tokenNm: text(100, 1),
+  expiresInDays: z
+    .int()
+    .min(1)
+    .max(API_TOKEN_EXPIRY_DAYS.max)
+    .default(API_TOKEN_EXPIRY_DAYS.default),
+});
+export type ApiTokenCreateInput = z.infer<typeof apiTokenCreateSchema>;

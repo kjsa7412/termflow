@@ -226,6 +226,11 @@ export const API_ERROR_CODES = {
   E_UNAUTHORIZED: '로그인이 필요합니다',
   E_FORBIDDEN: '권한이 없습니다',
   E_CSRF: 'CSRF 토큰이 올바르지 않습니다',
+  // 개인 접근 토큰·외부 연동(CR-18)
+  E_TOKEN_INVALID: '접근 토큰이 없거나 만료·폐기되었습니다',
+  E_TOKEN_DISABLED: '외부 연동(접근 토큰)이 꺼져 있습니다',
+  E_TOKEN_NOT_ALLOWED: '접근 토큰으로는 할 수 없는 요청입니다(웹에서 로그인해 처리)',
+  E_TOKEN_RATE_LIMIT: '접근 토큰 요청 한도를 넘었습니다. 잠시 후 다시 시도하세요',
   E_PASSWORD_CHANGE_REQUIRED: '비밀번호를 변경해야 합니다',
   E_LOCKED: '계정이 잠겼습니다',
   E_NOT_FOUND: '대상을 찾을 수 없습니다',

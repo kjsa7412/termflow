@@ -10,6 +10,8 @@ import type pg from 'pg';
 import { API_ERROR_CODES } from '@termflow/shared';
 import { ForbiddenProblem } from '../common/problem/problem.exception.js';
 import { sessionTimeoutMs, type Env } from '../config/env.schema.js';
+import { ApiTokenService } from './api-token.service.js';
+import { bearerMiddleware, TokenRateLimiter, unlessToken } from './bearer.js';
 
 /**
  * 세션·CSRF·보안 헤더 본 구성(T4.1, 설계서 §7.1·§7.4·§12.2, PoC_결과 §6 확정 설정).
@@ -156,7 +158,8 @@ export const CSRF_UTILS = Symbol('CSRF_UTILS');
 export const SESSION_STORE = Symbol('SESSION_STORE');
 
 /**
- * Nest 앱에 보안 미들웨어를 건다(main.ts·테스트 공용). 순서: helmet → cookie-parser → session → csrf.
+ * Nest 앱에 보안 미들웨어를 건다(main.ts·테스트 공용). 순서: helmet → cookie-parser → bearer(접근 토큰, CR-18) → session → csrf.
+ * Bearer로 인증된 요청은 세션·CSRF를 건너뛴다(쿠키를 쓰지 않는 요청이라 CSRF 대상이 아니다).
  * nestjs-cls 미들웨어(모듈 미들웨어)는 이 뒤에 실행되어 세션의 로그인 ID를 감사 컨텍스트에 담는다.
  */
 export function applyHttpSecurity(app: INestApplication): void {
@@ -172,6 +175,12 @@ export function applyHttpSecurity(app: INestApplication): void {
   express.set('trust proxy', 1);
   app.use(helmetMiddleware(env));
   app.use(cookieParser());
-  app.use(sessionMiddleware(env, app.get<session.Store>(SESSION_STORE)));
-  app.use(csrfMiddleware(app.get<CsrfUtils>(CSRF_UTILS)));
+  app.use(
+    bearerMiddleware(app.get(ApiTokenService), {
+      enabled: config.get('TERMFLOW_MCP_ENABLED', { infer: true }) === 'true',
+      limiter: new TokenRateLimiter(config.get('TERMFLOW_TOKEN_RATE_PER_MIN', { infer: true })),
+    }),
+  );
+  app.use(unlessToken(sessionMiddleware(env, app.get<session.Store>(SESSION_STORE))));
+  app.use(unlessToken(csrfMiddleware(app.get<CsrfUtils>(CSRF_UTILS))));
 }

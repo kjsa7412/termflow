@@ -18,6 +18,7 @@ import {
   bigint,
   jsonb,
   json,
+  char,
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -822,6 +823,42 @@ export const tfSession = pgTable(
       'btree',
       table.expire.asc().nullsLast().op('timestamp_ops'),
     ),
+  ],
+);
+
+export const tfApiToken = pgTable(
+  'tf_api_token',
+  {
+    tokenId: integer('token_id').primaryKey().generatedAlwaysAsIdentity({
+      name: 'tf_api_token_token_id_seq',
+      startWith: 1,
+      increment: 1,
+      minValue: 1,
+      maxValue: 2147483647,
+      cache: 1,
+    }),
+    userId: integer('user_id').notNull(),
+    tokenNm: varchar('token_nm', { length: 100 }).notNull(),
+    tokenPrefix: varchar('token_prefix', { length: 16 }).notNull(),
+    tokenHash: char('token_hash', { length: 64 }).notNull(),
+    expiresAt: timestamp('expires_at', { mode: 'string' }).notNull(),
+    lastUsedAt: timestamp('last_used_at', { mode: 'string' }),
+    lastUsedIp: varchar('last_used_ip', { length: 45 }),
+    revokedAt: timestamp('revoked_at', { mode: 'string' }),
+    createdAt: timestamp('created_at', { mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    createdBy: varchar('created_by', { length: 50 }).notNull(),
+    createdIp: varchar('created_ip', { length: 45 }),
+    updatedAt: timestamp('updated_at', { mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedBy: varchar('updated_by', { length: 50 }).notNull(),
+    updatedIp: varchar('updated_ip', { length: 45 }),
+  },
+  (table) => [
+    index('ix_tf_api_token_user').using('btree', table.userId.asc().nullsLast().op('int4_ops')),
+    unique('uk_tf_api_token_hash').on(table.tokenHash),
   ],
 );
 

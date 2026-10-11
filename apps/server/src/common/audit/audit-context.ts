@@ -22,7 +22,8 @@ export const clsOptions: ClsModuleOptions = {
     mount: true,
     setup: (cls, req: Request) => {
       const session = (req as Request & { session?: { user?: SessionUserLike } }).session;
-      cls.set(ACTOR, session?.user?.loginId ?? null);
+      // 접근 토큰 요청(CR-18)은 세션이 없다 — 토큰 주인이 감사 주체.
+      cls.set(ACTOR, req.tokenAuth?.loginId ?? session?.user?.loginId ?? null);
       cls.set(IP, clientIp(req));
     },
   },

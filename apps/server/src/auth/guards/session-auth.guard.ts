@@ -28,7 +28,10 @@ export class SessionAuthGuard implements CanActivate {
     ]);
     if (isPublic) return true;
     const req = context.switchToHttp().getRequest<Request>();
-    const sessionUser = req.session?.user;
+    // 접근 토큰(CR-18): bearerMiddleware가 토큰을 확인했다. 권한 값은 세션과 같이 tf_user에서 다시 읽는다.
+    const sessionUser = req.tokenAuth
+      ? { id: req.tokenAuth.userId, loginId: req.tokenAuth.loginId }
+      : req.session?.user;
     if (!sessionUser) throw new UnauthorizedProblem();
     const [u] = await this.db
       .select({
@@ -42,7 +45,7 @@ export class SessionAuthGuard implements CanActivate {
       .from(tfUser)
       .where(eq(tfUser.userId, sessionUser.id));
     if (!u || !u.isActive || u.loginId !== sessionUser.loginId) {
-      await destroySession(req);
+      if (!req.tokenAuth) await destroySession(req);
       throw new UnauthorizedProblem();
     }
     req.authUser = {

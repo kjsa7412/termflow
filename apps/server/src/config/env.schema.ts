@@ -64,6 +64,13 @@ const envObject = z.object({
       message: 'oracle,mysql 중에서 쉼표로 구분합니다',
     }),
   TERMFLOW_CACHE_MAX_PROJECTS: z.coerce.number().int().min(1).max(1000).default(20),
+  /**
+   * 외부 연동(CR-18): 개인 접근 토큰(Bearer)과 `/mcp` 엔드포인트. 기본 꺼짐 — 켜면 토큰 발급자의 에이전트를 거쳐
+   * 표준 사전·테이블 정의가 서버 밖으로 나갈 수 있으므로 설치 기관이 정한다.
+   */
+  TERMFLOW_MCP_ENABLED: z.enum(['true', 'false']).default('false'),
+  /** 접근 토큰 1개당 분당 요청 상한(REST·`/mcp` 합산, CR-18 C6). */
+  TERMFLOW_TOKEN_RATE_PER_MIN: z.coerce.number().int().min(10).max(10000).default(600),
 
   TERMFLOW_LEGACY_DUMP: z.string().default('/seed/dump-gen_table-new.sql'),
   TERMFLOW_REPORT_DIR: z.string().default('./migration/report'),

@@ -17,6 +17,7 @@ import { UserModule } from './user/user.module.js';
 import { ProjectModule } from './project/project.module.js';
 import { StandardModule } from './standard/standard.module.js';
 import { TableModule } from './table/table.module.js';
+import { McpModule } from './mcp/mcp.module.js';
 import { webStaticModules } from './web-static.js';
 
 @Module({
@@ -40,6 +41,7 @@ import { webStaticModules } from './web-static.js';
     ProjectModule,
     StandardModule,
     TableModule,
+    McpModule,
     ...webStaticModules(),
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemDetailFilter }],

@@ -9,6 +9,7 @@ import {
 } from '@termflow/shared';
 import { ApiError } from '../api/client.js';
 import { ROLE_LABEL } from '../components/layout/labels.js';
+import ApiTokensCard from '../components/me/ApiTokensCard.vue';
 import TfBadge from '../components/ui/TfBadge.vue';
 import TfButton from '../components/ui/TfButton.vue';
 import TfIcon from '../components/ui/TfIcon.vue';
@@ -150,7 +151,10 @@ async function logout(): Promise<void> {
       <div>
         <div class="breadcrumb"><span>내 계정</span></div>
         <h1 class="page-title">내 계정</h1>
-        <p class="page-desc">이름·소속 프로젝트·역할을 확인하고 비밀번호를 바꿉니다.</p>
+        <p class="page-desc">
+          이름·소속 프로젝트·역할을 확인하고 비밀번호를 바꿉니다. 외부 연동 접근 토큰도 여기서
+          발급합니다.
+        </p>
       </div>
     </div>
     <div class="grid-2">
@@ -224,5 +228,6 @@ async function logout(): Promise<void> {
         </form>
       </section>
     </div>
+    <ApiTokensCard />
   </template>
 </template>

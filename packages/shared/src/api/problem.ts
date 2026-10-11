@@ -22,6 +22,7 @@ export const PROBLEM_TYPES = [
   'bad-request',
   'unauthorized',
   'conflict',
+  'too-many-requests',
 ] as const;
 export type ProblemType = (typeof PROBLEM_TYPES)[number];
 
@@ -71,6 +72,7 @@ export const PROBLEM_TITLES: Record<ProblemType, string> = {
   'bad-request': '요청 형식 오류',
   unauthorized: '로그인 필요',
   conflict: '처리할 수 없는 상태',
+  'too-many-requests': '요청 한도 초과',
 };
 
 export function isProblemDetail(v: unknown): v is ProblemDetail {

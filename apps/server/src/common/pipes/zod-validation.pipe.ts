@@ -10,7 +10,8 @@ import { BadRequestProblem } from '../problem/problem.exception.js';
  */
 @Injectable()
 export class ZodValidationPipe<S extends z.ZodType> implements PipeTransform<unknown, z.output<S>> {
-  constructor(private readonly schema: S) {}
+  /** `schema`는 외부 연동 도구 목록(CR-18)이 입력 스키마를 만들 때도 읽는다. */
+  constructor(readonly schema: S) {}
 
   transform(value: unknown): z.output<S> {
     const result = this.schema.safeParse(value);

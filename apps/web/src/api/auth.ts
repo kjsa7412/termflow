@@ -1,4 +1,9 @@
-import type { LoginResponse, MeResponse } from '@termflow/shared';
+import type {
+  ApiTokenCreateResponse,
+  ApiTokenListResponse,
+  LoginResponse,
+  MeResponse,
+} from '@termflow/shared';
 import { api, type ApiClient } from './client.js';
 
 /** 인증·내 계정 API(§9.3). */
@@ -21,5 +26,10 @@ export function authApi(client: ApiClient = api) {
     me: () => client.get<MeResponse>('/me'),
     changePassword: (currentPassword: string, newPassword: string) =>
       client.put<void>('/me/password', { currentPassword, newPassword }),
+    /** 개인 접근 토큰(CR-18). */
+    tokens: () => client.get<ApiTokenListResponse>('/me/tokens'),
+    issueToken: (tokenNm: string, expiresInDays: number) =>
+      client.post<ApiTokenCreateResponse>('/me/tokens', { tokenNm, expiresInDays }),
+    revokeToken: (tokenId: number) => client.del<void>(`/me/tokens/${tokenId}`),
   };
 }
