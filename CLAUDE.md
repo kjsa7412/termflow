@@ -27,4 +27,5 @@
 ## 금지
 - `seed/original/` 수정, `C:\project\gen_table_promotion` 열람·수정.
 - AI 기능(채팅·추천·외부 LLM 호출) 구현. `pnpm check:no-ai` 게이트 유지.
+  - 예외(CR-18, 2026-10-11 사용자 승인): 외부 에이전트가 TermFlow를 호출하는 연동 창구(`/mcp` + 개인 접근 토큰)는 허용한다. 서버가 모델을 부르는 코드는 여전히 금지. 제품 코드에 클라이언트 제품명을 쓰지 않는다(게이트 패턴 — `getAllMethodNames`처럼 단어 속 `llm`도 걸린다). 새 REST 라우트를 추가하면 `apps/server/src/mcp/tool-specs.ts`에 도구 이름·설명(또는 제외 사유)을 넣는다(test:db `mcp.test.ts`가 확인).
 - 비밀번호·비밀값을 문서나 커밋에 기록(`.env`는 커밋 금지).
