@@ -36,19 +36,26 @@ export const TABLE_DESIGN_PROMPT = {
   title: 'TermFlow 규약으로 테이블 설계',
   description:
     '요구사항을 받아 표준 용어·도메인에 맞는 테이블을 설계·검증·저장하고 DDL을 보여 준다.',
+  // 클라이언트가 인자를 공백으로 나눠 넘기는 경우가 있다(`/termflow:design_table QATEST RP …`) —
+  // 한 단어 값(키·코드)을 앞에 두고, 문장인 요구사항은 선택으로 받아 없거나 잘렸으면 먼저 묻게 한다.
   arguments: [
-    { name: 'projectKey', description: '프로젝트 키(예 RMS)', required: true },
-    { name: 'requirement', description: '만들 테이블 설명(업무·컬럼 목록 등)', required: true },
-    { name: 'bizArea', description: '업무구분 코드(생략하면 고른다)', required: false },
+    { name: 'projectKey', description: '프로젝트 키(예 QATEST)', required: true },
+    { name: 'bizArea', description: '업무구분 코드(예 RP, 생략하면 고른다)', required: false },
+    {
+      name: 'requirement',
+      description: '만들 테이블 설명(생략하면 먼저 묻는다)',
+      required: false,
+    },
   ] satisfies PromptArg[],
 };
 
 export function tableDesignPromptText(args: Record<string, string | undefined>): string {
-  return `TermFlow 프로젝트 ${args['projectKey'] ?? '(키 미지정)'}에서 다음 요구사항으로 테이블을 설계하라.
-
-요구사항:
-${args['requirement'] ?? '(없음)'}
+  const req = args['requirement']?.trim();
+  return `TermFlow 프로젝트 ${args['projectKey'] ?? '(키 미지정)'}에서 테이블을 설계하라.
 ${args['bizArea'] ? `업무구분: ${args['bizArea']}\n` : ''}
+요구사항: ${req ? req : '(아직 없음)'}
+
+요구사항이 없거나 한두 단어로 잘려 보이면 도구를 부르기 전에 사용자에게 먼저 묻는다 — 테이블의 목적(무엇을 기록하나), 컬럼으로 둘 항목, 한 행을 구분하는 키.
 서버 안내문의 "테이블 설계 순서"를 따른다. 진행 방법:
 1. 테이블 논리명과 컬럼 논리명 목록(한국어 표준 용어 조합)을 먼저 정리해 보여 준다.
 2. table_name_suggest·columns_autocomplete로 물리명·타입을 받는다. 미등록 용어·필요한 도메인은 등록안을 표로 보여 주고 확인을 받은 뒤 등록한다.

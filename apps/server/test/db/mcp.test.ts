@@ -260,13 +260,28 @@ describe('/mcp', () => {
     const client = await mcp(await issue('editor'));
     const list = await client.listPrompts();
     expect(list.prompts.map((p) => p.name)).toEqual(['design_table']);
+    // 공백으로 나뉘는 클라이언트 대비: 한 단어 인자(키·업무구분)가 앞, 요구사항은 선택(마지막)
+    expect(list.prompts[0]!.arguments!.map((a) => [a.name, a.required])).toEqual([
+      ['projectKey', true],
+      ['bizArea', false],
+      ['requirement', false],
+    ]);
     const p = await client.getPrompt({
       name: 'design_table',
-      arguments: { projectKey: 'PRJA', requirement: '교육 신청 이력' },
+      arguments: { projectKey: 'PRJA', bizArea: 'RP', requirement: '교육 신청 이력' },
     });
     const msg = p.messages[0]!.content as { text: string };
     expect(msg.text).toContain('PRJA');
+    expect(msg.text).toContain('업무구분: RP');
     expect(msg.text).toContain('교육 신청 이력');
+    // 요구사항 없이 부르면 먼저 묻게 한다
+    const bare = await client.getPrompt({
+      name: 'design_table',
+      arguments: { projectKey: 'PRJA' },
+    });
+    expect((bare.messages[0]!.content as { text: string }).text).toContain(
+      '사용자에게 먼저 묻는다',
+    );
     await client.close();
   });
 
