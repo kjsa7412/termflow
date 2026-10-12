@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.2',
+    date: '2026-10-12',
+    summary: '테이블 설계 명령 다듬기.',
+    items: [
+      '준비된 테이블 설계 명령에 프로젝트 키·업무구분만 붙여 시작, 요구사항은 에이전트가 이어서 묻는다',
+    ],
+  },
+  {
     version: '1.3.1',
     date: '2026-10-11',
     summary: '에이전트 연동 설명 보강.',
