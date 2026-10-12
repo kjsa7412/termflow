@@ -193,6 +193,10 @@ export function validateTable(table: TableModel, ctx: ValidateContext): Validati
     if (dflt.kind === 'STRING' && dflt.looksLikeFunction) {
       push('W_DEFAULT_AS_STRING', { ...base, field: 'defaultVal' }, { defaultVal: dflt.value });
     }
+    // 'N'처럼 따옴표째 넣으면 DEFAULT '''N'''이 된다 — 문자열 리터럴은 방언이 감싼다(§6.6)
+    if (dflt.kind === 'STRING' && /^(['"]).*\1$/s.test(dflt.value) && dflt.value.length >= 2) {
+      push('W_DEFAULT_QUOTED', { ...base, field: 'defaultVal' }, { defaultVal: dflt.value });
+    }
     if (blank(c.colComment)) push('W_COMMENT_EMPTY', { ...base, field: 'colComment' });
   });
   return { errors, warnings };

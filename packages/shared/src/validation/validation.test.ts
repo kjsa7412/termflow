@@ -28,7 +28,7 @@ function designCodeRows(): { code: string; severity: string }[] {
 describe('validation/codes (T2.10)', () => {
   it('코드표 행 수·코드·구분이 설계서 §5.7 표와 같다', () => {
     const rows = designCodeRows();
-    expect(rows.length).toBe(30);
+    expect(rows.length).toBe(31); // +W_DEFAULT_QUOTED(CR-18)
     expect(Object.keys(VALIDATION_CODES)).toEqual(rows.map((r) => r.code));
     for (const r of rows) {
       expect(VALIDATION_CODES[r.code as keyof typeof VALIDATION_CODES].severity).toBe(r.severity);

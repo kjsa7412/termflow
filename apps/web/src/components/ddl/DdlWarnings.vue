@@ -26,6 +26,7 @@ const LABEL: Record<string, string> = {
   W_TERM_CHANGED: '표준 변경',
   W_CODE_CLS_MISSING: '코드구분',
   W_DEFAULT_AS_STRING: '기본값',
+  W_DEFAULT_QUOTED: '기본값 따옴표',
   W_COMMENT_EMPTY: '코멘트',
   W_PREFIX_MISMATCH: '접두어',
   W_VARCHAR_BYTES: '바이트',

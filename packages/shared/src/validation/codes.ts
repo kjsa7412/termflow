@@ -170,6 +170,12 @@ export const VALIDATION_CODES = {
     condition: '기본값이 함수처럼 보이나 화이트리스트 밖 → 문자열 처리',
     message: '{defaultVal}을(를) 문자열로 처리합니다',
   },
+  W_DEFAULT_QUOTED: {
+    severity: 'W',
+    targets: col,
+    condition: '기본값을 따옴표로 감쌈 → 따옴표까지 문자열 값이 됨(TermFlow가 감싼다)',
+    message: '기본값 {defaultVal}의 따옴표를 빼고 입력하세요(문자열은 자동으로 감쌉니다)',
+  },
   W_COMMENT_EMPTY: {
     severity: 'W',
     targets: col,

@@ -22,6 +22,7 @@ export const SERVER_INSTRUCTIONS = `TermFlow = 표준 용어·도메인 기반 �
 4. 도메인 추가(프로젝트 관리자): domain_classes_list로 접미어 확인 → domain_calculate {nm1..nm7 조각} 미리보기 → domain_create.
 5. 기본컬럼: default_column_set_get(프로젝트 기본 세트)의 columns를 컬럼 끝에 넣는다 — defaultColId 유지, matchType DEFAULT, columnId null.
 6. table_validate로 오류·경고 확인 → table_create {table:{bizAreaId, tableNm, tableLogicalNm, description}, columns:[{logicalNm, physicalNm, isPk, dataType, dataLength, dataScale, isNullable, defaultVal, colComment, domainId, codeClsId, defaultColId, matchType}]}.
+   - defaultVal: 문자열은 따옴표 없이(N, Y — 서버가 'N'으로 감싼다. 'N'으로 넣으면 따옴표까지 값이 되고 W_DEFAULT_QUOTED 경고). 숫자는 그대로, 함수는 CURRENT_TIMESTAMP·CURRENT_DATE만. 경고(warnings)도 0건을 목표로 고친다.
 7. table_ddl {id, query:{dialect}}로 DDL 확인. 여러 테이블은 ddl_generate(output JSON 또는 SQL).
 8. 수정: table_get → 바꾼 전체 columns(기존 행 columnId 유지) + version으로 table_save. FINAL 테이블은 table_status로 DRAFT로 돌린 뒤(프로젝트 관리자) 고친다.`;
 

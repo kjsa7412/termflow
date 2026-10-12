@@ -99,6 +99,7 @@ const CASES: [ValidationCode, () => TableModel, Partial<ValidateContext>?][] = [
   ['W_RESERVED_OTHER', () => withCol({ physicalNm: 'SIZE' })],
   ['W_RESERVED_OTHER', () => ({ ...ok(), tableNm: 'LEVEL', tablePrefix: null })],
   ['W_DEFAULT_AS_STRING', () => withCol({ defaultVal: 'now()' })],
+  ['W_DEFAULT_QUOTED', () => withCol({ defaultVal: "'N'" })],
   ['W_COMMENT_EMPTY', () => withCol({ colComment: null })],
   ['W_PREFIX_MISMATCH', () => ({ ...ok(), tableNm: 'AC_OK' })],
   ['W_VARCHAR_BYTES', () => withCol({ dataLength: 2000 })],
