@@ -29,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile # §2.5.8 멀티스테이지(node:22-alpine)
-    image: termflow-app:1.3.2
+    image: termflow-app:1.3.3
     container_name: ${TERMFLOW_APP_CONTAINER:-termflow-app}
     restart: unless-stopped
     depends_on:

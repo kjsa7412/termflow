@@ -8,6 +8,12 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.3',
+    date: '2026-10-12',
+    summary: '기본값 입력 실수 알림.',
+    items: ["기본값을 따옴표째 넣으면(예 'N') 검증 경고 — 문자열은 TermFlow가 감싼다"],
+  },
+  {
     version: '1.3.2',
     date: '2026-10-12',
     summary: '테이블 설계 명령 다듬기.',
