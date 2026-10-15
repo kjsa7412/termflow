@@ -8,6 +8,12 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.5',
+    date: '2026-10-15',
+    summary: '설계 절차 파일을 제품에서 내려받기.',
+    items: ['에이전트용 테이블 설계 절차 파일을 설명서와 내 계정 화면에서 내려받을 수 있음'],
+  },
+  {
     version: '1.3.4',
     date: '2026-10-15',
     summary: '테이블 설계 기준을 검증 경고로.',
