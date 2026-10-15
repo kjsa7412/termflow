@@ -43,6 +43,24 @@ export const MANUAL_BOOKS: readonly ManualBookDef[] = [
   },
 ];
 
+/**
+ * 설명서와 함께 내려받게 하는 원문 파일(T18.14): 빌드 때 `url` 경로로 그대로 싣고(dev 서버는 같은 경로로 응답),
+ * 설명서 원문에서 이 파일을 가리키는 상대 링크는 내려받기 링크가 된다.
+ */
+export interface ManualDownloadDef {
+  /** 저장소 루트 기준 원문 경로. */
+  file: string;
+  /** 제품 안 경로(정적 파일). */
+  url: string;
+}
+
+export const MANUAL_DOWNLOADS: readonly ManualDownloadDef[] = [
+  {
+    file: 'docs/skills/termflow-table-design/SKILL.md',
+    url: '/downloads/termflow-table-design/SKILL.md',
+  },
+];
+
 export interface TocItem {
   level: 2 | 3;
   slug: string;
@@ -65,12 +83,27 @@ export function slugify(text: string): string {
     .replace(/ /g, '-');
 }
 
+/** 문서 기준 상대 링크가 내려받기 원문(MANUAL_DOWNLOADS)이면 그 정의. */
+function downloadOf(env: Env, href: string): { url: string } | null {
+  if (!env.repoRoot || /^[a-z]+:|^\//i.test(href)) return null;
+  let rel = href.split('#')[0]!;
+  try {
+    rel = decodeURIComponent(rel);
+  } catch {
+    /* 그대로 */
+  }
+  const abs = path.resolve(env.baseDir, rel);
+  return MANUAL_DOWNLOADS.find((d) => path.resolve(env.repoRoot!, d.file) === abs) ?? null;
+}
+
 /** 정적 화면 경로(파라미터 없는 것만) — 인라인 코드를 링크로 바꾼다. */
 const APP_PATH = /^\/(?:projects(?:\/new)?|me|admin\/(?:users|projects|templates))$/;
 
 interface Env {
   bookIds: ReadonlySet<string>;
   baseDir: string;
+  /** 저장소 루트(내려받기 원문 판정). 없으면 내려받기 링크를 만들지 않는다. */
+  repoRoot?: string | undefined;
   images: string[];
   /** link_open에서 링크를 글자로 바꾼 것인지(link_close 짝 맞춤). */
   linkStack: boolean[];
@@ -130,6 +163,11 @@ function createRenderer(): MarkdownIt {
         return `<a href="/manual/${encodeURIComponent(id)}${esc(m[2] ?? '')}" data-route="1">`;
       }
     }
+    const dl = downloadOf(env, href);
+    if (dl) {
+      env.linkStack.push(false);
+      return `<a href="${esc(dl.url)}" download="${esc(path.posix.basename(dl.url))}">`;
+    }
     env.linkStack.push(true);
     let shown = href;
     try {
@@ -179,11 +217,12 @@ const renderer = createRenderer();
 /** Markdown 원문 → 설명서 HTML·목차. `baseDir`는 그림 상대 경로의 기준(원문 폴더). */
 export function renderManual(
   source: string,
-  opts: { bookIds: readonly string[]; baseDir: string },
+  opts: { bookIds: readonly string[]; baseDir: string; repoRoot?: string },
 ): RenderedManual {
   const env: Env = {
     bookIds: new Set(opts.bookIds),
     baseDir: opts.baseDir,
+    repoRoot: opts.repoRoot,
     images: [],
     linkStack: [],
     slugs: new Map(),
@@ -213,6 +252,7 @@ export function manualPlugin(repoRoot: string): Plugin {
         const out = renderManual(readFileSync(file, 'utf8'), {
           bookIds: ids,
           baseDir: path.dirname(file),
+          repoRoot,
         });
         let html = JSON.stringify(out.html);
         out.images.forEach((img, n) => {
@@ -223,6 +263,24 @@ export function manualPlugin(repoRoot: string): Plugin {
         return `{ id: ${JSON.stringify(b.id)}, title: ${JSON.stringify(out.title || b.id)}, audience: ${JSON.stringify(b.audience)}, icon: ${JSON.stringify(b.icon)}, desc: ${JSON.stringify(b.desc)}, toc: ${JSON.stringify(out.toc)}, html: ${html} }`;
       });
       return `${imports.join('\n')}\nexport default [\n${books.join(',\n')}\n];\n`;
+    },
+    // 내려받기 원문: 빌드는 dist의 같은 경로(서버 정적 파일), dev는 미들웨어로 원문을 그대로 준다
+    generateBundle() {
+      for (const d of MANUAL_DOWNLOADS) {
+        this.emitFile({
+          type: 'asset',
+          fileName: d.url.slice(1),
+          source: readFileSync(path.resolve(repoRoot, d.file), 'utf8'),
+        });
+      }
+    },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const d = MANUAL_DOWNLOADS.find((x) => x.url === req.url?.split('?')[0]);
+        if (!d) return next();
+        res.setHeader('content-type', 'text/markdown; charset=utf-8');
+        res.end(readFileSync(path.resolve(repoRoot, d.file), 'utf8'));
+      });
     },
     handleHotUpdate(ctx) {
       if (!files.includes(path.resolve(ctx.file))) return;

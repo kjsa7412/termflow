@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { MANUAL_BOOKS, renderManual, slugify } from './manual.js';
+import { MANUAL_BOOKS, MANUAL_DOWNLOADS, renderManual, slugify } from './manual.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const opts = { bookIds: ['사용자_가이드', '설치_운영_가이드'], baseDir: '/repo/docs' };
@@ -12,6 +12,28 @@ describe('설명서 변환(T12.5)', () => {
     expect(slugify('2.1 로그인·비밀번호')).toBe('21-로그인비밀번호');
     expect(slugify('14. Linux 서버 설치')).toBe('14-linux-서버-설치');
     expect(slugify('`.env` 작성')).toBe('env-작성');
+  });
+
+  it('내려받기 원문(설계 절차 스킬)을 가리키는 상대 링크는 제품 안 내려받기 링크, 원문 파일이 있다(T18.14)', () => {
+    const docs = path.join(ROOT, 'docs');
+    const out = renderManual('[스킬](skills/termflow-table-design/SKILL.md) [CR](CR-18.md)', {
+      ...opts,
+      baseDir: docs,
+      repoRoot: ROOT,
+    });
+    expect(out.html).toContain(
+      '<a href="/downloads/termflow-table-design/SKILL.md" download="SKILL.md">스킬</a>',
+    );
+    expect(out.html).toContain('<span class="doc-ref"');
+    for (const d of MANUAL_DOWNLOADS)
+      expect(readFileSync(path.join(ROOT, d.file), 'utf8')).toMatch(/^---\r?\nname: /);
+    // 사용자 가이드가 실제로 내려받기 링크를 건다
+    const guide = renderManual(readFileSync(path.join(docs, '사용자_가이드.md'), 'utf8'), {
+      ...opts,
+      baseDir: docs,
+      repoRoot: ROOT,
+    });
+    expect(guide.html).toContain('href="/downloads/termflow-table-design/SKILL.md"');
   });
 
   it('h1은 제목, h2·h3은 목차 — 같은 제목은 -1을 붙인다', () => {
@@ -74,6 +96,7 @@ describe('설명서 변환(T12.5)', () => {
         out: renderManual(readFileSync(file, 'utf8'), {
           bookIds: MANUAL_BOOKS.map((x) => x.id),
           baseDir: path.dirname(file),
+          repoRoot: ROOT,
         }),
       };
     });

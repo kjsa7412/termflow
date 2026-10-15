@@ -260,7 +260,7 @@ describe('/mcp', () => {
     const client = await mcp(await issue('editor'));
     const text = client.getInstructions() ?? '';
     for (let i = 1; i <= 8; i++) expect(text).toContain(`P${i} `);
-    expect(text).toContain('docs/skills/termflow-table-design/SKILL.md');
+    expect(text).toContain('/downloads/termflow-table-design/SKILL.md');
     expect(text).toContain('table_create는 자동으로 넣지 않는다');
     expect(text.length).toBeLessThanOrEqual(1900);
     await client.close();

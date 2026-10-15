@@ -2,7 +2,7 @@
 # TermFlow 배포물·태그를 달 커밋 고르기(CR-17 C8). 커밋 목록의 판 표시(태그)가 판을 올린 커밋에 붙게 한다.
 #
 #   판 올림 커밋 = <끝 커밋>까지의 이력에서 package.json "version"이 마지막으로 바뀐 커밋
-#   - 판 올림 커밋 뒤의 변경이 제품과 무관한 문서뿐이면(docs — 설명서 두 권·그림 제외 —, 루트 .md, 개발 도구 폴더) 판 올림 커밋
+#   - 판 올림 커밋 뒤의 변경이 제품과 무관한 문서뿐이면(docs — 설명서 두 권·그림·설계 절차 스킬 제외 —, 루트 .md, 개발 도구 폴더) 판 올림 커밋
 #   - 뒤에 제품 파일이 바뀌었으면 <끝 커밋>(CI가 검사한 커밋)
 #   - 판 올림 커밋을 이력에서 찾지 못하면(얕은 clone 범위 밖 등) <끝 커밋>
 #
@@ -31,7 +31,7 @@ fi
 
 changed="$(git -C "$ROOT" -c core.quotepath=off diff --name-only "$bump" "$end")"
 product="$(printf '%s\n' "$changed" | grep -vE '^docs/|^[^/]+\.md$|^\.[cC]laude/|^$' || true)"
-manual="$(printf '%s\n' "$changed" | grep -E '^docs/(사용자_가이드\.md|설치_운영_가이드\.md|img/)' || true)"
+manual="$(printf '%s\n' "$changed" | grep -E '^docs/(사용자_가이드\.md|설치_운영_가이드\.md|img/|skills/)' || true)"
 
 if [ -n "$product$manual" ]; then
   note "판 올림 커밋 ${bump:0:7} 뒤에 제품 파일이 바뀌었습니다 — 끝 커밋 ${end:0:7}:"

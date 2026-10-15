@@ -30,6 +30,9 @@ const issued = ref<{ token: string; tokenNm: string } | null>(null);
 const revoking = ref<ApiTokenItem | null>(null);
 const revokeBusy = ref(false);
 
+/** 설계 절차 스킬 파일(빌드 때 docs/skills에서 싣는 정적 파일, T18.14 — build/manual.ts MANUAL_DOWNLOADS). */
+const SKILL_URL = '/downloads/termflow-table-design/SKILL.md';
+
 const DAY_OPTIONS = [
   { value: '30', label: '30일' },
   { value: '90', label: '90일' },
@@ -136,7 +139,18 @@ onMounted(load);
       </div>
     </div>
 
-    <form v-else-if="loaded" class="row mt-2" novalidate @submit.prevent="issue">
+    <div v-if="loaded && enabled" class="row mt-2" data-testid="skill-download">
+      <span class="text-sm text-muted"
+        >테이블 설계 절차(스킬 파일): 받은 <span class="mono">SKILL.md</span>를 에이전트 스킬 폴더에
+        두면 설계 규칙대로 진행합니다(사용자 가이드 §9.5).</span
+      >
+      <span class="spacer" />
+      <a :href="SKILL_URL" download="SKILL.md" class="btn btn-secondary btn-sm">
+        <TfIcon name="download" />설계 절차 스킬 내려받기
+      </a>
+    </div>
+
+    <form v-if="loaded && enabled" class="row mt-2" novalidate @submit.prevent="issue">
       <TfInput
         id="token-nm"
         v-model="tokenNm"

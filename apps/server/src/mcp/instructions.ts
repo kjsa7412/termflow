@@ -18,7 +18,7 @@ P8 용어·도메인·코드 등록은 프로젝트 전체에 영향 — 등록�
 기타
 - defaultVal: 문자열은 따옴표 없이(N), 숫자는 그대로, 함수는 CURRENT_TIMESTAMP·CURRENT_DATE만.
 - 오류는 ProblemDetail(code·detail·errors[]의 rowIndex·field). 409 E_VERSION_CONFLICT면 table_get으로 다시 읽어 합친다. 수정은 table_get → 전체 columns(columnId 유지)+version으로 table_save.
-- 단계별 절차: 프롬프트 design_table, 또는 TermFlow 저장소 docs/skills/termflow-table-design/SKILL.md(설계 절차 스킬). 판단 기준 전문: docs/04_테이블_설계_가이드.md.`;
+- 단계별 절차: 프롬프트 design_table, 또는 설계 절차 스킬 파일(이 서버의 /downloads/termflow-table-design/SKILL.md, 사용자 가이드 §9.5). 판단 기준 전문: TermFlow 저장소 docs/04_테이블_설계_가이드.md.`;
 
 export interface PromptArg {
   name: string;

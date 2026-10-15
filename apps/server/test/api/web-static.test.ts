@@ -22,9 +22,12 @@ describe('web 정적 서빙(ServeStaticModule)', () => {
   mkdirSync(cacheDir, { recursive: true });
   const dist = mkdtempSync(path.join(cacheDir, 'tf-web-'));
   let app: INestApplication;
+  const SKILL = '---\nname: x\n---\n';
   beforeAll(async () => {
     writeFileSync(path.join(dist, 'index.html'), '<!doctype html><div id="app"></div>');
     writeFileSync(path.join(dist, 'app.js'), 'console.log(1)');
+    mkdirSync(path.join(dist, 'downloads', 'termflow-table-design'), { recursive: true });
+    writeFileSync(path.join(dist, 'downloads', 'termflow-table-design', 'SKILL.md'), SKILL);
     // 로더(Express/Noop)는 DI 시점의 HTTP 어댑터로 정해진다 → Test.createTestingModule이 아니라 NestFactory로 만든다
     @Module({
       imports: [...webStaticModules(dist)],
@@ -48,6 +51,13 @@ describe('web 정적 서빙(ServeStaticModule)', () => {
     }
     const js = await request(app.getHttpServer()).get('/app.js');
     expect(js.text).toBe('console.log(1)');
+    // 설계 절차 스킬 파일(T18.14): 웹 빌드가 싣는 원문 그대로 — SPA 폴백이 아니다
+    const skill = await request(app.getHttpServer()).get(
+      '/downloads/termflow-table-design/SKILL.md',
+    );
+    expect(skill.status).toBe(200);
+    expect(skill.headers['content-type']).toMatch(/markdown/);
+    expect(skill.text).toBe(SKILL);
   });
 
   it('/api/**는 제외: 있는 API는 JSON, 없는 API는 ProblemDetail 404(index.html 아님)', async () => {

@@ -200,6 +200,10 @@ describe('MePage — 외부 연동 접근 토큰(CR-18)', () => {
     const w = mount(MePage, { global: { plugins: [pinia, router] }, attachTo: document.body });
     await flushPromises();
     expect(w.text()).toContain('발급한 토큰이 없습니다');
+    // 설계 절차 스킬 파일 내려받기(T18.14)
+    const skill = w.get('[data-testid="skill-download"] a');
+    expect(skill.attributes('href')).toBe('/downloads/termflow-table-design/SKILL.md');
+    expect(skill.attributes('download')).toBe('SKILL.md');
     await w.get('#token-nm').setValue('내 PC');
     await w.get('#token-days').setValue('30');
     await w.findAll('form').at(-1)!.trigger('submit');
@@ -238,6 +242,7 @@ describe('MePage — 외부 연동 접근 토큰(CR-18)', () => {
     await flushPromises();
     expect(w.text()).toContain('TERMFLOW_MCP_ENABLED');
     expect(w.find('#token-nm').exists()).toBe(false);
+    expect(w.find('[data-testid="skill-download"]').exists()).toBe(false);
   });
 });
 
