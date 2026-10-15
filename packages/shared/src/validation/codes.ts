@@ -207,6 +207,45 @@ export const VALIDATION_CODES = {
     condition: 'Oracle VARCHAR2 4000바이트 초과 가능(n > 1333) 또는 MySQL 행 크기',
     message: 'Oracle에서 CLOB 사용을 권장합니다',
   },
+  // 설계 규칙(테이블 설계 가이드 §2, T18.12) — 저장 검증·목록에서만(DDL 생성 재검증 제외)
+  W_DEFAULT_COLS_MISSING: {
+    severity: 'W',
+    targets: tbl,
+    condition:
+      "프로젝트 설정 '기본컬럼 포함'인데 기본 세트 컬럼(default_col_id)이 빠짐(설명에 '기본컬럼 제외'가 있으면 생략)",
+    message: "기본컬럼 세트 '{setNm}'의 {cnt}개 컬럼이 없습니다({cols})",
+  },
+  W_MATCH_MANUAL: {
+    severity: 'W',
+    targets: col,
+    condition: 'match_type MANUAL',
+    message: '수동 입력 컬럼입니다. 자동완성(표준 용어·도메인)으로 다시 받으세요',
+  },
+  W_MATCH_SIMILAR: {
+    severity: 'W',
+    targets: col,
+    condition: 'match_type SIMILAR',
+    message:
+      "유사 도메인 '{domainNm}'을(를) 다른 논리명으로 씁니다. 논리명을 도메인 이름으로 맞추세요",
+  },
+  W_CODE_CLS_NONE: {
+    severity: 'W',
+    targets: col,
+    condition: '물리명 접미어 CD인데 code_cls_id NULL(도메인 있는 코드 마스터 키·참조 제외)',
+    message: '코드 컬럼에 코드구분이 연결되지 않았습니다',
+  },
+  W_COMPOSED_KEY: {
+    severity: 'W',
+    targets: col,
+    condition: 'match_type COMPOSED이고 PK',
+    message: 'PK 컬럼이 도메인 없는 조합입니다. 도메인을 등록해 쓰세요',
+  },
+  W_COMPOSED_SHARED: {
+    severity: 'W',
+    targets: col,
+    condition: 'match_type COMPOSED이고 같은 프로젝트 다른 테이블에 같은 물리명',
+    message: '{tables}에도 있는 컬럼이 도메인 없는 조합입니다. 도메인을 등록해 쓰세요',
+  },
 } as const satisfies Record<string, ValidationCodeDef>;
 
 export type ValidationCode = keyof typeof VALIDATION_CODES;

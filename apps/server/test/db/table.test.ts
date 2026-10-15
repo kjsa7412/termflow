@@ -323,6 +323,64 @@ describe('저장 전 검증(T8.3): 코드표 E 전 항목 422', () => {
       (await e.post(`${PA}/tables/validate`, { ...b, tableId: ids.aTable })).body,
     ).toMatchObject({ errors: [] });
   });
+
+  it('설계 규칙(T18.12): 기본컬럼 누락(설정 켜짐)·다른 테이블과 같은 COMPOSED 물리명 — 자기 테이블은 빼고 판정', async () => {
+    const e = await as('editor');
+    const { rows } = await t.pool.query<{
+      set_id: number;
+      set_nm: string;
+      inc: boolean;
+      sid: number | null;
+    }>(
+      `select s.set_id, s.set_nm, p.include_default_cols inc, p.default_col_set_id sid
+         from std_default_col s0 join std_default_col_set s on s.set_id = s0.set_id
+         join tf_project p on p.project_id = s.project_id where s0.default_col_id = $1`,
+      [ids.aDefaultCol],
+    );
+    const before = rows[0]!;
+    const setProject = (inc: boolean, sid: number | null) =>
+      t.pool.query(
+        `update tf_project set include_default_cols = $1, default_col_set_id = $2 where project_key = 'PRJA'`,
+        [inc, sid],
+      );
+    const shared = (
+      await t.pool.query<{ physical_nm: string }>(
+        `select physical_nm from prj_column where table_id = $1 and default_col_id is null order by col_seq limit 1`,
+        [ids.aTable],
+      )
+    ).rows[0]!.physical_nm;
+    const warn = async (b: object) =>
+      ((await e.post(`${PA}/tables/validate`, b)).body as TableValidateResponse).warnings;
+    try {
+      await setProject(true, before.set_id);
+      const w = await warn(
+        body('RP_DESIGN_CHK', [
+          col('DSG_ID', { isPk: true, isNullable: false, matchType: 'COMPOSED' }),
+          col(shared, { matchType: 'COMPOSED' }),
+        ]),
+      );
+      const by = (c: string) => w.filter((x) => x.code === c);
+      expect(by('W_DEFAULT_COLS_MISSING')[0]?.message).toContain(`'${before.set_nm}'`);
+      expect(by('W_COMPOSED_KEY').map((x) => x.rowIndex)).toEqual([0]);
+      expect(by('W_COMPOSED_SHARED')[0]).toMatchObject({ rowIndex: 1 });
+      expect(by('W_COMPOSED_SHARED')[0]!.message).toContain('RP_RSCH_PRJ_MAST');
+      // 같은 테이블 자신(tableId)으로 검증하면 자기 컬럼은 '다른 테이블'이 아니다
+      const d = (await e.get(`${PA}/tables/${ids.aTable}`)).body as TableDetail;
+      const self = toBody(d);
+      self.columns = self.columns.map((c) =>
+        c.physicalNm === shared ? { ...c, matchType: 'COMPOSED', domainId: null } : c,
+      );
+      const sw = await warn({ ...self, tableId: ids.aTable });
+      expect(sw.filter((x) => x.code === 'W_COMPOSED_SHARED' && x.columnNm === shared)).toEqual([]);
+      // 설정을 끄면 기본컬럼 누락은 판정하지 않는다
+      await setProject(false, before.set_id);
+      expect(
+        (await warn(body('RP_DESIGN_CHK', [col('DSG_ID', { isPk: true })]))).map((x) => x.code),
+      ).not.toContain('W_DEFAULT_COLS_MISSING');
+    } finally {
+      await setProject(before.inc, before.sid);
+    }
+  });
 });
 
 describe('저장 PUT(T8.2): 낙관적 잠금·diff·스냅샷', () => {

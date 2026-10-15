@@ -49,7 +49,7 @@ import {
   readSnapshot,
   toExisting,
 } from './table-detail.loader.js';
-import { draftModel, loadBizAreas, loadSuffixes } from './table-model.loader.js';
+import { draftModel, loadBizAreas, loadDesignContext, loadSuffixes } from './table-model.loader.js';
 
 /** Db 또는 트랜잭션. */
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
@@ -237,7 +237,7 @@ export class TableService {
     } = {},
   ): Promise<Checked> {
     const input = normalizeInput(raw);
-    const [refErrors, bizAreas, suffixes, names, dialect, cached] = await Promise.all([
+    const [refErrors, bizAreas, suffixes, names, dialect, cached, design] = await Promise.all([
       opts.trustedRefs
         ? Promise.resolve([] as ValidationIssue[])
         : this.checkRefs(q, projectId, input, opts.currentBizAreaId ?? null),
@@ -251,6 +251,12 @@ export class TableService {
       ),
       this.dialectOf(q, projectId),
       this.cache.get(projectId),
+      loadDesignContext(
+        q,
+        projectId,
+        input.columns.map((c) => c.physicalNm),
+        opts.selfId,
+      ),
     ]);
     const model = await draftModel(q, projectId, input, bizAreas);
     const v = validateTable(model, {
@@ -259,6 +265,8 @@ export class TableService {
       otherTableNames: new Set(names.map((n) => n.table_nm)),
       // 재검증 힌트(§4.8, T9.9): 조각 중 검토대기·반려 용어, 재분절 물리명(W_TERM_CHANGED) — 캐시 스냅샷 기준
       termHints: (c) => columnTermHint(cached.snapshot, c),
+      // 설계 규칙(테이블 설계 가이드, T18.12): 기본컬럼 누락·MANUAL/SIMILAR·코드구분 없는 CD·도메인 없는 키
+      design,
     });
     const bizBad = refErrors.some((e) => e.target === 'table');
     return {

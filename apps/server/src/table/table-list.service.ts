@@ -13,7 +13,7 @@ import { DRIZZLE } from '../db/db.module.js';
 import { validateTable } from '../ddl/validator.js';
 import { isoTs, likePattern, rowsOf } from '../project/sql-util.js';
 import { limitOffset, orderBy, whereAll } from '../standard/std-sql.js';
-import { loadSuffixes, loadTableModels } from './table-model.loader.js';
+import { loadDesignContext, loadSuffixes, loadTableModels } from './table-model.loader.js';
 
 const SORTS = {
   tableNm: sql`t.table_nm collate "C"`,
@@ -92,9 +92,15 @@ export class TableListService {
       ),
       loadSuffixes(this.db, pid),
     ]);
+    // 설계 규칙(T18.12)도 편집기 저장 검증과 같게 센다 — 다른 테이블 판정은 검증기가 테이블명으로 자기 행을 뺀다
+    const design = await loadDesignContext(
+      this.db,
+      pid,
+      models.flatMap((m) => m.columns.map((c) => c.physicalNm)),
+    );
     const dialect = proj?.default_dialect ?? 'POSTGRESQL';
     const checked = new Map(
-      models.map((m) => [m.tableId!, validateTable(m, { dialect, suffixes })]),
+      models.map((m) => [m.tableId!, validateTable(m, { dialect, suffixes, design })]),
     );
     const items: TableListItem[] = rows.map((r) => {
       const v = checked.get(r.table_id) ?? { errors: [], warnings: [] };

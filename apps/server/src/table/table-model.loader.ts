@@ -14,6 +14,7 @@ import {
   type TableRow,
 } from '../ddl/assemble.js';
 import type { TableModel } from '../ddl/model.js';
+import type { DesignContext, NamedColumnRef } from '../ddl/validator.js';
 import { rowsOf, type ExecQ } from '../project/sql-util.js';
 
 /**
@@ -101,6 +102,58 @@ export async function loadSuffixes(q: ExecQ, projectId: number): Promise<Set<str
     sql`select suffix from std_domain_cls where project_id = ${projectId}`,
   );
   return new Set(rows.map((r) => r.suffix));
+}
+
+/**
+ * 설계 규칙 문맥(§5.7 W_DEFAULT_COLS_MISSING·W_CODE_CLS_NONE·W_COMPOSED_*, T18.12).
+ * 기본 세트는 프로젝트 설정 '기본컬럼 포함'이 켜져 있을 때만, 컬럼 위치는 `physicalNms`에 든 물리명만 읽는다.
+ */
+export async function loadDesignContext(
+  q: ExecQ,
+  projectId: number,
+  physicalNms: readonly string[],
+  excludeTableId?: number,
+): Promise<DesignContext> {
+  const names = [...new Set(physicalNms.filter((n) => n !== ''))];
+  const [setRows, colRows] = await Promise.all([
+    rowsOf<{ set_nm: string; default_col_id: number | null; physical_nm: string | null }>(
+      q,
+      sql`select s.set_nm, d.default_col_id, d.physical_nm
+            from tf_project p
+            join std_default_col_set s on s.set_id = p.default_col_set_id
+            left join std_default_col d on d.set_id = s.set_id
+           where p.project_id = ${projectId} and p.include_default_cols
+           order by d.col_seq`,
+    ),
+    names.length === 0
+      ? Promise.resolve([] as { physical_nm: string; table_nm: string; is_pk: boolean }[])
+      : rowsOf<{ physical_nm: string; table_nm: string; is_pk: boolean }>(
+          q,
+          sql`select c.physical_nm, t.table_nm, c.is_pk
+                from prj_column c join prj_table t on t.table_id = c.table_id
+               where c.project_id = ${projectId}
+                 and c.physical_nm = any(${sql.param(names)}::text[])
+                 ${excludeTableId !== undefined ? sql`and c.table_id <> ${excludeTableId}` : sql``}`,
+        ),
+  ]);
+  const columnsByName = new Map<string, NamedColumnRef[]>();
+  for (const r of colRows) {
+    const list = columnsByName.get(r.physical_nm) ?? [];
+    list.push({ tableNm: r.table_nm, isPk: r.is_pk });
+    columnsByName.set(r.physical_nm, list);
+  }
+  const first = setRows[0];
+  return {
+    defaultSet: first
+      ? {
+          setNm: first.set_nm,
+          cols: setRows
+            .filter((r) => r.default_col_id !== null)
+            .map((r) => ({ defaultColId: r.default_col_id!, physicalNm: r.physical_nm! })),
+        }
+      : null,
+    columnsByName,
+  };
 }
 
 /**

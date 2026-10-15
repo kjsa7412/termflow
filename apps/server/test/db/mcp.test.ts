@@ -188,7 +188,7 @@ describe('/mcp', () => {
 
   it('initialize·tools/list: 안내문, 시스템 관리자 도구는 관리자에게만', async () => {
     const editor = await mcp(await issue('editor'));
-    expect(editor.getInstructions()).toContain('테이블 설계 순서');
+    expect(editor.getInstructions()).toContain('설계 규칙(테이블 설계 가이드 P1~P8');
     const names = (await editor.listTools()).tools.map((x) => x.name);
     expect(names).toEqual(
       expect.arrayContaining([
@@ -253,6 +253,16 @@ describe('/mcp', () => {
     });
     expect(sql.isError).toBeFalsy();
     expect(textOf(sql)).toMatch(/CREATE TABLE/i);
+    await client.close();
+  });
+
+  it('안내문: 설계 규칙 P1~P8과 절차 문서 위치, 클라이언트가 자르지 않는 길이(T18.12)', async () => {
+    const client = await mcp(await issue('editor'));
+    const text = client.getInstructions() ?? '';
+    for (let i = 1; i <= 8; i++) expect(text).toContain(`P${i} `);
+    expect(text).toContain('docs/skills/termflow-table-design/SKILL.md');
+    expect(text).toContain('table_create는 자동으로 넣지 않는다');
+    expect(text.length).toBeLessThanOrEqual(1900);
     await client.close();
   });
 

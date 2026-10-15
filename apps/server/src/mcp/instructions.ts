@@ -1,30 +1,24 @@
 /**
- * 외부 연동 서버 안내문(initialize 응답 `instructions`)과 프롬프트(CR-18 C7). 에이전트가 TermFlow 규약대로
- * 테이블을 설계하도록 작업 순서를 알려 준다. 결과(물리명·타입·DDL)는 언제나 서버 규칙 엔진이 낸다.
+ * 외부 연동 서버 안내문(initialize 응답 `instructions`)과 프롬프트(CR-18 C7·C12). 클라이언트가 안내문을 약 2천 자에서
+ * 자르므로 테이블 설계 가이드(docs/04)의 핵심 원칙 P1~P8과 상세 절차 문서 위치만 둔다(T18.12).
+ * 결과(물리명·타입·DDL)는 언제나 서버 규칙 엔진이 낸다.
  */
-export const SERVER_INSTRUCTIONS = `TermFlow = 표준 용어·도메인 기반 테이블 설계·DDL 생성 서비스. 이 서버의 도구는 TermFlow REST API와 1:1이고, 토큰 주인의 권한(프로젝트 역할 VIEWER < EDITOR < ADMIN, 시스템 관리자)을 그대로 따른다.
+export const SERVER_INSTRUCTIONS = `TermFlow = 표준 용어·도메인 기반 테이블 설계·DDL 생성 서비스. 도구는 REST API와 1:1이고 토큰 주인의 권한(프로젝트 역할 VIEWER < EDITOR < ADMIN)을 따른다.
 
-원칙
-- 물리명·타입·길이를 직접 지어내지 않는다. 테이블명은 table_name_suggest, 컬럼은 columns_autocomplete 결과를 쓴다. 규칙 밖 이름이 필요하면 먼저 용어·도메인을 등록해 규칙 안으로 넣는다.
-- 표준 사전(용어·도메인·코드)을 바꾸면 그 프로젝트 전체에 영향이 있다. 새 용어 물리약어는 standards_search로 비슷한 기존 용어 약어 관례를 확인하고 정한다.
-- 삭제·확정(FINAL)·승인·반려·프로젝트/사용자 관리처럼 되돌리기 어려운 작업은 사용자 확인 후에만 한다.
-- 오류 응답은 ProblemDetail(JSON: code·detail·errors[]). 422 errors[]의 rowIndex·field를 보고 고쳐 다시 부른다. 409 E_VERSION_CONFLICT면 table_get으로 최신본을 다시 읽어 합친다.
+설계 규칙(테이블 설계 가이드 P1~P8, 반드시 지킨다)
+P1 물리명·타입·길이는 표준 사전에서 나온다. 테이블명은 table_name_suggest, 컬럼은 columns_autocomplete 결과만 쓰고 손으로 짓거나 고치지 않는다(MANUAL 금지). 사전에 없으면 먼저 등록하고 다시 받는다.
+P2 자동완성 처리 순위: exact → 코드성 컬럼은 codeCandidates로 CODE → similar 중 같은 뜻이면 논리명을 그 도메인 이름으로 바꿔 exact → 도메인 등록 대상(P3)이면 domain_create 후 exact → 그 외에만 composed. unregistered는 저장하지 않고 terms_check → term_request/term_create 후 다시 받는다.
+P3 같은 뜻은 모든 테이블에서 같은 도메인. PK·FK·조인 키와 둘 이상 테이블에 나오는 컬럼은 composed로 두지 말고 도메인을 등록한다.
+P4 '…코드'·구분·유형·상태·등급처럼 값이 정해진 컬럼은 코드구분에 연결(codeClsId, matchType CODE). 코드 마스터 테이블의 키만 예외(도메인).
+P5 프로젝트 기본컬럼 세트(project_settings_get → default_column_set_get)를 모든 테이블 끝에 넣는다(defaultColId 유지, matchType DEFAULT, columnId null). table_create는 자동으로 넣지 않는다. 빼려면 사용자 지시와 테이블 설명의 '기본컬럼 제외: 사유'가 있어야 한다.
+P6 접미어 기본 타입과 다른 타입이 필요하면 컬럼에서 고치지 말고 그 타입의 도메인을 만든다.
+P7 table_validate 오류 0·경고 0에서 저장한다. 경고를 남기면 사유를 테이블 설명에 적고 보고한다.
+P8 용어·도메인·코드 등록은 프로젝트 전체에 영향 — 등록안을 표로 보여 주고 확인받은 뒤 등록한다. 삭제·확정·승인·반려·관리 작업도 사용자 확인 후에만.
 
-테이블 설계 순서
-1. whoami → 프로젝트 키·역할 확인. project_settings_get(기본 방언·기본컬럼 세트), biz_areas_list(업무구분 bizAreaId·접두어).
-2. 테이블명: table_name_suggest {logicalNm, bizAreaId} → tableNm. complete=false면 segments의 matched=false 조각이 미등록 용어.
-3. 컬럼: columns_autocomplete {logicalNms[], bizAreaId} → items[i].type
-   - exact: applied를 그대로 쓴다(matchType EXACT, domainId).
-   - similar: candidates에서 의미가 맞는 도메인을 고른다(없으면 composed 후보).
-   - composed: applied 사용(표준 도메인 아님 — 자주 쓰일 컬럼이면 도메인 등록을 사용자에게 제안).
-   - unregistered: segments 중 matched=false 조각이 사전에 없다 → terms_check로 중복 확인 → term_request(편집자, 검토대기로 즉시 사용 가능) 또는 term_create(프로젝트 관리자, 바로 승인) → 다시 columns_autocomplete.
-   - '…코드' 컬럼: codeCandidates에서 코드구분을 고르면 codeClsId와 matchType CODE.
-4. 도메인 추가(프로젝트 관리자): domain_classes_list로 접미어 확인 → domain_calculate {nm1..nm7 조각} 미리보기 → domain_create.
-5. 기본컬럼: default_column_set_get(프로젝트 기본 세트)의 columns를 컬럼 끝에 넣는다 — defaultColId 유지, matchType DEFAULT, columnId null.
-6. table_validate로 오류·경고 확인 → table_create {table:{bizAreaId, tableNm, tableLogicalNm, description}, columns:[{logicalNm, physicalNm, isPk, dataType, dataLength, dataScale, isNullable, defaultVal, colComment, domainId, codeClsId, defaultColId, matchType}]}.
-   - defaultVal: 문자열은 따옴표 없이(N, Y — 서버가 'N'으로 감싼다. 'N'으로 넣으면 따옴표까지 값이 되고 W_DEFAULT_QUOTED 경고). 숫자는 그대로, 함수는 CURRENT_TIMESTAMP·CURRENT_DATE만. 경고(warnings)도 0건을 목표로 고친다.
-7. table_ddl {id, query:{dialect}}로 DDL 확인. 여러 테이블은 ddl_generate(output JSON 또는 SQL).
-8. 수정: table_get → 바꾼 전체 columns(기존 행 columnId 유지) + version으로 table_save. FINAL 테이블은 table_status로 DRAFT로 돌린 뒤(프로젝트 관리자) 고친다.`;
+기타
+- defaultVal: 문자열은 따옴표 없이(N), 숫자는 그대로, 함수는 CURRENT_TIMESTAMP·CURRENT_DATE만.
+- 오류는 ProblemDetail(code·detail·errors[]의 rowIndex·field). 409 E_VERSION_CONFLICT면 table_get으로 다시 읽어 합친다. 수정은 table_get → 전체 columns(columnId 유지)+version으로 table_save.
+- 단계별 절차: 프롬프트 design_table, 또는 TermFlow 저장소 docs/skills/termflow-table-design/SKILL.md(설계 절차 스킬). 판단 기준 전문: docs/04_테이블_설계_가이드.md.`;
 
 export interface PromptArg {
   name: string;
@@ -56,10 +50,11 @@ export function tableDesignPromptText(args: Record<string, string | undefined>):
 ${args['bizArea'] ? `업무구분: ${args['bizArea']}\n` : ''}
 요구사항: ${req ? req : '(아직 없음)'}
 
-요구사항이 없거나 한두 단어로 잘려 보이면 도구를 부르기 전에 사용자에게 먼저 묻는다 — 테이블의 목적(무엇을 기록하나), 컬럼으로 둘 항목, 한 행을 구분하는 키.
-서버 안내문의 "테이블 설계 순서"를 따른다. 진행 방법:
-1. 테이블 논리명과 컬럼 논리명 목록(한국어 표준 용어 조합)을 먼저 정리해 보여 준다.
-2. table_name_suggest·columns_autocomplete로 물리명·타입을 받는다. 미등록 용어·필요한 도메인은 등록안을 표로 보여 주고 확인을 받은 뒤 등록한다.
-3. PK·NULL 허용·기본컬럼을 정해 table_validate로 오류 0건을 만든 뒤 table_create로 저장한다.
-4. 저장한 테이블의 DDL(table_ddl)과 설계 요약(컬럼·매칭 종류·경고)을 보여 준다.`;
+요구사항이 없거나 한두 단어로 잘려 보이면 도구를 부르기 전에 사용자에게 먼저 묻는다 — 테이블의 목적(무엇을 기록하나), 한 행의 의미, 키, 다른 테이블과의 관계.
+서버 안내문의 설계 규칙 P1~P8을 따른다. 진행 방법:
+1. 준비: whoami(역할 — 편집자면 도메인·코드구분 등록은 프로젝트 관리자에게 요청해야 함을 알린다), project_settings_get(기본 방언·기본컬럼 세트), biz_areas_list, default_column_set_get, domain_classes_list.
+2. 테이블 논리명과 컬럼 논리명 목록(등록 용어 + 도메인분류 접미어로 끝나는 이름)을 먼저 보여 준다. 여러 테이블이면 공통 키·참조·시각 컬럼을 먼저 뽑아 도메인으로 등록한다.
+3. table_name_suggest·columns_autocomplete 결과를 P2 순위로 처리한다. composed로 둔 컬럼은 "한 테이블 전용·기본 타입·키 아님" 근거를 남긴다. 필요한 용어·도메인·코드구분은 한 번에 등록안 표로 보여 주고 확인받은 뒤 등록하고 다시 자동완성한다.
+4. PK·NULL 허용을 정하고 기본컬럼 세트를 끝에 넣어 table_validate 오류 0·경고 0을 만든 뒤 table_create로 저장한다.
+5. 저장한 테이블의 DDL(table_ddl)과 완료 보고를 보여 준다 — 매칭 통계(EXACT·CODE·COMPOSED·DEFAULT, SIMILAR 0·MANUAL 0), COMPOSED 사유, 사전 변경 목록, 예외(기본컬럼 제외·남긴 경고와 사유), 검증 결과.`;
 }

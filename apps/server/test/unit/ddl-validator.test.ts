@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { VALIDATION_CODES, type ValidationCode } from '@termflow/shared';
 import type { ColumnModel, TableModel } from '../../src/ddl/model.js';
-import { physicalSuffix, validateTable, type ValidateContext } from '../../src/ddl/validator.js';
+import {
+  physicalSuffix,
+  validateTable,
+  type DesignContext,
+  type ValidateContext,
+} from '../../src/ddl/validator.js';
 import { col, table } from './ddl-fixtures.js';
 
 // T7.6 DoD: 코드표(§5.7) 중 테이블·컬럼 규칙 전 행 단위 테스트
@@ -15,6 +20,18 @@ const withCol = (c: Partial<ColumnModel>, extra: Partial<TableModel> = {}): Tabl
   const t = ok();
   return { ...t, ...extra, columns: [t.columns[0]!, { ...t.columns[1]!, ...c }] };
 };
+const SET: NonNullable<DesignContext['defaultSet']> = {
+  setNm: '표준 감사',
+  cols: [
+    { defaultColId: 1, physicalNm: 'FIRS_REG_DTS' },
+    { defaultColId: 2, physicalNm: 'FINA_REG_DTS' },
+  ],
+};
+const design = (d: Partial<DesignContext> = {}): DesignContext => ({
+  defaultSet: null,
+  columnsByName: new Map(),
+  ...d,
+});
 const codes = (t: TableModel, ctx: Partial<ValidateContext> = {}) => {
   const r = validateTable(t, { ...CTX, ...ctx });
   return [...r.errors, ...r.warnings].map((i) => i.code);
@@ -103,6 +120,29 @@ const CASES: [ValidationCode, () => TableModel, Partial<ValidateContext>?][] = [
   ['W_COMMENT_EMPTY', () => withCol({ colComment: null })],
   ['W_PREFIX_MISMATCH', () => ({ ...ok(), tableNm: 'AC_OK' })],
   ['W_VARCHAR_BYTES', () => withCol({ dataLength: 2000 })],
+  ['W_DEFAULT_COLS_MISSING', ok, { design: design({ defaultSet: SET }) }],
+  ['W_MATCH_MANUAL', ok, { design: design() }],
+  ['W_MATCH_SIMILAR', () => withCol({ matchType: 'SIMILAR' }), { design: design() }],
+  ['W_CODE_CLS_NONE', () => withCol({ physicalNm: 'EQP_TP_CD' }), { design: design() }],
+  [
+    'W_COMPOSED_KEY',
+    () => ({
+      ...ok(),
+      columns: [
+        col({ physicalNm: 'SITE_ID', isPk: true, isNullable: false, matchType: 'COMPOSED' }),
+      ],
+    }),
+    { design: design() },
+  ],
+  [
+    'W_COMPOSED_SHARED',
+    () => withCol({ physicalNm: 'GW_ID', matchType: 'COMPOSED' }),
+    {
+      design: design({
+        columnsByName: new Map([['GW_ID', [{ tableNm: 'DP_GW_MST', isPk: true }]]]),
+      }),
+    },
+  ],
 ];
 
 describe('TableValidator — 코드표 전 행(§5.7)', () => {
@@ -178,6 +218,95 @@ describe('TableValidator — 코드표 전 행(§5.7)', () => {
     expect(physicalSuffix('WRK_ADDR1')).toBe('ADDR');
     expect(physicalSuffix('MEMO')).toBe('MEMO');
     expect(physicalSuffix('A_1')).toBeNull();
+  });
+
+  it('설계 규칙(T18.12)은 design 문맥이 없으면 판정하지 않는다(DDL 생성 재검증)', () => {
+    const t = withCol({ physicalNm: 'EQP_TP_CD', matchType: 'SIMILAR' });
+    const got = codes(t);
+    for (const c of ['W_MATCH_MANUAL', 'W_MATCH_SIMILAR', 'W_CODE_CLS_NONE'] as const)
+      expect(got).not.toContain(c);
+  });
+
+  it('기본컬럼 누락: 세트 컬럼이 다 있거나 설명에 "기본컬럼 제외"면 경고 없음, 메시지에 빠진 물리명', () => {
+    const ctx = { design: design({ defaultSet: SET }) };
+    const r = validateTable(withCol({ physicalNm: 'FIRS_REG_DTS', defaultColId: 1 }), {
+      ...CTX,
+      ...ctx,
+    });
+    expect(r.warnings.find((w) => w.code === 'W_DEFAULT_COLS_MISSING')?.message).toBe(
+      "기본컬럼 세트 '표준 감사'의 1개 컬럼이 없습니다(FINA_REG_DTS)",
+    );
+    const full: TableModel = {
+      ...ok(),
+      columns: [
+        ...ok().columns,
+        col({ physicalNm: 'FIRS_REG_DTS', defaultColId: 1, matchType: 'DEFAULT' }),
+        col({ physicalNm: 'FINA_REG_DTS', defaultColId: 2, matchType: 'DEFAULT' }),
+      ],
+    };
+    expect(codes(full, ctx)).not.toContain('W_DEFAULT_COLS_MISSING');
+    expect(
+      codes({ ...ok(), description: '수집 원시값. 기본컬럼 제외: 초당 수천 건' }, ctx),
+    ).not.toContain('W_DEFAULT_COLS_MISSING');
+  });
+
+  it('코드구분 없는 CD: 코드구분 연결·도메인 있는 PK(코드 마스터 키)·마스터 키 참조는 예외', () => {
+    const ctx = { design: design() };
+    expect(codes(withCol({ physicalNm: 'EQP_TP_CD', codeClsId: 3 }), ctx)).not.toContain(
+      'W_CODE_CLS_NONE',
+    );
+    // 코드 마스터 키: 도메인(EXACT) + PK
+    const master: TableModel = {
+      ...ok(),
+      columns: [
+        col({
+          physicalNm: 'ALRM_CD',
+          isPk: true,
+          isNullable: false,
+          domainId: 7,
+          matchType: 'EXACT',
+        }),
+      ],
+    };
+    expect(codes(master, ctx)).not.toContain('W_CODE_CLS_NONE');
+    // 도메인 없는 PK는 경고
+    const noDomain: TableModel = {
+      ...master,
+      columns: [{ ...master.columns[0]!, domainId: null }],
+    };
+    expect(codes(noDomain, ctx)).toContain('W_CODE_CLS_NONE');
+    // 다른 테이블에서 PK인 같은 물리명(코드 마스터 참조)
+    const refCtx = {
+      design: design({
+        columnsByName: new Map([['ALRM_CD', [{ tableNm: 'GT_ALRM_CD', isPk: true }]]]),
+      }),
+    };
+    const ref = withCol({ physicalNm: 'ALRM_CD', domainId: 7, matchType: 'EXACT' });
+    expect(codes(ref, refCtx)).not.toContain('W_CODE_CLS_NONE');
+    expect(codes(ref, ctx)).toContain('W_CODE_CLS_NONE');
+  });
+
+  it('COMPOSED 공유: 자기 테이블 행은 빼고, 다른 테이블명을 메시지에 보인다', () => {
+    const self = {
+      design: design({ columnsByName: new Map([['GW_ID', [{ tableNm: 'RP_OK', isPk: false }]]]) }),
+    };
+    expect(codes(withCol({ physicalNm: 'GW_ID', matchType: 'COMPOSED' }), self)).not.toContain(
+      'W_COMPOSED_SHARED',
+    );
+    const many = {
+      design: design({
+        columnsByName: new Map([
+          ['GW_ID', ['DP_A', 'DP_B', 'DP_C', 'DP_D'].map((tableNm) => ({ tableNm, isPk: false }))],
+        ]),
+      }),
+    };
+    const r = validateTable(withCol({ physicalNm: 'GW_ID', matchType: 'COMPOSED' }), {
+      ...CTX,
+      ...many,
+    });
+    expect(r.warnings.find((w) => w.code === 'W_COMPOSED_SHARED')?.message).toBe(
+      'DP_A, DP_B, DP_C 외 1개에도 있는 컬럼이 도메인 없는 조합입니다. 도메인을 등록해 쓰세요',
+    );
   });
 
   it('중복 물리명 메시지는 먼저 나온 행 번호(1-기준)', () => {

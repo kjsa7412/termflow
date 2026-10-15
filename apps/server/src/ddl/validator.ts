@@ -39,7 +39,25 @@ export interface ValidateContext {
   otherTableNames?: ReadonlySet<string>;
   /** 용어 상태·재분절(W_TERM_PENDING·REJECTED·CHANGED) — 자동완성 엔진(`columnTermHint`, T9.9)이 채운다. */
   termHints?: (col: ColumnModel, index: number) => TermHint | undefined;
+  /** 설계 규칙(테이블 설계 가이드 §2, T18.12) 문맥. 주지 않으면 W_DEFAULT_COLS_MISSING·W_MATCH_*·W_CODE_CLS_NONE·W_COMPOSED_* 판정 생략(DDL 생성 재검증). */
+  design?: DesignContext;
 }
+
+/** 다른 테이블의 같은 물리명 컬럼(가이드 §2.3 D1·D2, §2.5-3 코드 마스터 참조). */
+export interface NamedColumnRef {
+  tableNm: string;
+  isPk: boolean;
+}
+
+export interface DesignContext {
+  /** 프로젝트 설정 '기본컬럼 포함'이 켜져 있을 때 기본 세트. null이면 W_DEFAULT_COLS_MISSING 판정 생략. */
+  defaultSet: { setNm: string; cols: { defaultColId: number; physicalNm: string }[] } | null;
+  /** 같은 프로젝트 테이블의 컬럼(물리명 → 위치). 자기 테이블 행은 검증기가 테이블명으로 뺀다. */
+  columnsByName: ReadonlyMap<string, readonly NamedColumnRef[]>;
+}
+
+/** 테이블 설명에 이 표시가 있으면 기본컬럼 누락을 사용자 지시 예외로 본다(가이드 §2.6-4). */
+export const DEFAULT_COLS_EXCLUDED_MARK = '기본컬럼 제외';
 
 export interface ValidationResult {
   errors: ValidationIssue[];
@@ -121,6 +139,59 @@ export function validateTable(table: TableModel, ctx: ValidateContext): Validati
     }
   }
   if (!table.columns.some((c) => c.isPk)) push('W_PK_NONE', tbl);
+  const design = ctx.design;
+  const defaultSet = design?.defaultSet;
+  if (defaultSet && !(table.description ?? '').includes(DEFAULT_COLS_EXCLUDED_MARK)) {
+    const have = new Set(table.columns.map((c) => c.defaultColId));
+    const missing = defaultSet.cols.filter((d) => !have.has(d.defaultColId));
+    if (missing.length > 0) {
+      push('W_DEFAULT_COLS_MISSING', tbl, {
+        setNm: defaultSet.setNm,
+        cnt: missing.length,
+        cols: missing.map((d) => d.physicalNm).join(', '),
+      });
+    }
+  }
+  /** 다른 테이블의 같은 물리명 컬럼(자기 테이블 제외). */
+  const elsewhere = (physicalNm: string): readonly NamedColumnRef[] =>
+    (design?.columnsByName.get(physicalNm) ?? []).filter((r) => r.tableNm !== table.tableNm);
+
+  /**
+   * 설계 규칙(가이드 §2.2·§2.3·§2.5, T18.12) — 기본컬럼은 세트 정의가 기준이라 제외.
+   * - MANUAL·SIMILAR: 표준 사전 밖 입력·같은 뜻 다른 이름(P1·P2)
+   * - 접미어 CD인데 코드구분 없음(P4). 예외(§2.5-3): 도메인(EXACT)이 있고 PK(코드 마스터 키)이거나
+   *   다른 테이블에서 같은 물리명이 PK(코드 마스터 참조)인 컬럼
+   * - COMPOSED인데 PK(D1)이거나 다른 테이블에 같은 물리명(D2)
+   */
+  const designRules = (
+    c: ColumnModel,
+    base: Omit<ValidationIssue, 'code' | 'message'>,
+    physOk: boolean,
+  ) => {
+    if (c.matchType === 'MANUAL') push('W_MATCH_MANUAL', base);
+    if (c.matchType === 'SIMILAR')
+      push('W_MATCH_SIMILAR', base, { domainNm: c.domain?.logicalNm ?? '?' });
+    if (!physOk) return;
+    const refs = elsewhere(c.physicalNm);
+    if (
+      physicalSuffix(c.physicalNm) === 'CD' &&
+      c.codeClsId === null &&
+      c.matchType !== 'CODE' &&
+      c.matchType !== 'UNREGISTERED' &&
+      !(c.domainId !== null && (c.isPk || refs.some((r) => r.isPk)))
+    ) {
+      push('W_CODE_CLS_NONE', { ...base, field: 'codeClsId' });
+    }
+    if (c.matchType === 'COMPOSED') {
+      if (c.isPk) push('W_COMPOSED_KEY', base);
+      else if (refs.length > 0) {
+        const names = [...new Set(refs.map((r) => r.tableNm))].sort();
+        const shown =
+          names.slice(0, 3).join(', ') + (names.length > 3 ? ` 외 ${names.length - 3}개` : '');
+        push('W_COMPOSED_SHARED', base, { tables: shown });
+      }
+    }
+  };
 
   // ── 컬럼 ──────────────────────────────────────────────────────────
   const firstRow = new Map<string, number>();
@@ -189,6 +260,7 @@ export function validateTable(table: TableModel, ctx: ValidateContext): Validati
       if (s !== null && !ctx.suffixes.has(s)) push('W_SUFFIX_UNREGISTERED', phys, { suffix: s });
     }
     if (c.matchType === 'CODE' && c.codeClsId === null) push('W_CODE_CLS_MISSING', base);
+    if (design && !isDefaultCol) designRules(c, base, physOk);
     const dflt = classifyDefault(c.defaultVal);
     if (dflt.kind === 'STRING' && dflt.looksLikeFunction) {
       push('W_DEFAULT_AS_STRING', { ...base, field: 'defaultVal' }, { defaultVal: dflt.value });
