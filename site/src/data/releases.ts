@@ -8,6 +8,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.4',
+    date: '2026-10-15',
+    summary: '테이블 설계 기준을 검증 경고로.',
+    items: [
+      '기본컬럼 누락·수동 입력 컬럼·코드구분 없는 코드 컬럼·도메인 없는 키와 공통 컬럼을 경고로 알림',
+      '에이전트 연동 안내문을 설계 원칙 중심으로 줄이고 단계별 설계 절차 문서 제공',
+    ],
+  },
+  {
     version: '1.3.3',
     date: '2026-10-12',
     summary: '기본값 입력 실수 알림.',
