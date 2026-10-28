@@ -1,0 +1,52 @@
+name: 결함 보고
+description: 화면·API·설치가 설명과 다르게 동작한다
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 판
+      description: 왼쪽 메뉴 아래의 `TermFlow v<판>`
+      placeholder: v1.3.5
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: 설치 방식
+      options:
+        - Windows (start.bat)
+        - Linux (install.sh)
+        - 개발 환경 (pnpm dev)
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: 역할
+      options:
+        - 시스템 관리자
+        - 프로젝트 관리자
+        - 편집자
+        - 조회자
+        - 에이전트 연동(접근 토큰)
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 절차
+      placeholder: |
+        1. [표준 › 용어]에서 …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 결과와 실제 결과
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 화면 그림·오류 메시지·로그
+      description: 오류 코드(예 E_VERSION_CONFLICT)나 `logs/`의 해당 줄. 비밀번호·토큰·운영 데이터는 지운다.

@@ -30,24 +30,28 @@ function* files(dir) {
   }
 }
 
+/** 글자 하나에서 목록의 이름을 찾는다 → [{ term, context }]. 저장소 첫 화면 문서 검사(scripts/check-public-docs.mjs)도 쓴다. */
+export function leaksIn(text, terms = leakTerms()) {
+  const out = [];
+  for (const term of terms) {
+    const m = pattern(term).exec(text);
+    if (m)
+      out.push({
+        term,
+        context: text
+          .slice(Math.max(0, m.index - 30), m.index + term.length + 30)
+          .replace(/\s+/g, ' '),
+      });
+  }
+  return out;
+}
+
 /** dist 안 글자 파일에서 목록의 이름을 찾는다 → [{ file, term, context }]. */
 export function checkLeaks(dist, terms = leakTerms()) {
   const out = [];
-  const pats = terms.map((t) => [t, pattern(t)]);
   for (const f of files(dist)) {
-    const text = readFileSync(f, 'utf8');
-    for (const [term, re] of pats) {
-      re.lastIndex = 0;
-      const m = re.exec(text);
-      if (m)
-        out.push({
-          file: path.relative(dist, f),
-          term,
-          context: text
-            .slice(Math.max(0, m.index - 30), m.index + term.length + 30)
-            .replace(/\s+/g, ' '),
-        });
-    }
+    for (const hit of leaksIn(readFileSync(f, 'utf8'), terms))
+      out.push({ file: path.relative(dist, f), ...hit });
   }
   return out;
 }

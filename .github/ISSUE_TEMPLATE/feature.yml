@@ -1,0 +1,21 @@
+name: 기능 제안
+description: 새 기능이나 개선을 제안한다
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 지금 불편한 점
+      description: 어떤 역할이 어떤 화면·흐름에서 무엇을 하려다 막히는지
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 지금 쓰는 우회 방법

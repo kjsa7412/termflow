@@ -1,0 +1,31 @@
+name: 기본 표준 데이터 오류
+description: 범용 기본 표준 템플릿의 용어·도메인·코드가 틀렸거나 빠졌다
+labels: [standard-data]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 대상
+      options:
+        - 용어
+        - 도메인분류
+        - 도메인
+        - 코드구분·코드
+        - 기본컬럼
+        - 업무구분
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 지금 값
+      description: 논리명·물리명·타입 등 화면에 보이는 그대로
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: 고칠 값과 근거
+      description: 공공·업계 표준, 다른 항목과의 일관성 등
+    validations:
+      required: true

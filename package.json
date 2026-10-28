@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "pnpm --filter @termflow/shared build && pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "lint": "eslint . && prettier --check . && pnpm check:no-ai",
+    "lint": "eslint . && prettier --check . && pnpm check:no-ai && pnpm check:public-docs",
     "format": "prettier --write .",
     "typecheck": "pnpm --filter @termflow/shared build && pnpm -r typecheck",
     "test": "pnpm -r test",
@@ -21,6 +21,7 @@
     "db:pull": "pnpm --filter @termflow/server db:pull",
     "migrate:seed": "pnpm --filter @termflow/server migrate:seed",
     "check:no-ai": "node scripts/check-no-ai.mjs",
+    "check:public-docs": "node scripts/check-public-docs.mjs",
     "e2e": "pnpm --filter @termflow/e2e e2e"
   },
   "pnpm": {
