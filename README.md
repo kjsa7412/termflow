@@ -6,6 +6,7 @@
 [![release](https://img.shields.io/github/v/release/kjsa7412/termflow?label=release)](https://github.com/kjsa7412/termflow/releases/latest)
 ![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-336791)
 ![Node 22](https://img.shields.io/badge/Node.js-22-339933)
+[![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 표준 사전(용어·도메인·코드)을 **프로젝트마다** 두고, 컬럼 **논리명을 쓰고 Enter** 하면 표준으로 물리명·타입·코멘트가 채워진다. 설계가 끝나면 **PostgreSQL DDL**을 복사하거나 내려받는다.
 
@@ -104,3 +105,7 @@ sudo bash /opt/termflow/scripts/upgrade.sh /tmp/termflow-linux-<판>.tar.gz
 ## 기술
 
 NestJS(Node.js 22) · Vue 3 + Vite · PostgreSQL 17 · Drizzle · Docker Compose · Playwright · GitHub Actions
+
+## 라이선스
+
+[MIT](LICENSE) — 상업적 이용·수정·배포·재라이선스 모두 가능하다. 저작권 표시와 라이선스 문구만 함께 둔다.
