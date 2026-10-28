@@ -25,3 +25,19 @@ apps/server/.drizzle-pull/
 
 # Linux 오프라인 번들 산출물(scripts/bundle.sh, T12.4)
 release/
+
+# 공개 저장소에 올리지 않는 사내 원천 — 개발 PC에만 둔다(2026-10-28 추적 해제).
+# 승계 원본 dump·프로파일(실데이터), 내부 설계·검토·작업 기록과 목업(사내 이름·이관 시스템 내용).
+# 이 파일들을 읽는 테스트는 없으면 건너뛴다(apps/server/test/local-sources.ts). 공개 문서는 docs/의 나머지.
+seed/original/
+seed/PROFILE_original.md
+docs/00_*.md
+docs/01_*.md
+docs/02_*.md
+docs/03_*.md
+docs/CR-*.md
+docs/PoC_*.md
+docs/cr09_rename_postgresql.sql
+docs/수용_테스트_결과.md
+docs/측정_결과.md
+docs/mockups/

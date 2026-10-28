@@ -25,6 +25,7 @@
 - 사용자 결정이 필요한 항목은 설계서·TODO의 권장안으로 처리하고 기록한다. 설계 수준 변경은 `docs/CR-{nn}_*.md`로 남긴다.
 
 ## 금지
+- 사내 원천(승계 원본 `seed/original/`, 설계서·TODO·CR·목업 등 `.gitignore`의 "공개 저장소에 올리지 않는 사내 원천")을 커밋하지 않는다. 저장소는 공개다. 이 문서들은 개발 PC에만 있고 계속 그대로 고쳐 쓴다(TODO 체크·CR 기록은 로컬). 새 기록 문서에 사내 이름이 들어가면 `.gitignore`에 더한다.
 - `seed/original/` 수정, `C:\project\gen_table_promotion` 열람·수정.
 - AI 기능(채팅·추천·외부 LLM 호출) 구현. `pnpm check:no-ai` 게이트 유지.
   - 예외(CR-18, 2026-10-11 사용자 승인): 외부 에이전트가 TermFlow를 호출하는 연동 창구(`/mcp` + 개인 접근 토큰)는 허용한다. 서버가 모델을 부르는 코드는 여전히 금지. 제품 코드에 클라이언트 제품명을 쓰지 않는다(게이트 패턴 — `getAllMethodNames`처럼 단어 속 `llm`도 걸린다). 새 REST 라우트를 추가하면 `apps/server/src/mcp/tool-specs.ts`에 도구 이름·설명(또는 제외 사유)을 넣는다(test:db `mcp.test.ts`가 확인).

@@ -1,15 +1,14 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type pg from 'pg';
 import type { Db } from '../../../src/db/client.js';
 import type { RunOptions, StepName } from '../../../src/migration/context.js';
 import { runSeed, type RunSummary } from '../../../src/migration/runner.js';
 import { SEED_STEPS } from '../../../src/migration/steps/index.js';
+import { LEGACY_DUMP } from '../../local-sources.js';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
-export const DUMP = path.join(ROOT, 'seed', 'original', 'dump-gen_table-new.sql');
+export const DUMP = LEGACY_DUMP;
 
 /** 승계 1차(§11.5): LOAD_LEGACY..DEFAULT_COL + RECONCILE. */
 export const PHASE1: StepName[] = [

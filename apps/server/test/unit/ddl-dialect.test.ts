@@ -16,6 +16,7 @@ import {
   renderPattern,
   typeMapping,
 } from '../../src/ddl/type-mapping.js';
+import { HAS_DESIGN_DOC } from '../local-sources.js';
 import { col, designTypeTable, table } from './ddl-fixtures.js';
 
 const pg = dialectFor('POSTGRESQL');
@@ -182,32 +183,36 @@ describe('매핑 YAML(T7.2)', () => {
     expect(mapStdType(m, 'VARCHAR', 20000, null).warnings).toEqual([]);
   });
 
-  it('설계서 §6.3 표의 셀과 3방언 YAML 기본 표현이 같다(데이터 일관성)', () => {
-    const rows = designTypeTable();
-    expect(rows).toHaveLength(12);
-    const sample: Record<string, [number | null, number | null]> = {
-      VARCHAR: [20, null],
-      CHAR: [1, null],
-      NUMERIC: [6, 2],
-      TIMESTAMP: [0, null],
-    };
-    for (const row of rows) {
-      const type = row.type.replace(/\(.*$/, '') as (typeof STD_TYPES)[number];
-      const [n, s] = sample[type] ?? [null, null];
-      const cells = { POSTGRESQL: row.pg, ORACLE: row.oracle, MYSQL: row.mysql } as const;
-      for (const d of DIALECTS) {
-        const got = mapStdType(typeMapping(d), type, n, s).sql;
-        // 표 셀은 `PATTERN(n)` 표기 — 첫 백틱 구간을 샘플 값으로 채워 비교
-        const cell = /`([^`]+)`/.exec(cells[d])?.[1] ?? '';
-        const expected = cell
-          .replace('(n)', n !== null ? `(${n})` : '')
-          .replace('(n CHAR)', `(${n} CHAR)`)
-          .replace('(p[,s])', `(${n},${s})`)
-          .replace('(p,s)', `(${n},${s})`);
-        expect(got, `${d} ${type}`).toBe(expected);
+  // 설계서는 개발 PC에만 있다(저장소에 없음)
+  it.skipIf(!HAS_DESIGN_DOC)(
+    '설계서 §6.3 표의 셀과 3방언 YAML 기본 표현이 같다(데이터 일관성)',
+    () => {
+      const rows = designTypeTable();
+      expect(rows).toHaveLength(12);
+      const sample: Record<string, [number | null, number | null]> = {
+        VARCHAR: [20, null],
+        CHAR: [1, null],
+        NUMERIC: [6, 2],
+        TIMESTAMP: [0, null],
+      };
+      for (const row of rows) {
+        const type = row.type.replace(/\(.*$/, '') as (typeof STD_TYPES)[number];
+        const [n, s] = sample[type] ?? [null, null];
+        const cells = { POSTGRESQL: row.pg, ORACLE: row.oracle, MYSQL: row.mysql } as const;
+        for (const d of DIALECTS) {
+          const got = mapStdType(typeMapping(d), type, n, s).sql;
+          // 표 셀은 `PATTERN(n)` 표기 — 첫 백틱 구간을 샘플 값으로 채워 비교
+          const cell = /`([^`]+)`/.exec(cells[d])?.[1] ?? '';
+          const expected = cell
+            .replace('(n)', n !== null ? `(${n})` : '')
+            .replace('(n CHAR)', `(${n} CHAR)`)
+            .replace('(p[,s])', `(${n},${s})`)
+            .replace('(p,s)', `(${n},${s})`);
+          expect(got, `${d} ${type}`).toBe(expected);
+        }
       }
-    }
-  });
+    },
+  );
 
   it('Oracle·MySQL 대체 타입·경고(데이터)', () => {
     const o = typeMapping('ORACLE');

@@ -11,7 +11,8 @@
 #   ② 수동 — Actions › release › Run workflow(tag만 입력, sha는 비움). 이미 있는 태그로 배포물을 다시 만든다
 #      (검사는 그 태그의 ci가 이미 통과) → 목록 제목 "v1.2.1 배포물 다시 만들기"
 # 태그는 번들 검증이 끝난 뒤에 만든다 — 번들이 실패하면 태그가 없어 다음 main push가 다시 시도한다.
-# 저장소·Release는 비공개로 둔다 — 번들에 승계 원본(seed/original)이 들어 있다(CR-14 C7).
+# 번들(git archive)에는 승계 원본(seed/original)이 없다 — 저장소에서 추적을 해제했다(2026-10-28, CR-14 C7 대체).
+# 승계가 필요한 서버는 원본을 따로 반입해 설치 폴더 seed/original/에 둔다.
 name: release
 run-name: ${{ inputs.tag }} 배포물${{ inputs.sha == '' && ' 다시 만들기' || '' }}
 

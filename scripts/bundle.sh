@@ -2,7 +2,7 @@
 # TermFlow Linux 오프라인 번들(T12.4, CR-12 C7): 인터넷 없는 Linux 서버에 들고 가는 파일 한 개를 만든다.
 #
 #   release/termflow-linux-<판>.tar.gz
-#     termflow-<판>/            git archive(<ref>) — compose·스크립트·seed·문서·소스(업그레이드 빌드용)
+#     termflow-<판>/            git archive(<ref>) — compose·스크립트·문서·소스(업그레이드 빌드용). 승계 원본 seed/original은 추적하지 않아 없다
 #     termflow-<판>/images/     termflow-images-<판>.tar.gz = docker save termflow-app:<판> postgres:17
 #   release/termflow-linux-<판>.tar.gz.sha256
 #

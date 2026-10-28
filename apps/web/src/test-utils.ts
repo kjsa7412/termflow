@@ -27,7 +27,7 @@ export function problem(
   extra: Record<string, unknown> = {},
 ): Response {
   return json(status, {
-    type: `https://termflow.sjinc.co.kr/problems/${type}`,
+    type: `https://termflow.local/problems/${type}`,
     title: type,
     status,
     code,

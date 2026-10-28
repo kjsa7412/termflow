@@ -1,7 +1,8 @@
 /**
  * 오류 응답 형식(RFC 9457 ProblemDetail + `code`·`errors[]`·`warnings[]` 확장, 설계서 §9.2).
  */
-export const PROBLEM_TYPE_BASE = 'https://termflow.sjinc.co.kr/problems/';
+// 식별자일 뿐 열리는 주소가 아니다(RFC 9457 §3.1.1) — 회사 도메인을 쓰지 않는다(공개 저장소, 2026-10-28)
+export const PROBLEM_TYPE_BASE = 'https://termflow.local/problems/';
 
 /**
  * `type` 목록. §9.2 목록 + 형식 오류(400) `bad-request`·미인증(401) `unauthorized`를 더했다

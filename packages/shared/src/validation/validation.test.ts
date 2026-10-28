@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -7,9 +7,9 @@ import { checkIdentifier, DIALECT_IDENTIFIER_MAX } from './identifier.js';
 import { checkPasswordPolicy } from './password.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const doc = readFileSync(path.resolve(here, '../../../../docs/02_설계서.md'), 'utf8')
-  .split('\r\n')
-  .join('\n');
+// 설계서는 개발 PC에만 있다(저장소에 없음, .gitignore) — 없으면(CI·새 clone) 설계서 대조만 건너뛴다
+const DOC = path.resolve(here, '../../../../docs/02_설계서.md');
+const doc = existsSync(DOC) ? readFileSync(DOC, 'utf8').split('\r\n').join('\n') : '';
 
 /** 설계서 §5.7 표의 (코드, 구분) 행. */
 function designCodeRows(): { code: string; severity: string }[] {
@@ -26,7 +26,7 @@ function designCodeRows(): { code: string; severity: string }[] {
 }
 
 describe('validation/codes (T2.10)', () => {
-  it('코드표 행 수·코드·구분이 설계서 §5.7 표와 같다', () => {
+  it.skipIf(!doc)('코드표 행 수·코드·구분이 설계서 §5.7 표와 같다', () => {
     const rows = designCodeRows();
     expect(rows.length).toBe(37); // +W_DEFAULT_QUOTED(CR-18), +설계 규칙 6종(T18.12)
     expect(Object.keys(VALIDATION_CODES)).toEqual(rows.map((r) => r.code));

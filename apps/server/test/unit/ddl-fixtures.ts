@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { ColumnModel, DdlMeta, TableModel } from '../../src/ddl/model.js';
+import { DESIGN_DOC as DOC } from '../local-sources.js';
 
 /** DDL 단위 테스트 공용 모델 빌더. */
 export function col(over: Partial<ColumnModel> & Pick<ColumnModel, 'physicalNm'>): ColumnModel {
@@ -103,12 +102,7 @@ export const RP_RSCH_PRJ_MAST_68: TableModel = table({
   ],
 });
 
-const DOC = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../../../docs/02_설계서.md',
-);
-
-/** 설계서 §6.8의 첫 ```sql 블록(PostgreSQL 기본 옵션 예시). */
+/** 설계서 §6.8의 첫 ```sql 블록(PostgreSQL 기본 옵션 예시). 설계서는 개발 PC에만 있다 — 부르는 쪽이 HAS_DESIGN_DOC로 건너뛴다. */
 export function designExample68(): string {
   const doc = readFileSync(DOC, 'utf8').split('\r\n').join('\n');
   const sec = doc.slice(doc.indexOf('### 6.8'));

@@ -7,6 +7,7 @@ import {
   generateTable,
   warningSummary,
 } from '../../src/ddl/generator.js';
+import { HAS_DESIGN_DOC } from '../local-sources.js';
 import { col, designExample68, META_68, RP_RSCH_PRJ_MAST_68, table } from './ddl-fixtures.js';
 
 // T7.5 옵션 조합, T7.7 §6.8 예시 문자열 일치(생성기 + TableModel)
@@ -16,9 +17,13 @@ const gen = (t = RP_RSCH_PRJ_MAST_68, o: Partial<DdlOptions> = {}) =>
   generateTable(pg, { model: t, warnings: [] }, opts(o), META_68).sql;
 
 describe('generator — §6.8 예시(T7.7)', () => {
-  it('기본 옵션(D15) 출력이 설계서 §6.8 PostgreSQL 예시와 문자 단위로 같다', () => {
-    expect(gen()).toBe(designExample68());
-  });
+  // 설계서는 개발 PC에만 있다(저장소에 없음)
+  it.skipIf(!HAS_DESIGN_DOC)(
+    '기본 옵션(D15) 출력이 설계서 §6.8 PostgreSQL 예시와 문자 단위로 같다',
+    () => {
+      expect(gen()).toBe(designExample68());
+    },
+  );
 });
 
 describe('generator — 옵션 조합(T7.5)', () => {

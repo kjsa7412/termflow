@@ -6,7 +6,7 @@
 
 - 작업·커밋·push는 `main`에서 한다. push마다 CI가 돌므로 push 전에 고친 범위의 lint·typecheck·테스트를 로컬에서 확인한다.
 - 커밋 메시지는 한국어. 기능은 `feat(T<단계>): …`, 문서는 `docs: …`, 판 올림은 `v<판> — 판 올림 · <요약>`으로 시작한다.
-- 절차는 [docs/03_TODO.md](docs/03_TODO.md)를 따르고, 항목을 끝내면 `[x]`와 커밋 해시를 적는다. 설계 수준 변경은 `docs/CR-{nn}_*.md`로 남긴다.
+- 절차는 `docs/03_TODO.md`를 따르고, 항목을 끝내면 `[x]`와 커밋 해시를 적는다. 설계 수준 변경은 `docs/CR-{nn}_*.md`로 남긴다. 둘 다 개발 PC에만 있다([설계·기록 문서](#설계기록-문서)).
 - 태그는 버전 태그 `v{X.Y.Z}`만 쓰고 손으로 달지 않는다(아래 [CD](#cdgithub-release-단계-14cr-14)).
 - 하지 않는 것: `seed/original/` 수정, AI 기능(대화·추천·외부 모델 호출) 구현 — `pnpm check:no-ai`가 막는다. 외부 에이전트가 TermFlow를 부르는 연동 창구(`/mcp` + 개인 접근 토큰)만 예외(CR-18). 새 REST 라우트를 더하면 `apps/server/src/mcp/tool-specs.ts`에 도구 이름·설명(또는 제외 사유)을 넣는다.
 - 비밀번호·비밀값을 문서나 커밋에 적지 않는다. `.env`는 커밋하지 않는다.
@@ -85,15 +85,15 @@ E2E_SHOTS=1 pnpm -C e2e exec playwright test mockup-shots --project=chrome   # �
 
 `main`·`stage/**` push와 main 대상 PR마다 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)이 ubuntu 러너에서 돈다(Actions 탭에서 수동 실행도 가능). 문서만 바꾼 push(`docs/`·루트 `.md`)는 돌지 않는다. 제품에 들어가는 설명서 두 권(`docs/사용자_가이드.md`·`docs/설치_운영_가이드.md`)과 `docs/img/`는 예외로 돈다(CR-17).
 
-| 작업                | 내용                                                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| lint · typecheck    | `pnpm lint`(ESLint·Prettier·check:no-ai) + `pnpm typecheck` — 실패하면 아래 test·test:db·build·install을 돌리지 않는다                  |
-| 설치 스크립트 검사  | shellcheck(`install.sh`·`start.sh`·`scripts/*.sh`) + PowerShell 구문(`start.ps1`·`scripts/*.ps1`)                                       |
-| test · test:db      | 단위 테스트, Testcontainers postgres:17(`TF_TEST_DB_REUSE=0`)                                                                           |
-| build               | `pnpm build`(shared → web → server, 소개 사이트 누출 검사 포함)                                                                         |
-| 이미지 · Linux 설치 | `docker build` → `./install.sh --no-systemd --migrate yes --migrate-all`(빈 서버 첫 설치·승계 1~12) → `/health`·`/manual` → 백업 → 복구 |
+| 작업                | 내용                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| lint · typecheck    | `pnpm lint`(ESLint·Prettier·check:no-ai) + `pnpm typecheck` — 실패하면 아래 test·test:db·build·install을 돌리지 않는다 |
+| 설치 스크립트 검사  | shellcheck(`install.sh`·`start.sh`·`scripts/*.sh`) + PowerShell 구문(`start.ps1`·`scripts/*.ps1`)                      |
+| test · test:db      | 단위 테스트, Testcontainers postgres:17(`TF_TEST_DB_REUSE=0`) — 승계 원본·설계서를 읽는 테스트는 건너뛴다              |
+| build               | `pnpm build`(shared → web → server, 소개 사이트 누출 검사 포함)                                                        |
+| 이미지 · Linux 설치 | `docker build` → `./install.sh --no-systemd --migrate no`(빈 서버 첫 설치) → `/health`·`/manual` → 백업 → 복구         |
 
-E2E(`pnpm e2e`)는 dev DB(RMS)·설치된 Chrome·Edge가 필요해 로컬 게이트에 남는다. 실패한 install 작업은 compose 로그·`logs/`·`migration/report/`를 산출물(7일)로 올린다.
+E2E(`pnpm e2e`)는 dev DB(RMS)·설치된 Chrome·Edge가 필요해 로컬 게이트에 남는다. 승계 1~12·대사·DDL 회귀와 설계서 대조도 원본이 있는 개발 PC의 `pnpm test`·`pnpm test:db`에서만 돈다. 실패한 install 작업은 compose 로그·`logs/`·`migration/report/`를 산출물(7일)로 올린다.
 
 ### CD(GitHub Release, 단계 14·CR-14)
 
@@ -185,7 +185,7 @@ e2e/               Playwright 브라우저 E2E·접근성(@termflow/e2e) · 데�
 site/              소개 사이트(@termflow/site, Vue 정적 SPA)
 docs/              설계서·TODO·CR·가이드·릴리스 노트 · img/screens(화면 그림) · skills(설계 절차 스킬)
 scripts/           check-no-ai.mjs · check-public-docs.mjs · run-vitest.mjs · load-concurrency.mjs(부하) · backup·restore · bundle.sh · release-check.sh
-seed/original/     승계 원본 SQL 복사본(수정 금지) → 승계 러너가 DB legacy 스키마로 적재 후 정제
+seed/              승계 원본 자리(seed/original/, 개발 PC에만·수정 금지) → 승계 러너가 DB legacy 스키마로 적재 후 정제
 migration/corrections/  승계 정정 초안 xlsx(용어·도메인분류·도메인)
 docker-compose.yml db + app 서비스(설계서 부록 B)
 Dockerfile         운영 이미지(CR-11a)
@@ -195,13 +195,26 @@ install.sh / start.sh   Linux 서버 설치·실행
 
 ## 설계·기록 문서
 
-| 문서                                                                  | 내용                               |
-| --------------------------------------------------------------------- | ---------------------------------- |
-| `docs/00_네이밍.md` · `docs/01_검토안.md`                             | 이름 선정, 기존 도구 검토          |
-| `docs/02_설계서.md`                                                   | 설계서(기능·데이터·화면·API·운영)  |
-| `docs/03_TODO.md`                                                     | 단계별 작업 목록과 완료 커밋       |
-| `docs/04_테이블_설계_가이드.md` · `docs/05_가이드_적용_프롬프트.md`   | 테이블 설계 판단 기준 P1~P8        |
-| `docs/CR-*.md`                                                        | 설계 변경 기록                     |
-| `docs/수용_테스트_결과.md` · `docs/측정_결과.md` · `docs/PoC_결과.md` | 수용 시험·성능 측정·PoC            |
-| `docs/릴리스_노트_v*.md`                                              | 판별 릴리스 노트(요약은 CHANGELOG) |
-| `docs/mockups/`                                                       | 화면 목업(HTML)                    |
+저장소에 있는 문서:
+
+| 문서                                                                | 내용                               |
+| ------------------------------------------------------------------- | ---------------------------------- |
+| `docs/04_테이블_설계_가이드.md` · `docs/05_가이드_적용_프롬프트.md` | 테이블 설계 판단 기준 P1~P8        |
+| `docs/사용자_가이드.md` · `docs/설치_운영_가이드.md`                | 제품 설명서(`/manual`)             |
+| `docs/릴리스_노트_v*.md`                                            | 판별 릴리스 노트(요약은 CHANGELOG) |
+| `docs/CI_CD_흐름.html`                                              | CI/CD 흐름도                       |
+
+**개발 PC에만 두는 문서**(사내 이름·이관 시스템 내용이 있어 `.gitignore`, 2026-10-28 추적 해제 — 이전 커밋 이력에는 남아 있다):
+
+| 문서                                                                  | 내용                                |
+| --------------------------------------------------------------------- | ----------------------------------- |
+| `docs/00_네이밍.md` · `docs/01_검토안.md`                             | 이름 선정, 기존 도구 검토           |
+| `docs/02_설계서.md`                                                   | 설계서(기능·데이터·화면·API·운영)   |
+| `docs/03_TODO.md`                                                     | 단계별 작업 목록과 완료 커밋        |
+| `docs/CR-*.md`                                                        | 설계 변경 기록                      |
+| `docs/수용_테스트_결과.md` · `docs/측정_결과.md` · `docs/PoC_결과.md` | 수용 시험·성능 측정·PoC             |
+| `docs/cr09_rename_postgresql.sql`                                     | CR-09 운영 DB 전환 스크립트         |
+| `docs/mockups/`                                                       | 화면 목업(HTML)                     |
+| `seed/original/` · `seed/PROFILE_original.md`                         | 승계 원본 dump와 프로파일(실데이터) |
+
+이 파일들을 읽는 테스트(설계서 대조·승계 원본으로 만든 실데이터 회귀·CR-09 전환 스크립트)는 파일이 없으면 건너뛴다(`apps/server/test/local-sources.ts`). CI·새 clone에서는 빠지고 개발 PC의 로컬 게이트에서만 돈다. 새 기록 문서를 만들 때 사내 이름이 들어가면 같은 규칙으로 `.gitignore`에 더한다.

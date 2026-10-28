@@ -71,11 +71,11 @@ describe('TERMFLOW_SECURE_COOKIE(CR-11a C5)', () => {
   });
 
   it('COOP: HTTP(사내 PC 이름·IP)에서는 보내지 않고 HTTPS·localhost에서만(콘솔 오류 방지, CR-15 C17)', async () => {
-    const http = await request(app('auto')).get('/').set('Host', '10.10.20.188:7340');
+    const http = await request(app('auto')).get('/').set('Host', '192.168.0.10:7340');
     expect(http.headers['cross-origin-opener-policy']).toBeUndefined();
     const https = await request(app('auto'))
       .get('/')
-      .set('Host', '10.10.20.188:7340')
+      .set('Host', '192.168.0.10:7340')
       .set('X-Forwarded-Proto', 'https');
     expect(https.headers['cross-origin-opener-policy']).toBe('same-origin');
     const local = await request(app('auto')).get('/').set('Host', 'localhost:7340');

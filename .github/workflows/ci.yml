@@ -6,7 +6,7 @@
 #   test        pnpm test(단위: shared·web·server·site)
 #   test-db     pnpm test:db(Testcontainers postgres:17 — 러너의 Docker를 쓴다)
 #   build       pnpm build(shared → web → server, site 누출 검사 포함)
-#   install     docker build → install.sh(빈 Linux 설치·승계 1~12·대사·DDL 회귀) → /health·/manual → 백업·복구
+#   install     docker build → install.sh(빈 Linux 설치, 승계 없음 — 원본은 저장소에 없다) → /health·/manual → 백업·복구
 #   version     (main push만) v<package.json version> 태그가 원격에 없으면 = 판을 올린 커밋 → 판 번호 일치 확인
 #   release     version이 판 올림이라고 판단하고 위 검사가 모두 통과하면 release.yml 실행 요청(번들 → 번들만으로 설치 → 태그·Release 초안)
 #
@@ -163,9 +163,10 @@ jobs:
           tags: ${{ steps.tag.outputs.image }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      # 빈 서버 첫 설치와 같은 경로: .env 생성(난수) → db → 승계 1~12(대사·DDL 회귀 포함) → app healthy
+      # 빈 서버 첫 설치와 같은 경로: .env 생성(난수) → db → app healthy(범용 기본 표준 템플릿).
+      # 승계 원본 dump는 저장소에 없다(개발 PC에만, 2026-10-28) — 승계 1~12·대사·DDL 회귀는 로컬 게이트(test:db)에서 확인한다.
       - name: install.sh
-        run: ./install.sh --no-systemd --migrate yes --migrate-all
+        run: ./install.sh --no-systemd --migrate no
       - name: 접속 확인
         run: |
           curl -fsS http://localhost:7340/health

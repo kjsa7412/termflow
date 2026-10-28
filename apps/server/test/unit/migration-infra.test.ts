@@ -1,23 +1,19 @@
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import { LegacyTransformError, transformDump } from '../../src/migration/legacy-loader.js';
 import { csvCell, REPORT_HEADER, ReportWriter, toCsv } from '../../src/migration/report-writer.js';
 import { parseSteps } from '../../src/migration/runner.js';
 import { parseArgs } from '../../src/migration/seed.js';
 import { mask, parseValues, scanDump } from '../../src/migration/sensitive-scan.js';
+import { HAS_LEGACY_DUMP, LEGACY_DUMP } from '../local-sources.js';
 
 const BOM = String.fromCharCode(0xfeff);
-const DUMP = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../../../seed/original/dump-gen_table-new.sql',
-);
-
 describe('LOAD_LEGACY 치환 규칙 4개(T3.3, PoC T1.9)', () => {
-  const out = transformDump(readFileSync(DUMP, 'utf8'));
-  it('DB 블록 제거·스키마 legacy·OWNER 제거·public. 치환', () => {
+  // 승계 원본 dump는 개발 PC에만 있다(저장소에 없음) — 없으면 실제 dump 치환 확인만 건너뛴다
+  it.skipIf(!HAS_LEGACY_DUMP)('DB 블록 제거·스키마 legacy·OWNER 제거·public. 치환', () => {
+    const out = transformDump(readFileSync(LEGACY_DUMP, 'utf8'));
     expect(out).not.toMatch(/^DROP DATABASE/m);
     expect(out).not.toMatch(/^\\connect/m);
     expect(out).toMatch(/^CREATE SCHEMA legacy;$/m);

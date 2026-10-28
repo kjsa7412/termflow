@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -10,9 +10,9 @@ import { termInlineSchema } from './term.js';
 
 // T2.11 DoD: 설계서 §9.5(및 §5.4) JSON 예시가 스키마로 파싱된다. 예시는 설계서에서 직접 읽는다.
 const here = path.dirname(fileURLToPath(import.meta.url));
-const doc = readFileSync(path.resolve(here, '../../../../docs/02_설계서.md'), 'utf8')
-  .split('\r\n')
-  .join('\n');
+// 설계서는 개발 PC에만 있다(저장소에 없음, .gitignore) — 없으면(CI·새 clone) 이 파일을 건너뛴다
+const DOC = path.resolve(here, '../../../../docs/02_설계서.md');
+const doc = existsSync(DOC) ? readFileSync(DOC, 'utf8').split('\r\n').join('\n') : '';
 
 /** `label` 뒤에 처음 나오는 ```json 블록을 JSON으로 읽는다. */
 function exampleAfter(label: string, from = 0): unknown {
@@ -25,7 +25,7 @@ function exampleAfter(label: string, from = 0): unknown {
 const sec95 = doc.indexOf('### 9.5 주요 JSON 예시');
 const sec54 = doc.indexOf('### 5.4 자동완성 API 규격');
 
-describe('schemas — 설계서 예시 파싱', () => {
+describe.skipIf(!doc)('schemas — 설계서 예시 파싱', () => {
   it('§9.5 프로젝트 생성 요청', () => {
     const r = projectCreateSchema.parse(exampleAfter('프로젝트 생성 요청', sec95));
     expect(r.projectKey).toBe('RMS26');
